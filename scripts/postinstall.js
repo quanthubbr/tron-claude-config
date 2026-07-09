@@ -34,6 +34,7 @@ const GIT_HOOKS = [
 const GITIGNORE_ENTRIES = [
   '.claude/.commit-authorized',
   '.claude/.pr-authorized',
+  '.claude/.pr-body-draft.md',
   '.claude/.harness-last-update',
 ];
 
@@ -151,6 +152,15 @@ function installKarpathySkill() {
   log('andrej-karpathy-skills installed → ~/.claude/skills/');
 }
 
+function installMakePrSkill() {
+  const dest = path.join(os.homedir(), '.claude', 'commands', 'make-pr.md');
+  if (fs.existsSync(dest)) return;
+  const src = path.join(PACKAGE_ROOT, 'managed', 'skills', 'make-pr', 'SKILL.md');
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(src, dest);
+  log('make-pr skill installed → ~/.claude/commands/make-pr.md');
+}
+
 function installEnforcementRule() {
   const dest = path.join(os.homedir(), '.claude', 'rules', 'harness-enforcement.md');
   const src = path.join(PACKAGE_ROOT, 'managed', 'claude', 'rules', 'harness-enforcement.md');
@@ -180,6 +190,7 @@ if (!IS_CI) {
   installGsd();
   installCaveman();
   installKarpathySkill();
+  installMakePrSkill();
   installEnforcementRule();
   installAgentIsolationRule();
   installHarnessPatterns();

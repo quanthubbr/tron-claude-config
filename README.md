@@ -69,6 +69,7 @@ Global (machine-level, installed once):
 ~/.claude/rules/ecc/                                          ← ECC coding rules (common, typescript, vue, react, …)
 ~/.claude/rules/harness-enforcement.md                        ← priority rules + Karpathy principles (always-on)
 ~/.claude/skills/andrej-karpathy-skills/karpathy-guidelines/  ← Karpathy skill (explicit invocations)
+~/.claude/commands/make-pr.md                                 ← canonical /make-pr skill (install-if-missing, see PR enforcement below)
 ```
 
 ---
@@ -103,7 +104,12 @@ Token files are automatically added to `.gitignore` and never committed.
 
 ### PR enforcement
 
-Same pattern: `gh pr create` is blocked unless called from the `/make-pr` skill, which creates `.claude/.pr-authorized` first.
+Same bypass-token pattern as commits, plus template validation: `gh pr create` is blocked unless
+
+1. Called from the `/make-pr` skill, which creates `.claude/.pr-authorized` first, **and**
+2. The PR body (written to `.claude/.pr-body-draft.md` and passed via `--body-file`, never inline `--body`) contains all 5 canonical sections: **Resumo**, **Principais mudanças**, **Arquitetura & implementação**, **Antes → Agora**, **Roteiro de teste**.
+
+`/make-pr` is installed automatically (install-if-missing, `~/.claude/commands/make-pr.md`) and already produces a compliant body — this validation exists so the template is *enforced*, not just followed by convention: even a developer-customized `/make-pr` must still pass the same structural check, since it's the hook (not the skill) that has the final say. Sections that don't apply to a given PR should keep their header with a `_N/A — não aplicável a esta mudança_` placeholder rather than being omitted.
 
 ### Tool verification (every session)
 
@@ -131,10 +137,10 @@ On the first session after install, the harness clones [affaan-m/ECC](https://gi
 
 ## Skill requirements
 
-This harness assumes your Claude Code setup has the `/commit-changes` and `/make-pr` skills. If you're using this outside of a Tron repo, you'll need to either:
+This harness assumes your Claude Code setup has the `/commit-changes` skill. `/make-pr` is installed automatically by `postinstall.js` (install-if-missing — an existing customized `/make-pr` is never overwritten). If you're using this outside of a Tron repo, you'll need to either:
 
-- Add those skills to your `~/.claude/commands/` folder, **or**
-- Edit `.claude/hooks/bypass-check.sh` to remove the bypass mechanism (makes the hooks block all commits)
+- Add `/commit-changes` to your `~/.claude/commands/` folder, **or**
+- Edit `.claude/hooks/bypass-check.sh` to remove the bypass mechanism (makes the hooks block all commits and PRs)
 
 ---
 

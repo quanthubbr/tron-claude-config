@@ -11,7 +11,7 @@ Files installed into every consumer repo:
 | File | Purpose |
 |------|---------|
 | `.claude/settings.json` | Claude Code hooks — blocks direct `git commit` and `gh pr create`, runs bootstrap on every prompt |
-| `.claude/hooks/bypass-check.sh` | Reads a token file (`.claude/.commit-authorized` or `.claude/.pr-authorized`). If present → allows the command and deletes the token. If absent → blocks with an error. |
+| `.claude/hooks/bypass-check.sh` | Reads a token file (`.claude/.commit-authorized` or `.claude/.pr-authorized`). If present → allows the command and deletes the token. For `pr`, also validates that `.claude/.pr-body-draft.md` contains all 5 canonical PR-template sections before allowing `gh pr create` through — the body-content check, not just the token, is what makes the template mandatory. If absent → blocks with an error. |
 | `.claude/hooks/bootstrap-check.sh` | Runs on every Claude prompt. Checks that `gsd` and `codebase-memory-mcp` are installed. Once per day also checks for a `@tron/claude-config` update and applies it silently. |
 | `.claude/git-hooks/pre-commit` | Source for the git hook. Blocks direct `git commit` from the terminal. |
 | `.claude/git-hooks/pre-push` | Source for the git hook. Blocks direct `git push` to main/master. |
@@ -20,7 +20,8 @@ Files installed into every consumer repo:
 
 **What is enforced:**
 - `/commit-changes` → only path to commit via Claude (runs `/code-review` + `/security-review` automatically)
-- `/make-pr` → only path to open a PR via Claude
+- `/make-pr` → only path to open a PR via Claude, and installed automatically by the package (install-if-missing at `~/.claude/commands/make-pr.md` — never overwrites a developer's own customized version)
+- PR body template → every `gh pr create` is blocked unless the body (written to `.claude/.pr-body-draft.md`, passed via `--body-file`) has all 5 canonical sections: Resumo, Principais mudanças, Arquitetura & implementação, Antes → Agora, Roteiro de teste. Enforced by `bypass-check.sh`, so it applies even if a repo has its own customized `/make-pr`.
 - `git commit` directly in terminal → blocked by `pre-commit` git hook
 - `git push` directly to main/master → blocked by `pre-push` git hook
 - Missing tools → warning injected into Claude's context every session
@@ -81,8 +82,8 @@ Done. The `postinstall` script runs automatically and sets everything up. No fur
 - Copies `.claude/settings.json` (Claude Code hooks)
 - Copies `.claude/hooks/bypass-check.sh` and `bootstrap-check.sh`
 - Installs `.git/hooks/pre-commit` and `.git/hooks/pre-push`
-- Adds token files to the project's `.gitignore`
-- Installs ECC rules, Karpathy skill, enforcement rule, gsd, and caveman (developer machines only)
+- Adds token/draft files (including `.claude/.pr-body-draft.md`) to the project's `.gitignore`
+- Installs ECC rules, Karpathy skill, enforcement rule, `/make-pr` skill, gsd, and caveman (developer machines only)
 
 ---
 
@@ -171,9 +172,11 @@ tron-claude-config/
 │   │   ├── pre-commit                      ← blocks direct terminal commits
 │   │   └── pre-push                        ← blocks direct terminal pushes to main
 │   ├── skills/
-│   │   └── andrej-karpathy-skills/
-│   │       └── karpathy-guidelines/
-│   │           └── SKILL.md                ← Karpathy skill (bundled)
+│   │   ├── andrej-karpathy-skills/
+│   │   │   └── karpathy-guidelines/
+│   │   │       └── SKILL.md                ← Karpathy skill (bundled)
+│   │   └── make-pr/
+│   │       └── SKILL.md                    ← canonical /make-pr skill (installed to ~/.claude/commands/, install-if-missing)
 │   └── setup-claude-harness.sh             ← idempotent setup script
 ├── MAINTAINER.md                           ← full maintainer guide
 └── README.md                               ← quick install guide
