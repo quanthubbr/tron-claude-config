@@ -4,7 +4,7 @@
 
 | Layer | Higher priority | Lower priority |
 |-------|----------------|---------------|
-| **Rules** | ECC (`~/.claude/rules/ecc/`) | Karpathy guidelines below |
+| **Rules** | ECC (`.claude/rules/ecc/`) | Karpathy guidelines below |
 | **Skills** | `andrej-karpathy-skills:karpathy-guidelines` | ECC skills |
 
 When rules conflict: follow ECC.
