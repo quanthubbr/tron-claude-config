@@ -47,7 +47,7 @@ All agents in this repo have access to the full rule stack, applied in this prio
 
 | Priority | Layer | Source | What it governs |
 |----------|-------|--------|-----------------|
-| 1 | **ECC rules** | `~/.claude/rules/ecc/` | Coding standards: naming, testing, security, git workflow |
+| 1 | **ECC rules** | `.claude/rules/ecc/` | Coding standards: naming, testing, security, git workflow |
 | 2 | **Karpathy principles** | `~/.claude/rules/agent-isolation.md` | Behavior: simplicity, surgical changes, goal-driven execution |
 | 3 | **Harness enforcement** | `~/.claude/rules/harness-enforcement.md` | Workflow: commit gates, review gates, approval flow |
 

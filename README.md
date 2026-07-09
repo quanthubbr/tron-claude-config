@@ -14,7 +14,7 @@
 | Enforces `/make-pr` for pull requests | `gh pr create` blocked unless called from the skill |
 | Warns Claude when required tools are missing | `UserPromptSubmit` hook injects a note into every session |
 | Self-updates silently, once per day | `bootstrap-check.sh` compares installed SHA vs remote HEAD |
-| Installs [ECC coding rules](https://github.com/affaan-m/ECC) globally | Done once, on first session, into `~/.claude/rules/ecc/` |
+| Installs [ECC coding rules](https://github.com/affaan-m/ECC) per project | Scoped via `package.json` → `.claude/rules/ecc/` |
 
 The harness lives in your repo's `.claude/` folder and `.git/hooks/`. It does **not** touch your `CLAUDE.md`, `.claude/commands/`, or `.claude/settings.local.json`.
 
@@ -53,6 +53,8 @@ That's it. The `postinstall` script runs automatically and sets everything up. N
 your-project/
 ├── .claude/
 │   ├── settings.json              ← Claude Code hooks (merged, not overwritten)
+│   ├── rules/
+│   │   └── ecc/                   ← ECC rules (common + stack-specific folders)
 │   └── hooks/
 │       ├── bypass-check.sh        ← bypass token checker (used by skills)
 │       └── bootstrap-check.sh     ← tool verifier + auto-updater (runs every session)
@@ -66,7 +68,6 @@ your-project/
 Global (machine-level, installed once):
 
 ```
-~/.claude/rules/ecc/                                          ← ECC coding rules (common, typescript, vue, react, …)
 ~/.claude/rules/harness-enforcement.md                        ← priority rules + Karpathy principles (always-on)
 ~/.claude/skills/andrej-karpathy-skills/karpathy-guidelines/  ← Karpathy skill (explicit invocations)
 ~/.claude/commands/make-pr.md                                 ← canonical /make-pr skill (install-if-missing, see PR enforcement below)
@@ -82,7 +83,7 @@ Two complementary layers enforce code quality automatically, with no user action
 
 | Layer | Source | Priority | Scope |
 |-------|--------|----------|-------|
-| **ECC rules** | `~/.claude/rules/ecc/` | Highest for rules | Standards: naming, testing, security, git workflow |
+| **ECC rules** | `.claude/rules/ecc/` | Highest for rules | Standards: naming, testing, security, git workflow |
 | **Karpathy principles** | `~/.claude/rules/harness-enforcement.md` | Highest for behavior | How to think and act: simplicity, surgical changes, goal-driven execution |
 | **Karpathy skill** | `~/.claude/skills/andrej-karpathy-skills/` | — | Explicit invocation via `Skill("karpathy-guidelines")` |
 
@@ -131,7 +132,12 @@ Once per 24 hours, `bootstrap-check.sh` compares the installed SHA of this packa
 
 ### ECC rules
 
-On the first session after install, the harness clones [affaan-m/ECC](https://github.com/affaan-m/ECC) temporarily, copies the rule folders into `~/.claude/rules/ecc/`, and removes the clone. No permanent network dependency. If already installed, this step is silently skipped.
+On `npm install`, and whenever `scripts/setup-claude-harness.sh` runs (including after a harness package update), the harness clones [affaan-m/ECC](https://github.com/affaan-m/ECC) temporarily, detects the consumer project's stack from `package.json` and project files, then syncs rule folders into `.claude/rules/ecc/`:
+
+- **Always:** `common`
+- **When detected:** `typescript`, `vue`, `nuxt`, `react`, `react-native`, `web`, `csharp`, and other ECC language folders (python, golang, etc.)
+
+Folders outside the detected scope are removed on the next sync. State is recorded in `.claude/.ecc-scope.json`.
 
 ---
 

@@ -31,7 +31,6 @@ Machine-level tools installed once per developer machine (skipped in CI):
 
 | Tool | Installed to | How |
 |------|-------------|-----|
-| ECC rules | `~/.claude/rules/ecc/` | `git clone` from [affaan-m/ECC](https://github.com/affaan-m/ECC), then copied |
 | Karpathy enforcement rule | `~/.claude/rules/harness-enforcement.md` | Copied from package (bundled) |
 | Karpathy skill | `~/.claude/skills/andrej-karpathy-skills/` | Copied from package (bundled, no network) |
 | gsd | global `$PATH` | `npm install -g gsd-core` |
@@ -45,7 +44,7 @@ Two layers work together automatically, with no user action:
 
 | Layer | Source | Priority | Scope |
 |-------|--------|----------|-------|
-| **ECC rules** | `~/.claude/rules/ecc/` | Highest for rules | Standards: naming, testing, security, git |
+| **ECC rules** | `.claude/rules/ecc/` | Highest for rules | Standards: naming, testing, security, git |
 | **Karpathy principles** | `~/.claude/rules/harness-enforcement.md` | Highest for behavior | Simplicity, surgical changes, goal-driven execution |
 
 **ECC takes priority over Karpathy on rules.** When they conflict on coding standards, follow ECC.

@@ -9,6 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
+const { installEccRules } = require('./lib/install-ecc-rules');
 
 const DRY = process.env.DRY === '1';
 const IS_CI = !!(process.env.CI || process.env.CONTINUOUS_INTEGRATION || process.env.GITHUB_ACTIONS);
@@ -96,28 +97,6 @@ function globalInstallCmd(pm, pkg) {
     case 'bun':  return `bun add -g ${pkg}`;
     case 'pnpm': return `pnpm add -g ${pkg}`;
     default:     return `npm install -g ${pkg}`;
-  }
-}
-
-function installECC() {
-  const eccTarget = path.join(os.homedir(), '.claude', 'rules', 'ecc');
-  if (fs.existsSync(path.join(eccTarget, 'common'))) return;
-
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ecc-'));
-  try {
-    execSync(`git clone --depth=1 https://github.com/affaan-m/ECC.git "${tmpDir}/ECC"`, { stdio: 'ignore', timeout: 30000 });
-    fs.mkdirSync(eccTarget, { recursive: true });
-    for (const folder of ['common', 'typescript', 'csharp', 'nuxt', 'react', 'react-native', 'vue', 'web']) {
-      const src = path.join(tmpDir, 'ECC', 'rules', folder);
-      if (fs.existsSync(src)) {
-        execSync(`cp -R "${src}" "${eccTarget}/"`, { stdio: 'ignore' });
-      }
-    }
-    log('ECC rules installed → ' + eccTarget);
-  } catch {
-    log('WARN: ECC install failed (check internet / git)');
-  } finally {
-    try { execSync(`rm -rf "${tmpDir}"`, { stdio: 'ignore' }); } catch {}
   }
 }
 
@@ -227,7 +206,6 @@ function installHarnessPatterns() {
 
 // Machine-level tools: install for developers, skip in CI
 if (!IS_CI) {
-  installECC();
   installGsd();
   installCodebaseMemoryMcp();
   installCaveman();
@@ -248,6 +226,11 @@ if (path.resolve(CONSUMER_ROOT) === path.resolve(PACKAGE_ROOT)) process.exit(0);
 // Copy managed files
 for (const [src, dest] of MANAGED_FILES) {
   copyFile(src, dest);
+}
+
+// ECC rules: project-scoped sync (add/remove folders based on consumer package.json)
+if (!IS_CI) {
+  installEccRules(CONSUMER_ROOT, { dryRun: DRY, silent: DRY });
 }
 
 // Install git hooks

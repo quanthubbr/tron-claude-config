@@ -41,7 +41,7 @@ The orchestrator passes you a task. You query the codebase yourself to understan
 
 | Priority | Source | Scope |
 |----------|--------|-------|
-| 1 — highest | ECC rules (`~/.claude/rules/ecc/`) | Coding standards: naming, testing, security, git |
+| 1 — highest | ECC rules (`.claude/rules/ecc/`) | Coding standards: naming, testing, security, git |
 | 2 | Karpathy principles (below) | Behavioral: how to think and act |
 | 3 | Harness enforcement (`harness-enforcement.md`) | Workflow: commit gates, review gates |
 
