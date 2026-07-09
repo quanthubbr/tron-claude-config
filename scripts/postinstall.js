@@ -85,6 +85,20 @@ function installGitIgnoreEntries() {
 
 // ── Machine-level tools (skip in CI — developers-only) ───────────────────────
 
+function detectPackageManager() {
+  if (fs.existsSync(path.join(CONSUMER_ROOT, 'bun.lockb')) || fs.existsSync(path.join(CONSUMER_ROOT, 'bun.lock'))) return 'bun';
+  if (fs.existsSync(path.join(CONSUMER_ROOT, 'pnpm-lock.yaml'))) return 'pnpm';
+  return 'npm';
+}
+
+function globalInstallCmd(pm, pkg) {
+  switch (pm) {
+    case 'bun':  return `bun add -g ${pkg}`;
+    case 'pnpm': return `pnpm add -g ${pkg}`;
+    default:     return `npm install -g ${pkg}`;
+  }
+}
+
 function installECC() {
   const eccTarget = path.join(os.homedir(), '.claude', 'rules', 'ecc');
   if (fs.existsSync(path.join(eccTarget, 'common'))) return;
@@ -115,11 +129,38 @@ function installGsd() {
 
   if (alreadyInstalled) return;
 
+  const pm = detectPackageManager();
+  const cmd = globalInstallCmd(pm, 'gsd-core');
   try {
-    execSync('npm install -g gsd-core', { stdio: 'ignore', timeout: 60000 });
-    log('gsd installed globally');
+    execSync(cmd, { stdio: 'ignore', timeout: 60000 });
+    log(`gsd installed globally (${cmd})`);
   } catch {
-    log('WARN: gsd install failed — run manually: npm install -g gsd-core');
+    log(`WARN: gsd install failed — run manually: ${cmd}`);
+  }
+}
+
+function installCodebaseMemoryMcp() {
+  const alreadyInstalled = (() => {
+    try {
+      const mcpConfigPath = path.join(os.homedir(), '.claude', '.mcp.json');
+      if (!fs.existsSync(mcpConfigPath)) return false;
+      const config = JSON.parse(fs.readFileSync(mcpConfigPath, 'utf8'));
+      return Object.keys(config.mcpServers || {}).some(k => k.includes('codebase-memory'));
+    } catch { return false; }
+  })();
+
+  if (alreadyInstalled) return;
+
+  const isWindows = process.platform === 'win32';
+  const cmd = isWindows
+    ? 'powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.ps1 -OutFile $env:TEMP\\cmm-install.ps1; & $env:TEMP\\cmm-install.ps1"'
+    : 'curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.sh | bash';
+
+  try {
+    execSync(cmd, { stdio: 'ignore', shell: true, timeout: 60000 });
+    log('codebase-memory-mcp installed');
+  } catch {
+    log('WARN: codebase-memory-mcp install failed — see: https://github.com/DeusData/codebase-memory-mcp');
   }
 }
 
@@ -188,6 +229,7 @@ function installHarnessPatterns() {
 if (!IS_CI) {
   installECC();
   installGsd();
+  installCodebaseMemoryMcp();
   installCaveman();
   installKarpathySkill();
   installMakePrSkill();
