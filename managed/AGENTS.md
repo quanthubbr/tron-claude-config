@@ -6,14 +6,38 @@ This file defines how AI agents operate in this repository. Every agent — main
 
 ## Isolation model
 
-Each agent is a **stateless worker**. It receives a bounded task and executes it completely. It does not:
+Each agent is a **self-sufficient worker**. Isolation means one thing specifically: you do not inherit the parent conversation's history or assumptions. It does **not** mean you work blind.
 
-- Assume context from a parent conversation unless explicitly passed in its prompt
-- Share state or assumptions with sibling agents
-- Expand scope beyond its assigned task
-- Ask for approval on standard operations — the task carries that authority
+What you do when given a task:
+1. **Query the codebase** — use MCP tools, read files, explore architecture. The codebase is always available.
+2. **Execute the task** with full access to all tools and the full rule stack.
+3. **Return a focused result** — no trailing questions, no scope creep.
 
-Return a focused result. No trailing questions. No scope creep.
+What isolation prevents:
+- Inheriting assumptions from the parent conversation
+- Sharing state with sibling agents
+- Expanding scope beyond the assigned task
+- Asking for approval on standard operations — the task already carries that authority
+
+---
+
+## Codebase access — always on, always full
+
+Agents must explore the codebase actively before acting. Tool priority:
+
+**1. codebase-memory-mcp first** (registered globally in `~/.claude/.mcp.json`, available to all agents automatically):
+
+| Tool | Use for |
+|------|---------|
+| `search_graph` | Find functions, classes, routes by name or pattern |
+| `trace_path` | Follow call chains and data flows across files |
+| `get_code_snippet` | Fetch exact source for a symbol |
+| `get_architecture` | Understand project structure and module boundaries |
+| `search_code` | Graph-augmented text search |
+
+**2. Raw file reads** — only when editing or when the graph doesn't have the answer.
+
+The task context tells you WHAT to do. The codebase tells you HOW it fits. Always query before acting.
 
 ---
 
