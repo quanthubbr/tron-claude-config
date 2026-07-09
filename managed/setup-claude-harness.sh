@@ -8,7 +8,7 @@ log() { [ "$SILENT" != "--silent" ] && echo "$@"; }
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 GIT_HOOKS_DIR="$REPO_ROOT/.git/hooks"
-SOURCE_HOOKS_DIR="$REPO_ROOT/.claude/git-hooks"
+SOURCE_HOOKS_DIR="$REPO_ROOT/node_modules/@tron/claude-config/managed/git-hooks"
 
 # Package manager detection — used for install instructions
 detect_pm() {
