@@ -66,12 +66,30 @@ your-project/
 Global (machine-level, installed once):
 
 ```
-~/.claude/rules/ecc/               ← ECC coding rules (common, typescript, vue, react, …)
+~/.claude/rules/ecc/                                          ← ECC coding rules (common, typescript, vue, react, …)
+~/.claude/rules/harness-enforcement.md                        ← priority rules + Karpathy principles (always-on)
+~/.claude/skills/andrej-karpathy-skills/karpathy-guidelines/  ← Karpathy skill (explicit invocations)
 ```
 
 ---
 
 ## How it works
+
+### Code quality enforcement
+
+Two complementary layers enforce code quality automatically, with no user action required:
+
+| Layer | Source | Priority | Scope |
+|-------|--------|----------|-------|
+| **ECC rules** | `~/.claude/rules/ecc/` | Highest for rules | Standards: naming, testing, security, git workflow |
+| **Karpathy principles** | `~/.claude/rules/harness-enforcement.md` | Highest for behavior | How to think and act: simplicity, surgical changes, goal-driven execution |
+| **Karpathy skill** | `~/.claude/skills/andrej-karpathy-skills/` | — | Explicit invocation via `Skill("karpathy-guidelines")` |
+
+**ECC takes priority over Karpathy on rules.** When they conflict on coding standards (naming, structure, coverage), follow ECC.
+
+**Karpathy takes priority on behavioral skills.** When they conflict on how to approach a task (assumptions, scope, success criteria), follow Karpathy.
+
+The principles live directly in `harness-enforcement.md` (a global rule file Claude Code loads every session) — no Skill tool call overhead per task. The skill file is still installed for explicit `/karpathy-guidelines` invocations.
 
 ### Commit enforcement
 
@@ -183,16 +201,22 @@ rm .claude/hooks/bypass-check.sh .claude/hooks/bootstrap-check.sh
 tron-claude-config/
 ├── package.json
 ├── scripts/
-│   └── postinstall.js             ← copies managed files into the consumer repo
+│   └── postinstall.js             ← copies managed files; installs machine-level tools
 ├── managed/
 │   ├── claude/
 │   │   ├── settings.json          ← Claude Code hooks config
-│   │   └── hooks/
-│   │       ├── bypass-check.sh    ← bypass token access control
-│   │       └── bootstrap-check.sh ← tool check + ECC install + auto-update
+│   │   ├── hooks/
+│   │   │   ├── bypass-check.sh    ← bypass token access control
+│   │   │   └── bootstrap-check.sh ← tool check + auto-update (runs every session)
+│   │   └── rules/
+│   │       └── harness-enforcement.md  ← priority + Karpathy principles (always-on rule)
 │   ├── git-hooks/
 │   │   ├── pre-commit             ← blocks direct terminal commits
 │   │   └── pre-push               ← blocks direct terminal pushes to main
+│   ├── skills/
+│   │   └── andrej-karpathy-skills/
+│   │       └── karpathy-guidelines/
+│   │           └── SKILL.md       ← Karpathy skill (bundled, no network needed)
 │   └── setup-claude-harness.sh   ← idempotent setup script
 ├── MAINTAINER.md
 └── README.md

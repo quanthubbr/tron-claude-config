@@ -141,6 +141,22 @@ function installCaveman() {
   }
 }
 
+function installKarpathySkill() {
+  const dest = path.join(os.homedir(), '.claude', 'skills', 'andrej-karpathy-skills', 'karpathy-guidelines', 'SKILL.md');
+  if (fs.existsSync(dest)) return;
+  const src = path.join(PACKAGE_ROOT, 'managed', 'skills', 'andrej-karpathy-skills', 'karpathy-guidelines', 'SKILL.md');
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(src, dest);
+  log('andrej-karpathy-skills installed → ~/.claude/skills/');
+}
+
+function installEnforcementRule() {
+  const dest = path.join(os.homedir(), '.claude', 'rules', 'harness-enforcement.md');
+  const src = path.join(PACKAGE_ROOT, 'managed', 'claude', 'rules', 'harness-enforcement.md');
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(src, dest);
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 // Machine-level tools: install for developers, skip in CI
@@ -148,6 +164,8 @@ if (!IS_CI) {
   installECC();
   installGsd();
   installCaveman();
+  installKarpathySkill();
+  installEnforcementRule();
 }
 
 // Consumer-repo-specific setup
