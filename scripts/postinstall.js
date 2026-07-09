@@ -18,6 +18,7 @@ const MANAGED_FILES = [
   ['managed/claude/settings.json',           '.claude/settings.json'],
   ['managed/claude/hooks/bypass-check.sh',   '.claude/hooks/bypass-check.sh'],
   ['managed/claude/hooks/bootstrap-check.sh','.claude/hooks/bootstrap-check.sh'],
+  ['managed/setup-claude-harness.sh',        'scripts/setup-claude-harness.sh'],
 ];
 
 const GIT_HOOKS = [
