@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# pre-push git hook — enforces use of Claude /make-pr skill
+# Installed by scripts/setup-claude-harness.sh to .git/hooks/pre-push
+# Bypass (emergency only): git push --no-verify
+
+TOKEN=".claude/.pr-authorized"
+COMMIT_TOKEN=".claude/.commit-authorized"
+
+# Allow if either skill token is present (commit-changes pushes at end)
+if [ -f "$TOKEN" ] || [ -f "$COMMIT_TOKEN" ]; then
+  exit 0
+fi
+
+# Allow force-free pushes to non-main branches from CI environments
+if [ -n "$CI" ] || [ -n "$GITHUB_ACTIONS" ]; then
+  exit 0
+fi
+
+REMOTE="$1"
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+# Block pushes to main/master unconditionally (always go through PR)
+if [[ "$BRANCH" == "main" || "$BRANCH" == "master" ]]; then
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo " 🚫  Direct push to $BRANCH is blocked."
+  echo ""
+  echo "  Use /make-pr to open a pull request instead."
+  echo "  Emergency bypass: git push --no-verify"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  exit 1
+fi
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo " ⚠️   Direct git push detected on branch: $BRANCH"
+echo ""
+echo "  Prefer using /commit-changes (pushes automatically)"
+echo "  or /make-pr (opens a reviewed PR)."
+echo ""
+echo "  To allow this push: git push --no-verify"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+exit 1

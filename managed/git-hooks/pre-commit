@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# pre-commit git hook — enforces use of Claude /commit-changes skill
+# Installed by scripts/setup-claude-harness.sh to .git/hooks/pre-commit
+# Bypass (emergency only): git commit --no-verify
+
+TOKEN=".claude/.commit-authorized"
+
+if [ -f "$TOKEN" ]; then
+  # Token created by /commit-changes skill — allow through
+  exit 0
+fi
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo " 🚫  Direct git commit is not allowed in this repo."
+echo ""
+echo "  Use the Claude Code skill instead:"
+echo "    /commit-changes"
+echo ""
+echo "  This ensures /code-review and /security-review"
+echo "  run automatically before every commit."
+echo ""
+echo "  Emergency bypass: git commit --no-verify"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+exit 1
