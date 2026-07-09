@@ -33,7 +33,9 @@ if [ "$MODE" = "pr" ]; then
   fi
 
   for section in "${REQUIRED_SECTIONS[@]}"; do
-    if ! grep -q "^## ${section}" "$BODY_FILE"; then
+    # LC_ALL=C forces byte-wise matching so the U+2192 arrow in "Antes → Agora"
+    # can't fail as an invalid multibyte sequence in non-UTF-8 locales (e.g. CI).
+    if ! LC_ALL=C grep -q "^## ${section}" "$BODY_FILE"; then
       echo "{\"decision\":\"block\",\"reason\":\"PR body is missing required section: ## ${section}. All 5 canonical sections (Resumo, Principais mudanças, Arquitetura & implementação, Antes → Agora, Roteiro de teste) are mandatory — use the placeholder '_N/A — não aplicável a esta mudança_' under any section that genuinely doesn't apply.\"}" >&2
       exit 1
     fi
