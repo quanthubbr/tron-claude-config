@@ -7,8 +7,11 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
+const { execSync } = require('child_process');
 
 const DRY = process.env.DRY === '1';
+const IS_CI = !!(process.env.CI || process.env.CONTINUOUS_INTEGRATION || process.env.GITHUB_ACTIONS);
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const CONSUMER_ROOT = process.env.INIT_CWD || process.cwd();
 
@@ -78,16 +81,81 @@ function installGitIgnoreEntries() {
   }
 }
 
-// Skip if not in a consumer repo (e.g. installing inside the package itself)
-const isConsumerRepo = fs.existsSync(path.join(CONSUMER_ROOT, '.git'));
-if (!isConsumerRepo) {
-  process.exit(0);
+// ── Machine-level tools (skip in CI — developers-only) ───────────────────────
+
+function installECC() {
+  const eccTarget = path.join(os.homedir(), '.claude', 'rules', 'ecc');
+  if (fs.existsSync(path.join(eccTarget, 'common'))) return;
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ecc-'));
+  try {
+    execSync(`git clone --depth=1 https://github.com/affaan-m/ECC.git "${tmpDir}/ECC"`, { stdio: 'ignore', timeout: 30000 });
+    fs.mkdirSync(eccTarget, { recursive: true });
+    for (const folder of ['common', 'typescript', 'csharp', 'nuxt', 'react', 'react-native', 'vue', 'web']) {
+      const src = path.join(tmpDir, 'ECC', 'rules', folder);
+      if (fs.existsSync(src)) {
+        execSync(`cp -R "${src}" "${eccTarget}/"`, { stdio: 'ignore' });
+      }
+    }
+    log('ECC rules installed → ' + eccTarget);
+  } catch {
+    log('WARN: ECC install failed (check internet / git)');
+  } finally {
+    try { execSync(`rm -rf "${tmpDir}"`, { stdio: 'ignore' }); } catch {}
+  }
 }
 
-// Also skip if CONSUMER_ROOT === PACKAGE_ROOT (self-install)
-if (path.resolve(CONSUMER_ROOT) === path.resolve(PACKAGE_ROOT)) {
-  process.exit(0);
+function installGsd() {
+  // Already available?
+  const alreadyInstalled =
+    (() => { try { execSync('gsd --version', { stdio: 'ignore' }); return true; } catch { return false; } })() ||
+    (() => { try { execSync('npx --yes gsd-core --version', { stdio: 'ignore', timeout: 8000 }); return true; } catch { return false; } })();
+
+  if (alreadyInstalled) return;
+
+  try {
+    execSync('npm install -g gsd-core', { stdio: 'ignore', timeout: 60000 });
+    log('gsd installed globally');
+  } catch {
+    log('WARN: gsd install failed — run manually: npm install -g gsd-core');
+  }
 }
+
+function installCaveman() {
+  // Check if caveman skill already present in any known location
+  const home = os.homedir();
+  const knownPaths = [
+    path.join(home, '.claude', 'skills', 'caveman'),
+    path.join(home, '.claude', 'commands', 'caveman.md'),
+  ];
+  if (knownPaths.some(p => fs.existsSync(p))) return;
+
+  try {
+    execSync(
+      'curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash',
+      { stdio: 'ignore', shell: true, timeout: 30000 }
+    );
+    log('caveman installed');
+  } catch {
+    log('WARN: caveman install failed — see: https://github.com/JuliusBrussee/caveman');
+  }
+}
+
+// ── Main ─────────────────────────────────────────────────────────────────────
+
+// Machine-level tools: install for developers, skip in CI
+if (!IS_CI) {
+  installECC();
+  installGsd();
+  installCaveman();
+}
+
+// Consumer-repo-specific setup
+const isConsumerRepo = fs.existsSync(path.join(CONSUMER_ROOT, '.git'));
+if (!isConsumerRepo) process.exit(0);
+
+// Also skip if CONSUMER_ROOT === PACKAGE_ROOT (self-install)
+if (path.resolve(CONSUMER_ROOT) === path.resolve(PACKAGE_ROOT)) process.exit(0);
 
 // Copy managed files
 for (const [src, dest] of MANAGED_FILES) {

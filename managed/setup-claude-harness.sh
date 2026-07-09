@@ -50,51 +50,11 @@ for entry in ".claude/.commit-authorized" ".claude/.pr-authorized"; do
   fi
 done
 
-# ── ECC rules ────────────────────────────────────────────────────────────────
-install_ecc() {
-  local ECC_TARGET="$HOME/.claude/rules/ecc"
-  local ECC_FOLDERS="common typescript csharp nuxt react react-native vue web"
-
-  if [ -d "$ECC_TARGET/common" ]; then
-    log "   ✓ ECC rules already installed"
-    return 0
-  fi
-
-  log ""
-  log "🔌 Installing ECC rules..."
-  local TMPDIR
-  TMPDIR=$(mktemp -d)
-
-  if git clone --depth=1 https://github.com/affaan-m/ECC.git "$TMPDIR/ECC" --quiet 2>/dev/null; then
-    mkdir -p "$ECC_TARGET"
-    for folder in $ECC_FOLDERS; do
-      if [ -d "$TMPDIR/ECC/rules/$folder" ]; then
-        cp -R "$TMPDIR/ECC/rules/$folder" "$ECC_TARGET/"
-        log "   ✓ ECC rules/$folder"
-      fi
-    done
-    log "   ✅ ECC installed → $ECC_TARGET"
-  else
-    log "   ⚠ ECC install failed (check internet connection)"
-  fi
-
-  rm -rf "$TMPDIR"
-}
-
-install_ecc
-
 # 3. Check required tools
 log ""
 log "🔍 Checking required tools..."
 
 MISSING=()
-
-if command -v rtk &>/dev/null; then
-  log "   ✓ rtk $(rtk --version 2>/dev/null || echo '(version unknown)')"
-else
-  log "   ✗ rtk — MISSING"
-  MISSING+=("rtk")
-fi
 
 if npx gsd-core --version &>/dev/null 2>&1 || command -v gsd &>/dev/null; then
   log "   ✓ gsd"
@@ -122,10 +82,6 @@ if [ ${#MISSING[@]} -gt 0 ]; then
   log "⚠️  Missing tools. Install instructions:"
   for tool in "${MISSING[@]}"; do
     case "$tool" in
-      rtk)
-        log "   rtk:  cargo install rtk"
-        log "         (or see ~/.claude/RTK.md)"
-        ;;
       gsd)
         case "$PM" in
           bun)  log "   gsd:  bun add -g gsd-core" ;;

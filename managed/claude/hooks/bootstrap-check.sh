@@ -74,15 +74,11 @@ if [ "$SHOULD_UPDATE" = true ]; then
       echo "[harness] updated ✓"
     fi
   fi
+
 fi
 
 # ── Tool verification ─────────────────────────────────────────────────────────
 MISSING=()
-
-# Check rtk
-if ! command -v rtk &>/dev/null; then
-  MISSING+=("rtk")
-fi
 
 # Check gsd
 if ! npx --yes gsd-core --version &>/dev/null 2>&1 && ! command -v gsd &>/dev/null; then
@@ -107,9 +103,6 @@ if [ ${#MISSING[@]} -gt 0 ]; then
   echo "Or install individually:"
   for tool in "${MISSING[@]}"; do
     case "$tool" in
-      rtk)
-        echo "  rtk: cargo install rtk  (see ~/.claude/RTK.md)"
-        ;;
       gsd)
         echo "  gsd: npm install -g gsd-core"
         ;;
