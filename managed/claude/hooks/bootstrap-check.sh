@@ -44,13 +44,18 @@ if [ "$SHOULD_UPDATE" = true ]; then
       catch(e) { process.stdout.write(''); }
     " 2>/dev/null)
 
-    # For git-sourced packages: compare resolved commit vs remote HEAD
+    # For git-sourced packages: compare resolved commit vs remote HEAD.
+    # npm records this in package.json's "_resolved" field; pnpm does not,
+    # so fall back to the installed package's own .git HEAD when present.
     INSTALLED_SHA=$(node -e "
       try {
         const r = require('./${PKG_JSON}')._resolved || '';
         process.stdout.write(r.split('#')[1] || '');
       } catch(e) { process.stdout.write(''); }
     " 2>/dev/null)
+    if [ -z "$INSTALLED_SHA" ] && [ -d "node_modules/${PACKAGE_NAME}/.git" ]; then
+      INSTALLED_SHA=$(git -C "node_modules/${PACKAGE_NAME}" rev-parse HEAD 2>/dev/null)
+    fi
 
     REMOTE_SHA=""
     if [ -d "node_modules/${PACKAGE_NAME}/.git" ]; then
