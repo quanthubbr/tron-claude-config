@@ -28,11 +28,14 @@ tron-claude-config/
 │   ├── claude/
 │   │   ├── settings.json          # Claude Code hooks (bypass-check, bootstrap, auto-update)
 │   │   └── hooks/
-│   │       ├── bypass-check.sh    # bypass token for commit/pr skills
+│   │       ├── bypass-check.sh    # bypass token for commit/pr skills + PR-body template validation
 │   │       └── bootstrap-check.sh # tool verification + auto-update (UserPromptSubmit hook)
-│   └── git-hooks/
-│       ├── pre-commit             # blocks direct terminal git commit
-│       └── pre-push               # blocks direct terminal git push to main
+│   ├── git-hooks/
+│   │   ├── pre-commit             # blocks direct terminal git commit
+│   │   └── pre-push               # blocks direct terminal git push to main
+│   └── skills/
+│       └── make-pr/
+│           └── SKILL.md           # canonical /make-pr skill — installed to ~/.claude/commands/, install-if-missing
 ├── MAINTAINER.md                  # this file
 └── README.md                      # consumer-facing setup instructions
 ```
@@ -46,7 +49,9 @@ tron-claude-config/
 | `.claude/hooks/bootstrap-check.sh` | **Package** | Do not edit in consumer repos |
 | `.git/hooks/pre-commit` | **Package** | Installed/overwritten by setup |
 | `.git/hooks/pre-push` | **Package** | Installed/overwritten by setup |
-| `.claude/commands/*.md` | **Repo** | Skills — repo-specific, never overwritten |
+| `~/.claude/commands/make-pr.md` | **Package (install-if-missing, global)** | Installed once per machine, never overwrites an existing customized `/make-pr`. Enforcement of the PR template happens in the hook regardless of which version is present. |
+| `.claude/.pr-body-draft.md` | **Ephemeral (repo, gitignored)** | Written by `/make-pr` per PR, read by `bypass-check.sh` for template validation, deleted after `gh pr create` succeeds |
+| `.claude/commands/*.md` (repo-local, other than `make-pr.md`) | **Repo** | Skills — repo-specific, never overwritten |
 | `CLAUDE.md` | **Repo** | Project rules — never overwritten |
 | `.claude/settings.local.json` | **Repo** | Local overrides — never touched |
 
