@@ -94,13 +94,8 @@ for (const [src, dest] of MANAGED_FILES) {
 }
 
 // Install git hooks
-const gitHooksDir = path.join(CONSUMER_ROOT, '.git', 'hooks');
-if (fs.existsSync(path.join(CONSUMER_ROOT, '.git'))) {
-  for (const [src, dest] of GIT_HOOKS) {
-    copyFile(src, dest);
-  }
-} else {
-  log('WARN: .git not found — skipping git hook installation');
+for (const [src, dest] of GIT_HOOKS) {
+  copyFile(src, dest);
 }
 
 // Update .gitignore
