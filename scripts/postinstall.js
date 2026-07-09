@@ -22,6 +22,7 @@ const MANAGED_FILES = [
   ['managed/claude/hooks/bypass-check.sh',   '.claude/hooks/bypass-check.sh'],
   ['managed/claude/hooks/bootstrap-check.sh','.claude/hooks/bootstrap-check.sh'],
   ['managed/setup-claude-harness.sh',        'scripts/setup-claude-harness.sh'],
+  ['managed/AGENTS.md',                      'AGENTS.md'],
 ];
 
 const GIT_HOOKS = [
@@ -157,6 +158,13 @@ function installEnforcementRule() {
   fs.copyFileSync(src, dest);
 }
 
+function installAgentIsolationRule() {
+  const dest = path.join(os.homedir(), '.claude', 'rules', 'agent-isolation.md');
+  const src = path.join(PACKAGE_ROOT, 'managed', 'claude', 'rules', 'agent-isolation.md');
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(src, dest);
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 // Machine-level tools: install for developers, skip in CI
@@ -166,6 +174,7 @@ if (!IS_CI) {
   installCaveman();
   installKarpathySkill();
   installEnforcementRule();
+  installAgentIsolationRule();
 }
 
 // Consumer-repo-specific setup
