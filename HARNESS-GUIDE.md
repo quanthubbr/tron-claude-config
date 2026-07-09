@@ -1,75 +1,65 @@
-# Claude Enforcement Harness — Guia Prático
+# Claude Enforcement Harness — Practical Guide
 
-> Este arquivo não está versionado. É um guia rápido para entender o que foi construído, como instalar em outros projetos e como manter o pacote.
-
----
-
-## O que foi feito
-
-Dois entregáveis foram criados:
-
-### 1. Harness no tron-charts (referência)
-
-Arquivos adicionados a este repositório:
-
-| Arquivo | O que faz |
-|---------|-----------|
-| `.claude/settings.json` | Hooks do Claude Code — bloqueia `git commit` e `gh pr create` diretos, roda o bootstrap a cada prompt |
-| `.claude/hooks/bypass-check.sh` | Lê um arquivo-token (`.claude/.commit-authorized` ou `.claude/.pr-authorized`). Se existir → permite o comando e apaga o token. Se não existir → bloqueia com mensagem de erro. |
-| `.claude/hooks/bootstrap-check.sh` | Roda a cada prompt do Claude. Verifica se `rtk`, `gsd` e `codebase-memory-mcp` estão instalados. Uma vez por dia também verifica se há atualização do pacote `@tron/claude-config` e atualiza silenciosamente. |
-| `.claude/git-hooks/pre-commit` | Código-fonte do git hook. Bloqueia `git commit` direto no terminal (humanos). |
-| `.claude/git-hooks/pre-push` | Código-fonte do git hook. Bloqueia `git push` direto para main/master. |
-| `scripts/setup-claude-harness.sh` | Script de setup: instala os git hooks em `.git/hooks/`, verifica ferramentas, detecta o package manager (npm/pnpm/bun). |
-| `package.json` → `postinstall` | Roda o setup automaticamente em todo `npm install` / `bun install` / `pnpm install`. |
-
-**O que está enforced:**
-- `/commit-changes` → única forma de commitar via Claude (chama `/code-review` + `/security-review` automaticamente)
-- `/make-pr` → única forma de abrir PR via Claude
-- `git commit` direto no terminal → bloqueado pelo git hook `pre-commit`
-- `git push` direto para main/master → bloqueado pelo git hook `pre-push`
-- Ferramentas ausentes → aviso injetado no contexto do Claude a cada sessão
-- Pacote desatualizado → auto-atualização silenciosa, uma vez por dia
-
-### 2. Pacote `tron-claude-config` (distribuição)
-
-Repositório em: `/Users/zaq/Repos/tron-claude-config`
-
-Contém os mesmos hooks/configs acima como "arquivos gerenciados". Quando um projeto instala este pacote como devDependency, o `postinstall.js` copia os arquivos gerenciados para o projeto consumidor automaticamente.
+> Quick reference for understanding what the harness does, how to add it to a project, and how to maintain the package.
 
 ---
 
-## ECC — Regras de código automáticas
+## What it does
 
-O setup instala automaticamente as regras do [ECC (Extended Claude Code)](https://github.com/affaan-m/ECC) em `~/.claude/rules/ecc/`. São regras globais por máquina — instaladas uma única vez.
+Files installed into every consumer repo:
 
-**Pastas instaladas:** `common`, `typescript`, `csharp`, `nuxt`, `react`, `react-native`, `vue`, `web`
+| File | Purpose |
+|------|---------|
+| `.claude/settings.json` | Claude Code hooks — blocks direct `git commit` and `gh pr create`, runs bootstrap on every prompt |
+| `.claude/hooks/bypass-check.sh` | Reads a token file (`.claude/.commit-authorized` or `.claude/.pr-authorized`). If present → allows the command and deletes the token. If absent → blocks with an error. |
+| `.claude/hooks/bootstrap-check.sh` | Runs on every Claude prompt. Checks that `gsd` and `codebase-memory-mcp` are installed. Once per day also checks for a `@tron/claude-config` update and applies it silently. |
+| `.claude/git-hooks/pre-commit` | Source for the git hook. Blocks direct `git commit` from the terminal. |
+| `.claude/git-hooks/pre-push` | Source for the git hook. Blocks direct `git push` to main/master. |
+| `scripts/setup-claude-harness.sh` | Setup script: installs git hooks into `.git/hooks/`, checks tools, auto-detects package manager (npm/pnpm/bun). |
+| `package.json` → `postinstall` | Runs setup automatically on every `npm install` / `bun install` / `pnpm install`. |
 
-**Local:** `~/.claude/rules/ecc/`
+**What is enforced:**
+- `/commit-changes` → only path to commit via Claude (runs `/code-review` + `/security-review` automatically)
+- `/make-pr` → only path to open a PR via Claude
+- `git commit` directly in terminal → blocked by `pre-commit` git hook
+- `git push` directly to main/master → blocked by `pre-push` git hook
+- Missing tools → warning injected into Claude's context every session
+- Outdated package → silent auto-update, once per day
 
-Se as regras já estiverem instaladas, o setup pula esta etapa. Para reinstalar manualmente:
+Machine-level tools installed once per developer machine (skipped in CI):
 
-```bash
-rm -rf ~/.claude/rules/ecc
-bash scripts/setup-claude-harness.sh
-```
-
-**Como funciona:** O `setup-claude-harness.sh` clona o repo ECC temporariamente, copia as pastas de regras para `~/.claude/rules/ecc/` e limpa o clone. Sem dependência permanente do repo externo após a instalação.
+| Tool | Installed to | How |
+|------|-------------|-----|
+| ECC rules | `~/.claude/rules/ecc/` | `git clone` from [affaan-m/ECC](https://github.com/affaan-m/ECC), then copied |
+| Karpathy enforcement rule | `~/.claude/rules/harness-enforcement.md` | Copied from package (bundled) |
+| Karpathy skill | `~/.claude/skills/andrej-karpathy-skills/` | Copied from package (bundled, no network) |
+| gsd | global `$PATH` | `npm install -g gsd-core` |
+| caveman | `~/.claude/skills/caveman/` | Official install script via `curl` |
 
 ---
 
-## Como instalar em outro projeto
+## Code quality layers
 
-### Passo 1 — Publicar o pacote no GitHub (uma única vez)
+Two layers work together automatically, with no user action:
 
-```bash
-cd /Users/zaq/Repos/tron-claude-config
-git remote add origin https://github.com/zaqueu-1/tron-claude-config.git
-git push -u origin main
-```
+| Layer | Source | Priority | Scope |
+|-------|--------|----------|-------|
+| **ECC rules** | `~/.claude/rules/ecc/` | Highest for rules | Standards: naming, testing, security, git |
+| **Karpathy principles** | `~/.claude/rules/harness-enforcement.md` | Highest for behavior | Simplicity, surgical changes, goal-driven execution |
 
-### Passo 2 — Adicionar ao projeto
+**ECC takes priority over Karpathy on rules.** When they conflict on coding standards, follow ECC.
 
-Em qualquer projeto (`package.json`), adicione:
+**Karpathy takes priority on behavioral skills.** When they conflict on how to approach a task, follow Karpathy.
+
+The Karpathy principles live inline in `harness-enforcement.md` — a global rule file Claude Code loads every session automatically, with zero per-task tool call overhead. The skill file is also installed for explicit `Skill("karpathy-guidelines")` invocations.
+
+---
+
+## Adding to a project
+
+### Step 1 — Add the dependency
+
+In `package.json`:
 
 ```json
 "devDependencies": {
@@ -77,103 +67,114 @@ Em qualquer projeto (`package.json`), adicione:
 }
 ```
 
-### Passo 3 — Instalar
+### Step 2 — Install
 
 ```bash
 npm install
-# ou: bun install
-# ou: pnpm install
+# or: bun install
+# or: pnpm install
 ```
 
-Pronto. O `postinstall` roda automaticamente e instala tudo. Nenhuma outra ação é necessária.
+Done. The `postinstall` script runs automatically and sets everything up. No further steps.
 
-Além disso, o `setup-claude-harness.sh` instala as regras ECC em `~/.claude/rules/ecc/` na primeira execução.
-
-**O que o install faz automaticamente:**
-- Copia `.claude/settings.json` (hooks do Claude Code)
-- Copia `.claude/hooks/bypass-check.sh` e `bootstrap-check.sh`
-- Instala `.git/hooks/pre-commit` e `.git/hooks/pre-push`
-- Adiciona os arquivos-token ao `.gitignore` do projeto
+**What the install does automatically:**
+- Copies `.claude/settings.json` (Claude Code hooks)
+- Copies `.claude/hooks/bypass-check.sh` and `bootstrap-check.sh`
+- Installs `.git/hooks/pre-commit` and `.git/hooks/pre-push`
+- Adds token files to the project's `.gitignore`
+- Installs ECC rules, Karpathy skill, enforcement rule, gsd, and caveman (developer machines only)
 
 ---
 
-## Como manter o pacote
+## Maintaining the package
 
-O pacote está em `/Users/zaq/Repos/tron-claude-config`. Veja `MAINTAINER.md` lá dentro para detalhes completos. Resumo:
+See `MAINTAINER.md` for the full maintainer guide.
 
-### Atualizar um hook ou regra
+### Update a hook or rule
 
 ```bash
-# 1. Edite o arquivo em managed/:
-nano /Users/zaq/Repos/tron-claude-config/managed/claude/hooks/bootstrap-check.sh
+# 1. Edit the file in managed/:
+nano managed/claude/hooks/bootstrap-check.sh
 
-# 2. Bump de versão:
-cd /Users/zaq/Repos/tron-claude-config
-npm version patch   # para fixes
-npm version minor   # para novas funcionalidades
+# 2. Bump version:
+npm version patch   # for fixes
+npm version minor   # for new hooks or rules
 
-# 3. Commit e push:
+# 3. Commit and push:
 git add -A
-git commit -m "fix: descrição da mudança"
+git commit -m "fix: describe the change"
 git push origin main
 git push --tags
 ```
 
-### Como os projetos recebem a atualização
+### How projects receive updates
 
-**Automático (próximo dia):** O `bootstrap-check.sh` roda a cada sessão do Claude e verifica uma vez por dia se o SHA instalado é diferente do HEAD remoto. Se sim, roda `npm install` / `bun install` / `pnpm install` silenciosamente e reinstala os hooks.
+**Automatic (next day):** `bootstrap-check.sh` runs every Claude session and checks once per day whether the installed SHA differs from the remote HEAD. If so, it runs `npm install` / `bun install` / `pnpm install` silently and reinstalls the hooks.
 
-**Imediato:** Qualquer desenvolvedor pode rodar `npm install` (ou bun/pnpm) para forçar a atualização agora.
+**Immediate:** Any developer can run `npm install` (or bun/pnpm) to force an update now.
 
-### Adionar um novo hook gerenciado
+### Adding a new managed hook
 
-1. Crie o arquivo em `managed/claude/hooks/novo-hook.sh`
-2. Adicione a entrada de cópia em `scripts/postinstall.js` (array `MANAGED_FILES`)
-3. Adicione a referência em `managed/claude/settings.json`
-4. Faça bump de versão e push
+1. Create the file under `managed/claude/hooks/new-hook.sh`
+2. Add the copy entry to `scripts/postinstall.js` (`MANAGED_FILES` array)
+3. Add the reference to `managed/claude/settings.json`
+4. Bump version and push
+
+### Adding a new machine-level tool
+
+1. Add an `installX()` function to `scripts/postinstall.js`
+2. Call it inside the `if (!IS_CI)` block
+3. If it ships a file, add it under `managed/` and copy from `PACKAGE_ROOT`
 
 ### Versioning
 
-| Tipo de mudança | Bump |
-|----------------|------|
-| Correção em script existente | `patch` |
-| Novo hook ou nova regra | `minor` |
-| Mudança breaking (renomear arquivo gerenciado) | `major` |
+| Change type | Bump |
+|-------------|------|
+| Fix in an existing script | `patch` |
+| New hook, rule, or skill | `minor` |
+| Breaking rename or removal of a managed file | `major` |
 
 ---
 
-## Emergências
+## Emergency bypass
 
 ```bash
-# Pular o pre-commit hook (emergência apenas):
-git commit --no-verify -m "mensagem"
+# Skip pre-commit hook (emergency only):
+git commit --no-verify -m "message"
 
-# Pular o pre-push hook:
+# Skip pre-push hook:
 git push --no-verify
 
-# Desinstalar o harness de um projeto:
+# Uninstall the harness from a project:
 rm .git/hooks/pre-commit .git/hooks/pre-push
-# Remova a entrada do package.json e rode npm install
+# Remove the entry from package.json and run npm install
 ```
 
 ---
 
-## Estrutura de arquivos do pacote
+## Package structure
 
 ```
 tron-claude-config/
-├── package.json                    ← @tron/claude-config v1.0.0
+├── package.json
 ├── scripts/
-│   └── postinstall.js             ← copia tudo para o projeto consumidor
+│   └── postinstall.js                      ← copies managed files; installs machine-level tools
 ├── managed/
 │   ├── claude/
-│   │   ├── settings.json          ← hooks do Claude Code
-│   │   └── hooks/
-│   │       ├── bypass-check.sh    ← controle de acesso por token
-│   │       └── bootstrap-check.sh ← verificação de tools + auto-update
-│   └── git-hooks/
-│       ├── pre-commit             ← bloqueia commit direto no terminal
-│       └── pre-push               ← bloqueia push direto para main
-├── MAINTAINER.md                  ← guia completo para o mantenedor
-└── README.md                      ← guia rápido para quem adiciona ao projeto
+│   │   ├── settings.json                   ← Claude Code hooks config
+│   │   ├── hooks/
+│   │   │   ├── bypass-check.sh             ← bypass token access control
+│   │   │   └── bootstrap-check.sh          ← tool check + auto-update (every session)
+│   │   └── rules/
+│   │       └── harness-enforcement.md      ← priority + Karpathy principles (always-on rule)
+│   ├── git-hooks/
+│   │   ├── pre-commit                      ← blocks direct terminal commits
+│   │   └── pre-push                        ← blocks direct terminal pushes to main
+│   ├── skills/
+│   │   └── andrej-karpathy-skills/
+│   │       └── karpathy-guidelines/
+│   │           └── SKILL.md                ← Karpathy skill (bundled)
+│   └── setup-claude-harness.sh             ← idempotent setup script
+├── MAINTAINER.md                           ← full maintainer guide
+└── README.md                               ← quick install guide
 ```
