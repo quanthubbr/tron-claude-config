@@ -165,6 +165,13 @@ function installAgentIsolationRule() {
   fs.copyFileSync(src, dest);
 }
 
+function installHarnessPatterns() {
+  const dest = path.join(os.homedir(), '.claude', 'rules', 'harness-patterns.md');
+  const src = path.join(PACKAGE_ROOT, 'managed', 'claude', 'rules', 'harness-patterns.md');
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(src, dest);
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 // Machine-level tools: install for developers, skip in CI
@@ -175,6 +182,7 @@ if (!IS_CI) {
   installKarpathySkill();
   installEnforcementRule();
   installAgentIsolationRule();
+  installHarnessPatterns();
 }
 
 // Consumer-repo-specific setup

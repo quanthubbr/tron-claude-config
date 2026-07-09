@@ -67,6 +67,19 @@ The following are pre-approved. Proceed without asking:
 - File exploration (`ls`, `find`, `grep`, `cat`, `head`, `tail`)
 - Node.js execution for project scripts
 
+## Self-verification gate — run before declaring done
+
+Before reporting completion on any write/edit/refactor:
+- [ ] Tests pass (run them yourself, don't ask the user)
+- [ ] Type-check passes
+- [ ] Every todo.md item checked off (if todo.md was used)
+- [ ] No dead imports/unused vars introduced by my changes
+- [ ] Every changed line traces to the task
+
+## Preserve error evidence
+
+Never clean up failed attempts before understanding them. Error output is information. Repeated edits to the same file without a passing verify step = loop → stop, re-read, re-hypothesize.
+
 ## Not permitted without explicit user instruction
 
 - `git commit` — must go through `/commit-changes` skill (bypass token required)

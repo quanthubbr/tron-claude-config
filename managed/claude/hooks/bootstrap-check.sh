@@ -77,6 +77,19 @@ if [ "$SHOULD_UPDATE" = true ]; then
 
 fi
 
+# ── Environment map (reduces agent orientation tax) ──────────────────────────
+# Injected once per prompt into Claude's context. Date-level only — no
+# second-precision timestamps (would break KV-cache prefix on every call).
+WORKSPACE_ROOT=$(pwd | sed "s|$HOME|~|")
+PKG_NAME=$(node -e "try{const p=require('./package.json');process.stdout.write(p.name||'')}catch(e){}" 2>/dev/null)
+GIT_BRANCH=$(git branch --show-current 2>/dev/null)
+
+echo "## Harness: workspace"
+echo "  root:   $WORKSPACE_ROOT"
+echo "  pm:     $PM"
+[ -n "$PKG_NAME" ]  && echo "  pkg:    $PKG_NAME"
+[ -n "$GIT_BRANCH" ] && echo "  branch: $GIT_BRANCH"
+
 # ── Tool verification ─────────────────────────────────────────────────────────
 MISSING=()
 
