@@ -172,6 +172,15 @@ function installKarpathySkill() {
   log('andrej-karpathy-skills installed → ~/.claude/skills/');
 }
 
+function installCommitChangesSkill() {
+  const dest = path.join(os.homedir(), '.claude', 'commands', 'commit-changes.md');
+  if (fs.existsSync(dest)) return;
+  const src = path.join(PACKAGE_ROOT, 'managed', 'skills', 'commit-changes', 'SKILL.md');
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(src, dest);
+  log('commit-changes skill installed → ~/.claude/commands/commit-changes.md');
+}
+
 function installMakePrSkill() {
   const dest = path.join(os.homedir(), '.claude', 'commands', 'make-pr.md');
   if (fs.existsSync(dest)) return;
@@ -210,6 +219,7 @@ if (!IS_CI) {
   installCodebaseMemoryMcp();
   installCaveman();
   installKarpathySkill();
+  installCommitChangesSkill();
   installMakePrSkill();
   installEnforcementRule();
   installAgentIsolationRule();
