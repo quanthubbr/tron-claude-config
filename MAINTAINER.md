@@ -36,6 +36,10 @@ tron-claude-config/
 │   └── skills/
 │       ├── commit-changes/
 │       │   └── SKILL.md           # canonical /commit-changes skill — installed to ~/.claude/commands/, install-if-missing
+│       ├── code-review/
+│       │   └── SKILL.md           # canonical /code-review skill — installed to ~/.claude/commands/, install-if-missing
+│       ├── security-review/
+│       │   └── SKILL.md           # canonical /security-review skill — installed to ~/.claude/commands/, install-if-missing
 │       └── make-pr/
 │           └── SKILL.md           # canonical /make-pr skill — installed to ~/.claude/commands/, install-if-missing
 ├── MAINTAINER.md                  # this file
@@ -51,7 +55,9 @@ tron-claude-config/
 | `.claude/hooks/bootstrap-check.sh` | **Package** | Do not edit in consumer repos |
 | `.git/hooks/pre-commit` | **Package** | Installed/overwritten by setup |
 | `.git/hooks/pre-push` | **Package** | Installed/overwritten by setup |
-| `~/.claude/commands/commit-changes.md` | **Package (install-if-missing, global)** | Installed once per machine, never overwrites an existing customized `/commit-changes`. Creates `.claude/.commit-authorized` before commits. |
+| `~/.claude/commands/commit-changes.md` | **Package (install-if-missing, global)** | Installed once per machine, never overwrites an existing customized `/commit-changes`. Must run `/security-review` + `/code-review` before creating `.claude/.commit-authorized`. |
+| `~/.claude/commands/code-review.md` | **Package (install-if-missing, global)** | Required review gate used by `/commit-changes`. |
+| `~/.claude/commands/security-review.md` | **Package (install-if-missing, global)** | Required security gate used by `/commit-changes`. |
 | `~/.claude/commands/make-pr.md` | **Package (install-if-missing, global)** | Installed once per machine, never overwrites an existing customized `/make-pr`. Enforcement of the PR template happens in the hook regardless of which version is present. |
 | `.claude/.pr-body-draft.md` | **Ephemeral (repo, gitignored)** | Written by `/make-pr` per PR, read by `bypass-check.sh` for template validation, deleted after `gh pr create` succeeds |
 | `.claude/commands/*.md` (repo-local, other than `make-pr.md`) | **Repo** | Skills — repo-specific, never overwritten |
