@@ -1,19 +1,23 @@
 # tron-claude-config — Maintainer Guide
 
-This doc is for whoever owns the `tron-claude-config` package — the source of truth for the Claude enforcement harness shared across all company repos.
+Owner playbook for the shared Claude enforcement harness (`@tron/claude-config` **v1.6.1**).
+
+Consumer docs: [README.md](README.md) · Operator cheat sheet: [HARNESS-GUIDE.md](HARNESS-GUIDE.md)
 
 ---
 
 ## What this package does
 
-`tron-claude-config` distributes a standardized Claude Code enforcement harness to all consumer repos via `npm install`. When a developer (or `npm install`) runs in a consumer repo, the package:
+On consumer `npm install` / `bun install` / `pnpm install`, `scripts/postinstall.js`:
 
-1. Copies managed hook files to `.claude/hooks/`
-2. Copies `.claude/settings.json` (Claude Code hooks)
-3. Installs native git hooks (`.git/hooks/pre-commit`, `.git/hooks/pre-push`)
-4. On every Claude Code session start: silently checks for updates and self-updates if outdated
+1. Copies managed Claude settings + hooks into `.claude/`
+2. Copies `AGENTS.md` and `scripts/setup-claude-harness.sh`
+3. Installs `.git/hooks/pre-commit` and `pre-push`
+4. Syncs **scoped** ECC rules into `.claude/rules/ecc/` (detect stack → copy matching folders → prune stale ones)
+5. On developer machines (not CI): install-if-missing skills + Karpathy rules, gsd, caveman, codebase-memory-mcp
+6. Thereafter, `bootstrap-check.sh` self-updates the package about once per day
 
-Non-technical users get this without doing anything. Technical users get it on `npm install`.
+Non-technical users get gates without extra setup. Engineers get them on install.
 
 ---
 
@@ -21,187 +25,205 @@ Non-technical users get this without doing anything. Technical users get it on `
 
 ```
 tron-claude-config/
-├── package.json                    # name, version (semver), scripts
+├── package.json
 ├── scripts/
-│   └── postinstall.js             # runs on npm install — copies managed files, installs git hooks
+│   ├── postinstall.js                 # install orchestrator
+│   ├── sync-ecc-rules.js              # CLI wrapper for ECC sync
+│   └── lib/
+│       ├── detect-project-scope.js    # package.json + markers → folder list
+│       └── install-ecc-rules.js       # clone ECC, copy, prune, write .ecc-scope.json
 ├── managed/
+│   ├── AGENTS.md
+│   ├── setup-claude-harness.sh        # also re-syncs ECC on auto-update
 │   ├── claude/
-│   │   ├── settings.json          # Claude Code hooks (bypass-check, bootstrap, auto-update)
-│   │   └── hooks/
-│   │       ├── bypass-check.sh    # bypass token for commit/pr skills + PR-body template validation
-│   │       └── bootstrap-check.sh # tool verification + auto-update (UserPromptSubmit hook)
+│   │   ├── settings.json
+│   │   ├── hooks/
+│   │   │   ├── bypass-check.sh        # commit/pr tokens + PR template headers
+│   │   │   └── bootstrap-check.sh     # tools + daily update
+│   │   └── rules/
+│   │       ├── harness-enforcement.md
+│   │       ├── agent-isolation.md
+│   │       └── harness-patterns.md
 │   ├── git-hooks/
-│   │   ├── pre-commit             # blocks direct terminal git commit
-│   │   └── pre-push               # blocks direct terminal git push to main
+│   │   ├── pre-commit
+│   │   └── pre-push
 │   └── skills/
-│       ├── commit-changes/
-│       │   └── SKILL.md           # canonical /commit-changes skill — installed to ~/.claude/commands/, install-if-missing
-│       ├── code-review/
-│       │   └── SKILL.md           # canonical /code-review skill — installed to ~/.claude/commands/, install-if-missing
-│       ├── security-review/
-│       │   └── SKILL.md           # canonical /security-review skill — installed to ~/.claude/commands/, install-if-missing
-│       └── make-pr/
-│           └── SKILL.md           # canonical /make-pr skill — installed to ~/.claude/commands/, install-if-missing
-├── MAINTAINER.md                  # this file
-└── README.md                      # consumer-facing setup instructions
+│       ├── commit-changes/SKILL.md    # → ~/.claude/commands/commit-changes.md
+│       ├── code-review/SKILL.md       # → ~/.claude/commands/code-review.md
+│       ├── security-review/SKILL.md   # → ~/.claude/commands/security-review.md
+│       ├── make-pr/SKILL.md           # → ~/.claude/commands/make-pr.md
+│       └── andrej-karpathy-skills/... # → ~/.claude/skills/...
+├── docs/assets/                       # README banner / diagrams
+├── MAINTAINER.md
+├── HARNESS-GUIDE.md
+└── README.md
 ```
 
-### Managed vs user-owned files
+### Managed vs user-owned (consumer repos)
 
 | File | Owner | Notes |
 |------|-------|-------|
-| `.claude/settings.json` | **Package (overwritten on update)** | Do not edit manually in consumer repos |
-| `.claude/hooks/bypass-check.sh` | **Package** | Do not edit in consumer repos |
-| `.claude/hooks/bootstrap-check.sh` | **Package** | Do not edit in consumer repos |
-| `.git/hooks/pre-commit` | **Package** | Installed/overwritten by setup |
-| `.git/hooks/pre-push` | **Package** | Installed/overwritten by setup |
-| `~/.claude/commands/commit-changes.md` | **Package (install-if-missing, global)** | Installed once per machine, never overwrites an existing customized `/commit-changes`. Must run `/security-review` + `/code-review` before creating `.claude/.commit-authorized`. |
-| `~/.claude/commands/code-review.md` | **Package (install-if-missing, global)** | Required review gate used by `/commit-changes`. |
-| `~/.claude/commands/security-review.md` | **Package (install-if-missing, global)** | Required security gate used by `/commit-changes`. |
-| `~/.claude/commands/make-pr.md` | **Package (install-if-missing, global)** | Installed once per machine, never overwrites an existing customized `/make-pr`. Enforcement of the PR template happens in the hook regardless of which version is present. |
-| `.claude/.pr-body-draft.md` | **Ephemeral (repo, gitignored)** | Written by `/make-pr` per PR, read by `bypass-check.sh` for template validation, deleted after `gh pr create` succeeds |
-| `.claude/commands/*.md` (repo-local, other than `make-pr.md`) | **Repo** | Skills — repo-specific, never overwritten |
-| `CLAUDE.md` | **Repo** | Project rules — never overwritten |
-| `.claude/settings.local.json` | **Repo** | Local overrides — never touched |
+| `.claude/settings.json` | **Package** (overwritten on update) | Do not edit in consumers |
+| `.claude/hooks/bypass-check.sh` | **Package** | Do not edit in consumers |
+| `.claude/hooks/bootstrap-check.sh` | **Package** | Do not edit in consumers |
+| `.claude/rules/ecc/` | **Package** (re-synced) | Scope follows consumer stack |
+| `.claude/.ecc-scope.json` | **Package** | Audit trail of last sync |
+| `AGENTS.md` | **Package** | Overwritten from managed copy |
+| `.git/hooks/pre-commit` / `pre-push` | **Package** | Installed by setup |
+| `~/.claude/commands/commit-changes.md` | **Package** (install-if-missing) | Must run `/security-review` + `/code-review` before token |
+| `~/.claude/commands/code-review.md` | **Package** (install-if-missing) | Required by `/commit-changes` |
+| `~/.claude/commands/security-review.md` | **Package** (install-if-missing) | Required by `/commit-changes` |
+| `~/.claude/commands/make-pr.md` | **Package** (install-if-missing) | PR template still enforced by hook |
+| `.claude/.pr-body-draft.md` | **Ephemeral** (gitignored) | Written by `/make-pr`, validated by hook |
+| `.claude/.commit-authorized` / `.pr-authorized` | **Ephemeral** (gitignored) | One-shot bypass tokens |
+| Repo-local `.claude/commands/*` (other) | **Repo** | Never overwritten |
+| `CLAUDE.md` | **Repo** | Never overwritten |
+| `.claude/settings.local.json` | **Repo** | Never touched |
 
-The `postinstall.js` script only writes files in the "Package" rows above. It never touches repo-owned files.
+`postinstall.js` only writes Package / ephemeral rows above.
+
+---
+
+## Official skill contract
+
+`/commit-changes` order is fixed:
+
+1. `/security-review` — BLOCK on CRITICAL/HIGH  
+2. `/code-review` — BLOCK on CRITICAL/HIGH  
+3. `touch .claude/.commit-authorized`  
+4. `git commit` (hook consumes token)  
+5. Push (pre-push accepts commit or PR token)
+
+When editing `managed/skills/commit-changes/SKILL.md`, keep that order. When editing PR section headers, keep them in sync with `bypass-check.sh`.
 
 ---
 
 ## Releasing a new version
 
 ```bash
-# 1. Make your changes to files under managed/
-# 2. Bump the version (semver: patch for fixes, minor for new features)
-npm version patch   # or: npm version minor | npm version major
+# 1. Change files under managed/ or scripts/
+# 2. Bump semver
+npm version patch   # or minor | major
 
-# 3. Commit and push
-git add -A
-git commit -m "chore: bump to vX.Y.Z"
+# 3. Commit + push
 git push origin main
 git push --tags
 ```
 
-That's it. Consumer repos will pick up the new version automatically on the next Claude Code session start (the bootstrap-check.sh auto-updater runs daily).
-
-To force immediate update in all consumer repos: ask users to run `npm install` once, or wait for next day's session start.
+Consumers pick up the release on the next daily bootstrap check, or immediately on `npm install`.
 
 ---
 
-## How auto-update works (consumer side)
+## How auto-update works (consumer)
 
-Every time a non-technical user opens Claude Code, the `UserPromptSubmit` hook fires `bootstrap-check.sh`. This script:
+`UserPromptSubmit` → `bootstrap-check.sh`:
 
-1. Checks `.claude/.harness-last-update` timestamp — if less than 24h old, skips (no noise)
-2. Reads the installed package version from `node_modules/@tron/claude-config/package.json`
-3. Compares with the remote latest (via `git ls-remote` for git dependencies, or `npm show` for registry)
-4. If outdated: runs `npm install --save-dev @tron/claude-config@latest --silent` then re-runs `setup-claude-harness.sh --silent`
-5. Updates the timestamp regardless (so next check is 24h from now)
+1. Skip if `.claude/.harness-last-update` is less than 24h old  
+2. Compare installed git SHA / version to remote  
+3. If outdated: package-manager install of `@tron/claude-config`, then `setup-claude-harness.sh --silent` (hooks + **ECC re-sync**)  
+4. Refresh the timestamp  
 
-The entire process is silent. No user action required. The user may see one line like `[harness] updated v1.2.3 → v1.3.0` at most.
+Silent by design. At most one status line in the session.
 
 ---
 
 ## Adding a new managed hook
 
-1. Create the hook file in `managed/claude/hooks/your-hook.sh`
-2. Add a copy step in `scripts/postinstall.js`:
-   ```js
-   copyFile('managed/claude/hooks/your-hook.sh', '.claude/hooks/your-hook.sh');
-   ```
-3. Wire it in `managed/claude/settings.json` under the appropriate hook type
-4. Test locally: `node scripts/postinstall.js` in a consumer repo (dry run with `DRY=1`)
-5. Release: bump version, push
-
----
+1. Add `managed/claude/hooks/your-hook.sh`  
+2. Register copy in `scripts/postinstall.js` (`MANAGED_FILES`)  
+3. Wire in `managed/claude/settings.json`  
+4. Test with `DRY=1` in a consumer  
+5. Bump version + push  
 
 ## Adding a new git hook
 
-1. Create the hook script in `managed/git-hooks/your-hook`
-2. Make it executable: `chmod +x managed/git-hooks/your-hook`
-3. Add install step in `scripts/postinstall.js`:
-   ```js
-   installGitHook('managed/git-hooks/your-hook', 'your-hook');
-   ```
-4. Release
+1. Add executable under `managed/git-hooks/`  
+2. Register in `GIT_HOOKS` inside `postinstall.js`  
+3. Release  
 
----
+## Adding a new global skill (install-if-missing)
 
-## Modifying an existing hook
+1. Add `managed/skills/<name>/SKILL.md`  
+2. Add `installXSkill()` in `postinstall.js` (copy to `~/.claude/commands/<name>.md` only if missing)  
+3. Call it inside the `if (!IS_CI)` block  
+4. Document in README + HARNESS-GUIDE + this table  
+5. `npm version minor` + push  
 
-1. Edit the file in `managed/` (never directly in a consumer repo)
-2. Test: copy the file to a consumer repo's `.claude/hooks/` and test manually
-3. Release (bump version, push)
-4. Consumer repos auto-update within 24h
+## Changing ECC scope detection
+
+1. Edit `scripts/lib/detect-project-scope.js`  
+2. Dry-run: `node scripts/sync-ecc-rules.js /path/to/consumer --dry-run`  
+3. Confirm prune behavior for folders that leave scope  
+4. Patch/minor bump as appropriate  
 
 ---
 
 ## Testing before release
 
 ```bash
-# In the tron-claude-config repo:
-node scripts/postinstall.js --dry-run  # shows what would be copied/installed without writing
+# Syntax
+node --check scripts/postinstall.js
+node --check scripts/lib/detect-project-scope.js
+node --check scripts/lib/install-ecc-rules.js
 
-# In a consumer repo (manual test):
-DRY=1 node node_modules/@tron/claude-config/scripts/postinstall.js
+# Scope detection (no network)
+node -e "console.log(require('./scripts/lib/detect-project-scope').detectProjectScope('.'))"
 
-# Full integration test in a consumer repo:
-git clone <consumer-repo> /tmp/test-consumer
-cd /tmp/test-consumer
-npm install
-# verify .claude/settings.json is correct
-# verify .git/hooks/pre-commit and pre-push are installed
-# open Claude Code and verify hooks fire
+# ECC dry-run (needs network)
+node scripts/sync-ecc-rules.js /tmp/some-consumer --dry-run
+
+# Consumer dry install
+DRY=1 INIT_CWD=/path/to/consumer node scripts/postinstall.js
 ```
+
+Integration checklist in a throwaway clone:
+
+- [ ] `.claude/settings.json` + both hooks present  
+- [ ] `.git/hooks/pre-commit` / `pre-push` executable  
+- [ ] `.claude/rules/ecc/common` exists; stack folders match the app  
+- [ ] `~/.claude/commands/{commit-changes,code-review,security-review,make-pr}.md` present (or intentionally left as pre-existing customs)  
+- [ ] Raw `git commit` blocked; token path works  
 
 ---
 
 ## Rollback
 
-If a bad version is released:
-
 ```bash
-# In the tron-claude-config repo:
 git revert HEAD
 npm version patch
 git push && git push --tags
 ```
 
-Consumer repos will auto-update to the reverted version within 24h, or immediately on `npm install`.
+Pin a consumer in an emergency:
 
-To force-pin a consumer to a specific version (emergency):
 ```json
-// consumer's package.json:
-"@tron/claude-config": "git+https://github.com/org/tron-claude-config.git#v1.2.3"
+"@tron/claude-config": "git+https://github.com/zaqueu-1/tron-claude-config.git#v1.6.1"
 ```
 
 ---
 
 ## Versioning scheme
 
-| Change type | Version bump | Examples |
-|-------------|-------------|---------|
-| Bug fix in hook script | `patch` | Fix bypass-check shell syntax |
-| New hook or new enforcement rule | `minor` | Add new skill guard, add new tool to bootstrap |
-| Breaking change (rename managed file, remove hook) | `major` | Rename settings.json key that consumers reference |
+| Change type | Bump | Examples |
+|-------------|------|----------|
+| Bug fix in hook/script | `patch` | Shell syntax, false-positive scope |
+| New hook, skill, or enforcement | `minor` | New review skill, new ECC detector |
+| Breaking rename/removal | `major` | Rename managed path consumers rely on |
 
-Keep a `CHANGELOG.md`. Non-technical users won't read it, but developers debugging auto-update issues will.
+Prefer a `CHANGELOG.md` for humans debugging auto-update surprises.
 
 ---
 
 ## Consumer onboarding (new repo)
 
-Add to `package.json`:
 ```json
 "devDependencies": {
-  "@tron/claude-config": "git+https://github.com/org/tron-claude-config.git"
+  "@tron/claude-config": "git+https://github.com/zaqueu-1/tron-claude-config.git"
 }
 ```
 
-Then:
 ```bash
 npm install
-# postinstall runs automatically — hooks installed, git hooks installed
 ```
 
-That's the entire onboarding. No further manual steps required.
+No further manual steps. Skills install on developer machines; CI skips machine-level tooling.

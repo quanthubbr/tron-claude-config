@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="160" viewBox="0 0 960 160" role="img" aria-label="Commit flow with rules enforcement">
+  <rect width="960" height="160" fill="#0F172A" rx="12"/>
+  <g font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600">
+    <rect x="20" y="52" width="156" height="56" rx="10" fill="#422006" stroke="#F59E0B"/>
+    <text x="98" y="85" text-anchor="middle" fill="#FDE68A">rules enforcement</text>
+    <path d="M186 80 H210" stroke="#64748B" stroke-width="2"/>
+    <rect x="216" y="52" width="150" height="56" rx="10" fill="#134E4A" stroke="#2DD4BF"/>
+    <text x="291" y="85" text-anchor="middle" fill="#CCFBF1">/security-review</text>
+    <path d="M376 80 H400" stroke="#64748B" stroke-width="2"/>
+    <rect x="406" y="52" width="140" height="56" rx="10" fill="#0C4A6E" stroke="#38BDF8"/>
+    <text x="476" y="85" text-anchor="middle" fill="#E0F2FE">/code-review</text>
+    <path d="M556 80 H580" stroke="#64748B" stroke-width="2"/>
+    <rect x="586" y="52" width="150" height="56" rx="10" fill="#312E81" stroke="#A78BFA"/>
+    <text x="661" y="85" text-anchor="middle" fill="#EDE9FE">git commit</text>
+    <path d="M746 80 H770" stroke="#64748B" stroke-width="2"/>
+    <rect x="776" y="52" width="160" height="56" rx="10" fill="#14532D" stroke="#4ADE80"/>
+    <text x="856" y="85" text-anchor="middle" fill="#DCFCE7">push</text>
+  </g>
+  <text x="20" y="28" fill="#94A3B8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12">Official commit path — always-on rules, then reviews, then commit</text>
+</svg>
