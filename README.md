@@ -1,31 +1,49 @@
+<p align="center">
+  <img src="docs/assets/harness-banner.svg" alt="@tron/claude-config — Enforcement harness for Claude Code" width="100%"/>
+</p>
+
+<p align="center">
+  <strong>Stop hoping the AI follows the process. Make the process impossible to skip.</strong>
+</p>
+
+<p align="center">
+  <img alt="version" src="https://img.shields.io/badge/version-1.6.1-0F766E?style=for-the-badge"/>
+  <img alt="node" src="https://img.shields.io/badge/node-%3E%3D18-38BDF8?style=for-the-badge&logo=node.js&logoColor=white"/>
+  <img alt="pm" src="https://img.shields.io/badge/npm%20%7C%20pnpm%20%7C%20bun-ready-A78BFA?style=for-the-badge"/>
+  <img alt="license" src="https://img.shields.io/badge/private-Tron-1E293B?style=for-the-badge"/>
+</p>
+
+---
+
 # @tron/claude-config
 
-**Claude Code enforcement harness.** Drop this into any Node.js project and Claude instantly starts following your team's workflow rules — enforced via hooks, not vibes.
+Drop one dependency into any repo. On `npm install`, Claude Code gets **hooks, git gates, scoped coding rules, and the official skills** (`/commit-changes`, `/code-review`, `/security-review`, `/make-pr`) — enforced by the filesystem, not by memory.
+
+> **Hooks over vibes.** Reviews before commits. Complete PRs before merge. Rules matched to the project stack. Silent daily self-update.
 
 ---
 
-## What it does
+## Why you should install this
 
-| Enforcement | How |
-|-------------|-----|
-| Blocks raw `git commit` in terminal | `pre-commit` git hook |
-| Blocks raw `git push` to main/master | `pre-push` git hook |
-| Enforces code review before every commit | `/commit-changes` skill gates the commit |
-| Enforces `/make-pr` for pull requests | `gh pr create` blocked unless called from the skill |
-| Warns Claude when required tools are missing | `UserPromptSubmit` hook injects a note into every session |
-| Self-updates silently, once per day | `bootstrap-check.sh` compares installed SHA vs remote HEAD |
-| Installs [ECC coding rules](https://github.com/affaan-m/ECC) per project | Scoped via `package.json` → `.claude/rules/ecc/` |
+| Without the harness | With the harness |
+|---------------------|------------------|
+| Anyone (or any model) can `git commit` raw | Only `/commit-changes` after **security + code review** |
+| PRs that say “fix stuff” | Template with **5 mandatory sections** (PT-BR) |
+| Rules copied by hand (or forgotten) | **ECC rules scoped** to Vue / React / TS / … automatically |
+| “Did you update the package?” | **Auto-update** once per day, silent |
+| Different process per repo | **One kit** across the company |
 
-The harness lives in your repo's `.claude/` folder and `.git/hooks/`. It does **not** touch your `CLAUDE.md`, `.claude/commands/`, or `.claude/settings.local.json`.
+<p align="center">
+  <img src="docs/assets/flow-commit.svg" alt="Commit flow: rules enforcement → security-review → code-review → git commit → push" width="100%"/>
+</p>
 
 ---
 
-## Installation
+## 60-second install
 
 ### 1. Add the dependency
 
 ```json
-// package.json
 {
   "devDependencies": {
     "@tron/claude-config": "git+https://github.com/zaqueu-1/tron-claude-config.git"
@@ -36,200 +54,165 @@ The harness lives in your repo's `.claude/` folder and `.git/hooks/`. It does **
 ### 2. Install
 
 ```bash
-npm install
-# or: bun install
-# or: pnpm install
+npm install   # or: bun install / pnpm install
 ```
 
-That's it. The `postinstall` script runs automatically and sets everything up. No further steps.
+That’s it. `postinstall` wires the repo and (on developer machines) installs the global skills.
 
-> **Works with npm, bun, and pnpm.** The package manager is auto-detected from your lockfile.
+> Works with **npm, bun, and pnpm** — detected from your lockfile.
+
+The harness lives under `.claude/` and `.git/hooks/`. It does **not** overwrite your `CLAUDE.md`, repo-local `.claude/commands/`, or `.claude/settings.local.json`.
 
 ---
 
-## What gets installed
+## What you get
+
+### In every consumer repo
 
 ```
 your-project/
 ├── .claude/
-│   ├── settings.json              ← Claude Code hooks (merged, not overwritten)
-│   ├── rules/
-│   │   └── ecc/                   ← ECC rules (common + stack-specific folders)
+│   ├── settings.json           ← Claude Code hooks
+│   ├── rules/ecc/              ← ECC rules (common + stack-matched folders)
+│   ├── .ecc-scope.json         ← last detected scope (audit trail)
 │   └── hooks/
-│       ├── bypass-check.sh        ← bypass token checker (used by skills)
-│       └── bootstrap-check.sh     ← tool verifier + auto-updater (runs every session)
+│       ├── bypass-check.sh     ← token + PR template gate
+│       └── bootstrap-check.sh  ← tool check + daily auto-update
 ├── .git/hooks/
-│   ├── pre-commit                 ← blocks direct terminal commits
-│   └── pre-push                   ← blocks direct terminal pushes to main
-└── scripts/
-    └── setup-claude-harness.sh    ← re-runnable setup (used by auto-update)
+│   ├── pre-commit              ← blocks raw commits
+│   └── pre-push                ← blocks raw push to main/master
+├── AGENTS.md                   ← agent contract for this repo
+└── scripts/setup-claude-harness.sh
 ```
 
-Global (machine-level, installed once):
+### On the developer machine (install-if-missing)
 
-```
-~/.claude/rules/harness-enforcement.md                        ← priority rules + Karpathy principles (always-on)
-~/.claude/skills/andrej-karpathy-skills/karpathy-guidelines/  ← Karpathy skill (explicit invocations)
-~/.claude/commands/make-pr.md                                 ← canonical /make-pr skill (install-if-missing, see PR enforcement below)
-```
+| Command | Role |
+|---------|------|
+| `/commit-changes` | Official commit path — reviews → token → commit → push |
+| `/code-review` | Quality / correctness gate (**required** before commit) |
+| `/security-review` | Security checklist gate (**required** before commit) |
+| `/make-pr` | Official PR path — PT-BR template + token |
+
+Also installed: Karpathy guidelines skill + always-on enforcement rules under `~/.claude/rules/`.
+
+Existing customized commands are **never overwritten**.
 
 ---
 
-## How it works
+## How enforcement works
 
-### Code quality enforcement
+### Commit path
 
-Two complementary layers enforce code quality automatically, with no user action required:
+1. `/security-review` on the staged/branch diff → **BLOCK** on CRITICAL/HIGH  
+2. `/code-review` on the same diff → **BLOCK** on CRITICAL/HIGH  
+3. Create `.claude/.commit-authorized`  
+4. `git commit` — hooks allow once, then delete the token  
 
-| Layer | Source | Priority | Scope |
-|-------|--------|----------|-------|
-| **ECC rules** | `.claude/rules/ecc/` | Highest for rules | Standards: naming, testing, security, git workflow |
-| **Karpathy principles** | `~/.claude/rules/harness-enforcement.md` | Highest for behavior | How to think and act: simplicity, surgical changes, goal-driven execution |
-| **Karpathy skill** | `~/.claude/skills/andrej-karpathy-skills/` | — | Explicit invocation via `Skill("karpathy-guidelines")` |
+Raw `git commit` in the terminal? **Blocked** by `pre-commit`.
 
-**ECC takes priority over Karpathy on rules.** When they conflict on coding standards (naming, structure, coverage), follow ECC.
+### PR path
 
-**Karpathy takes priority on behavioral skills.** When they conflict on how to approach a task (assumptions, scope, success criteria), follow Karpathy.
+1. `/make-pr` writes `.claude/.pr-body-draft.md` with all 5 sections  
+2. Creates `.claude/.pr-authorized`  
+3. `gh pr create --body-file …` — hook validates token **and** headers  
 
-The principles live directly in `harness-enforcement.md` (a global rule file Claude Code loads every session) — no Skill tool call overhead per task. The skill file is still installed for explicit `/karpathy-guidelines` invocations.
+Required sections: **Resumo**, **Principais mudanças**, **Arquitetura & implementação**, **Antes → Agora**, **Roteiro de teste**.  
+If a section doesn’t apply, keep the header and use `_N/A — não aplicável a esta mudança_`.
 
-### Commit enforcement
+### Scoped ECC rules
 
-When Claude calls `git commit` directly, the `pre-commit` hook blocks it. The only path through is the `/commit-changes` skill, which:
+On install and on harness setup/update, the package:
 
-1. Creates a bypass token file (`.claude/.commit-authorized`)
-2. Runs `/code-review` and `/security-review`
-3. Calls `git commit` — the hook reads the token, permits the commit, and deletes the token
+1. Detects stack from `package.json` + project markers  
+2. Clones [ECC](https://github.com/affaan-m/ECC) temporarily  
+3. Syncs **only** matching folders into `.claude/rules/ecc/`  
+4. Removes managed folders that no longer match  
 
-Token files are automatically added to `.gitignore` and never committed.
+Always: `common`. Conditionally: `typescript`, `vue`, `nuxt`, `react`, `react-native`, `web`, `csharp`, `python`, `golang`, and other ECC languages when detected.
 
-### PR enforcement
+### Session bootstrap
 
-Same bypass-token pattern as commits, plus template validation: `gh pr create` is blocked unless
+Every Claude prompt runs `bootstrap-check.sh`:
 
-1. Called from the `/make-pr` skill, which creates `.claude/.pr-authorized` first, **and**
-2. The PR body (written to `.claude/.pr-body-draft.md` and passed via `--body-file`, never inline `--body`) contains all 5 canonical sections: **Resumo**, **Principais mudanças**, **Arquitetura & implementação**, **Antes → Agora**, **Roteiro de teste**.
-
-`/make-pr` is installed automatically (install-if-missing, `~/.claude/commands/make-pr.md`) and already produces a compliant body — this validation exists so the template is *enforced*, not just followed by convention: even a developer-customized `/make-pr` must still pass the same structural check, since it's the hook (not the skill) that has the final say. Sections that don't apply to a given PR should keep their header with a `_N/A — não aplicável a esta mudança_` placeholder rather than being omitted.
-
-### Tool verification (every session)
-
-`bootstrap-check.sh` runs on every Claude Code prompt via `UserPromptSubmit`. It checks for required tools and injects a warning into Claude's context if any are missing. The warning includes install instructions.
-
-Default tools checked:
-
-| Tool | Purpose |
-|------|---------|
-| `rtk` | Rust Token Killer — reduces token usage on shell ops |
-| `gsd` | GSD task orchestration |
-| `codebase-memory-mcp` | Structural code graph for Claude |
-
-You can customize the tool list by editing `.claude/hooks/bootstrap-check.sh` in your repo.
-
-### Auto-update (once per day)
-
-Once per 24 hours, `bootstrap-check.sh` compares the installed SHA of this package against the remote HEAD. If they differ, it runs your package manager silently and reinstalls the hooks. Debounced via `.claude/.harness-last-update`.
-
-### ECC rules
-
-On `npm install`, and whenever `scripts/setup-claude-harness.sh` runs (including after a harness package update), the harness clones [affaan-m/ECC](https://github.com/affaan-m/ECC) temporarily, detects the consumer project's stack from `package.json` and project files, then syncs rule folders into `.claude/rules/ecc/`:
-
-- **Always:** `common`
-- **When detected:** `typescript`, `vue`, `nuxt`, `react`, `react-native`, `web`, `csharp`, and other ECC language folders (python, golang, etc.)
-
-Folders outside the detected scope are removed on the next sync. State is recorded in `.claude/.ecc-scope.json`.
+- Warns if `gsd` / `codebase-memory-mcp` are missing  
+- Once per 24h, compares package SHA to remote and self-updates  
 
 ---
 
-## Skill requirements
+## Quality layers
 
-This harness assumes your Claude Code setup has the `/commit-changes` skill. `/make-pr` is installed automatically by `postinstall.js` (install-if-missing — an existing customized `/make-pr` is never overwritten). If you're using this outside of a Tron repo, you'll need to either:
+| Layer | Where | Wins on |
+|-------|--------|---------|
+| **ECC rules** | `.claude/rules/ecc/` | Coding standards |
+| **Karpathy principles** | `~/.claude/rules/harness-enforcement.md` | Behavior: simplicity, surgical edits |
+| **Harness skills** | `~/.claude/commands/*` | Commit / PR workflow |
 
-- Add `/commit-changes` to your `~/.claude/commands/` folder, **or**
-- Edit `.claude/hooks/bypass-check.sh` to remove the bypass mechanism (makes the hooks block all commits and PRs)
+ECC > Karpathy on standards. Karpathy > ECC on how to approach the work.
 
 ---
 
 ## Emergency bypass
 
 ```bash
-# Skip pre-commit hook (emergencies only):
-git commit --no-verify -m "your message"
-
-# Skip pre-push hook:
+git commit --no-verify -m "emergency only"
 git push --no-verify
 
-# Temporarily disable the harness for one repo:
+# Tear down gates in one repo:
 rm .git/hooks/pre-commit .git/hooks/pre-push
 ```
 
 ---
 
-## Updating this package
+## Keep it fresh
 
-Push changes to `main` in this repo. All consuming projects pick up the update automatically on their next daily check (or immediately on the next `npm install`).
+Push to `main` in this repo. Consumers pick up changes on the next daily check — or immediately on `npm install`.
 
 ```bash
-# After editing files in managed/:
-npm version patch   # bug fix in a script
-npm version minor   # new hook or rule
-npm version major   # breaking rename or removal
-
-git add -A
-git commit -m "fix: your change"
-git push origin main
-git push --tags
+npm version patch|minor|major
+git push origin main --follow-tags
 ```
 
-### Adding a new managed file
-
-1. Add the file under `managed/`
-2. Add a copy entry in `scripts/postinstall.js` (the `MANAGED_FILES` array)
-3. If it's a Claude hook, add the reference to `managed/claude/settings.json`
-4. Bump version and push
-
-See [MAINTAINER.md](MAINTAINER.md) for the full maintainer guide.
+Full maintainer playbook: **[MAINTAINER.md](MAINTAINER.md)** · Day-to-day reference: **[HARNESS-GUIDE.md](HARNESS-GUIDE.md)**
 
 ---
 
-## Uninstalling
+## Uninstall
 
 ```bash
-# Remove git hooks:
 rm .git/hooks/pre-commit .git/hooks/pre-push
-
-# Remove the package:
 npm uninstall @tron/claude-config
-
-# Optionally remove Claude hooks:
-rm .claude/hooks/bypass-check.sh .claude/hooks/bootstrap-check.sh
+# optional: rm .claude/hooks/bypass-check.sh .claude/hooks/bootstrap-check.sh
 ```
 
 ---
 
-## Package structure
+## Package map
 
 ```
 tron-claude-config/
-├── package.json
+├── package.json                 # v1.6.1 · postinstall entry
 ├── scripts/
-│   └── postinstall.js             ← copies managed files; installs machine-level tools
+│   ├── postinstall.js           # install orchestrator
+│   ├── sync-ecc-rules.js        # manual ECC re-sync CLI
+│   └── lib/
+│       ├── detect-project-scope.js
+│       └── install-ecc-rules.js
 ├── managed/
-│   ├── claude/
-│   │   ├── settings.json          ← Claude Code hooks config
-│   │   ├── hooks/
-│   │   │   ├── bypass-check.sh    ← bypass token access control
-│   │   │   └── bootstrap-check.sh ← tool check + auto-update (runs every session)
-│   │   └── rules/
-│   │       └── harness-enforcement.md  ← priority + Karpathy principles (always-on rule)
-│   ├── git-hooks/
-│   │   ├── pre-commit             ← blocks direct terminal commits
-│   │   └── pre-push               ← blocks direct terminal pushes to main
-│   ├── skills/
-│   │   └── andrej-karpathy-skills/
-│   │       └── karpathy-guidelines/
-│   │           └── SKILL.md       ← Karpathy skill (bundled, no network needed)
-│   └── setup-claude-harness.sh   ← idempotent setup script
+│   ├── AGENTS.md
+│   ├── setup-claude-harness.sh
+│   ├── claude/                  # settings, hooks, rules
+│   ├── git-hooks/               # pre-commit, pre-push
+│   └── skills/                  # commit-changes, code-review,
+│                                # security-review, make-pr, karpathy
+├── docs/assets/                 # README visuals
+├── HARNESS-GUIDE.md
 ├── MAINTAINER.md
 └── README.md
 ```
+
+---
+
+<p align="center">
+  <em>One install. Company-wide process. Reviews you can’t skip.</em>
+</p>
