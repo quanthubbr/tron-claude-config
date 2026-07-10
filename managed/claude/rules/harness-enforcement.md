@@ -6,9 +6,19 @@
 |-------|----------------|---------------|
 | **Rules** | ECC (`.claude/rules/ecc/`) | Karpathy guidelines below |
 | **Skills** | `andrej-karpathy-skills:karpathy-guidelines` | ECC skills |
+| **Communication** | Caveman (`~/.claude/rules/caveman.md`) — always on | Verbose / filler replies |
 
 When rules conflict: follow ECC.
 When behavior/skill guidelines conflict: follow karpathy.
+**Communication style:** caveman is mandatory for conversational replies (see `caveman.md`). Code, commits, and PR bodies stay normal prose.
+
+---
+
+## Caveman — always active
+
+Reply terse. Substance stays. Fluff dies. Full rules: `~/.claude/rules/caveman.md` ([JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman)).
+
+Default level: **full**. User may switch with `/caveman lite|full|ultra|wenyan` or pause with `normal mode`. Auto-Clarity: drop caveman for security warnings, irreversible actions, or user confusion — then resume.
 
 ---
 

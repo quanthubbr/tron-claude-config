@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <img alt="version" src="https://img.shields.io/badge/version-1.6.1-0F766E?style=for-the-badge"/>
+  <img alt="version" src="https://img.shields.io/badge/version-1.6.2-0F766E?style=for-the-badge"/>
   <img alt="node" src="https://img.shields.io/badge/node-%3E%3D18-38BDF8?style=for-the-badge&logo=node.js&logoColor=white"/>
   <img alt="pm" src="https://img.shields.io/badge/npm%20%7C%20pnpm%20%7C%20bun-ready-A78BFA?style=for-the-badge"/>
   <img alt="license" src="https://img.shields.io/badge/private-Tron-1E293B?style=for-the-badge"/>
@@ -32,6 +32,7 @@ Drop one dependency into any repo. On `npm install`, Claude Code gets **hooks, g
 | Rules copied by hand (or forgotten) | **ECC rules scoped** to Vue / React / TS / … automatically |
 | “Did you update the package?” | **Auto-update** once per day, silent |
 | Different process per repo | **One kit** across the company |
+| Verbose AI replies | **Caveman** always on — same substance, fewer tokens |
 
 <p align="center">
   <img src="docs/assets/flow-commit.svg" alt="Commit flow: rules enforcement → security-review → code-review → git commit → push" width="100%"/>
@@ -94,7 +95,11 @@ your-project/
 | `/security-review` | Security checklist gate (**required** before commit) |
 | `/make-pr` | Official PR path — PT-BR template + token |
 
-Also installed: Karpathy guidelines skill + always-on enforcement rules under `~/.claude/rules/`.
+Also installed:
+
+- Karpathy guidelines skill + always-on rules under `~/.claude/rules/`
+- **Caveman** (`caveman.md`): terse replies enforced every session ([JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman)) — always overwritten from the package
+- **codebase-memory-mcp** ([DeusData](https://github.com/DeusData/codebase-memory-mcp)): required MCP for graph-first codebase navigation — install is **guaranteed** on macOS, Linux, and Windows (`install.sh` / `install.ps1` + `Unblock-File`, retries, npm fallback). `postinstall` exits `1` if registration in `~/.claude/.mcp.json` still fails
 
 Existing customized commands are **never overwritten**.
 
@@ -135,8 +140,11 @@ Always: `common`. Conditionally: `typescript`, `vue`, `nuxt`, `react`, `react-na
 
 Every Claude prompt runs `bootstrap-check.sh`:
 
-- Warns if `gsd` / `codebase-memory-mcp` are missing  
+- Re-runs `ensure-codebase-memory.js` if the MCP is missing (same Win + Unix path as postinstall)
+- Warns if `gsd` is missing  
 - Once per 24h, compares package SHA to remote and self-updates  
+
+Manual repair: `npm run ensure:codebase-memory` (or `node node_modules/@tron/claude-config/scripts/lib/ensure-codebase-memory.js`).
 
 ---
 
@@ -191,17 +199,18 @@ npm uninstall @tron/claude-config
 
 ```
 tron-claude-config/
-├── package.json                 # v1.6.1 · postinstall entry
+├── package.json                 # v1.6.2 · postinstall entry
 ├── scripts/
 │   ├── postinstall.js           # install orchestrator
 │   ├── sync-ecc-rules.js        # manual ECC re-sync CLI
 │   └── lib/
 │       ├── detect-project-scope.js
-│       └── install-ecc-rules.js
+│       ├── install-ecc-rules.js
+│       └── ensure-codebase-memory.js  # Win + macOS/Linux guarantee
 ├── managed/
 │   ├── AGENTS.md
 │   ├── setup-claude-harness.sh
-│   ├── claude/                  # settings, hooks, rules
+│   ├── claude/                  # settings, hooks, rules (incl. caveman)
 │   ├── git-hooks/               # pre-commit, pre-push
 │   └── skills/                  # commit-changes, code-review,
 │                                # security-review, make-pr, karpathy

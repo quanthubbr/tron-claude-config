@@ -50,9 +50,23 @@ All agents in this repo have access to the full rule stack, applied in this prio
 | 1 | **ECC rules** | `.claude/rules/ecc/` | Coding standards: naming, testing, security, git workflow |
 | 2 | **Karpathy principles** | `~/.claude/rules/agent-isolation.md` | Behavior: simplicity, surgical changes, goal-driven execution |
 | 3 | **Harness enforcement** | `~/.claude/rules/harness-enforcement.md` | Workflow: commit gates, review gates, approval flow |
+| 4 | **Caveman** | `~/.claude/rules/caveman.md` | Communication: terse replies (always on) |
 
 When rule layers conflict: higher priority wins.
 When skill layers conflict: Karpathy > ECC.
+**Communication:** caveman is mandatory for chat replies; code / commits / PR bodies stay normal prose.
+
+---
+
+## Caveman — always on
+
+Every agent replies in caveman style by default ([JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman)). Drop filler. Keep technical accuracy. Code and commands unchanged.
+
+- Default: `/caveman full`
+- Pause: `stop caveman` / `normal mode`
+- Auto-Clarity: normal prose for security warnings, irreversible actions, or user confusion — then resume
+
+Full contract: `~/.claude/rules/caveman.md`.
 
 ---
 

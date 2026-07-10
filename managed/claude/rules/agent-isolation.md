@@ -22,7 +22,7 @@ Agents MUST explore the codebase actively before acting. Use the full tool stack
 
 **Then**: read raw files only when editing or when the graph doesn't have the answer.
 
-The `codebase-memory-mcp` server is registered globally in `~/.claude/.mcp.json` — it is available to every agent in every project, automatically, with no setup needed.
+The `codebase-memory-mcp` server is registered globally in `~/.claude/.mcp.json` — harness postinstall / setup / bootstrap **guarantee** install on macOS, Linux, and Windows ([DeusData/codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp)). Available to every agent automatically.
 
 Business rules, domain logic, and architectural decisions live in the codebase. Your task context tells you WHAT to do; the codebase tells you HOW it fits. Always query before acting.
 
@@ -44,6 +44,9 @@ The orchestrator passes you a task. You query the codebase yourself to understan
 | 1 — highest | ECC rules (`.claude/rules/ecc/`) | Coding standards: naming, testing, security, git |
 | 2 | Karpathy principles (below) | Behavioral: how to think and act |
 | 3 | Harness enforcement (`harness-enforcement.md`) | Workflow: commit gates, review gates |
+| 4 | Caveman (`caveman.md`) | Communication: terse replies (always on) |
+
+**Caveman:** reply terse by default. Code/commits/PR bodies stay normal. See `~/.claude/rules/caveman.md`.
 
 ## Karpathy principles — mandatory for all write/edit/refactor tasks
 

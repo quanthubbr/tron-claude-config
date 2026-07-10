@@ -3,7 +3,7 @@
 > Quick reference: what the harness installs, what it enforces, and how to operate it day to day.  
 > Consumer pitch + install story: [README.md](README.md) · Releases: [MAINTAINER.md](MAINTAINER.md)
 
-**Current package version:** `1.6.1`
+**Current package version:** `1.6.2`
 
 ---
 
@@ -36,7 +36,7 @@
 | PR body | `gh pr create` blocked unless draft has: Resumo, Principais mudanças, Arquitetura & implementação, Antes → Agora, Roteiro de teste |
 | Terminal `git commit` | Blocked by `pre-commit` without token |
 | Push to `main`/`master` | Blocked by `pre-push` |
-| Missing tools | Warning injected into Claude context each session |
+| Missing tools | `codebase-memory-mcp`: auto-ensure (hard fail on install/setup). `gsd`: warning in session |
 | Outdated package | Silent auto-update, once per 24h |
 
 ### Machine-level installs (developers only — skipped in CI)
@@ -51,8 +51,27 @@
 | Agent isolation / harness patterns | `~/.claude/rules/` | Copied from package |
 | Karpathy skill | `~/.claude/skills/andrej-karpathy-skills/` | Copied from package |
 | gsd | global `$PATH` | `npm install -g gsd-core` (or bun/pnpm) |
-| caveman | `~/.claude/skills/caveman/` | Official install script |
-| codebase-memory-mcp | `~/.claude/.mcp.json` | Official install script |
+| caveman skill/plugin | `~/.claude/skills/caveman/` (or plugin) | Official install script |
+| **Caveman rule (enforced)** | `~/.claude/rules/caveman.md` | Always overwritten from package — terse replies mandatory |
+| codebase-memory-mcp | `~/.claude/.mcp.json` | **Required** — `ensure-codebase-memory.js` (official install.sh / install.ps1 + Unblock-File on Windows; npm fallback; postinstall exits 1 if missing) |
+
+---
+
+## codebase-memory-mcp (required)
+
+Referenced by `AGENTS.md` / `agent-isolation.md` as the first layer of codebase navigation. The harness **must** leave it registered in `~/.claude/.mcp.json`.
+
+| Step | Behavior |
+|------|----------|
+| Detect | Key containing `codebase-memory` in `~/.claude/.mcp.json` |
+| macOS / Linux | Official `install.sh` via curl |
+| Windows | Official `install.ps1` with `Unblock-File` + `ExecutionPolicy Bypass` |
+| Retry | Up to 3 attempts |
+| Fallback | `npm` / `pnpm` / `bun` global `codebase-memory-mcp` |
+| Failure | `postinstall` → `process.exit(1)`; `setup-claude-harness.sh` → exit 1 |
+| Repair | `npm run ensure:codebase-memory` |
+
+Skipped only when `CI` / `GITHUB_ACTIONS` / `CONTINUOUS_INTEGRATION` is set.
 
 ---
 
@@ -118,7 +137,7 @@ npm install   # or bun / pnpm
 - Syncs scoped ECC rules into `.claude/rules/ecc/`  
 - Copies `AGENTS.md`  
 - Adds token/draft paths to `.gitignore`  
-- On developer machines: installs skills, Karpathy rules, gsd, caveman, codebase-memory-mcp  
+- On developer machines: installs skills, Karpathy rules, gsd, caveman; **guarantees** codebase-memory-mcp (Win + macOS/Linux)  
 
 ---
 
@@ -167,13 +186,14 @@ rm .git/hooks/pre-commit .git/hooks/pre-push
 
 ```
 tron-claude-config/
-├── package.json                              # v1.6.1
+├── package.json                              # v1.6.2
 ├── scripts/
 │   ├── postinstall.js                        # orchestrator
 │   ├── sync-ecc-rules.js                     # ECC re-sync CLI
 │   └── lib/
 │       ├── detect-project-scope.js           # stack → ECC folders
-│       └── install-ecc-rules.js              # clone / copy / prune
+│       ├── install-ecc-rules.js              # clone / copy / prune
+│       └── ensure-codebase-memory.js         # required MCP (Win + Unix)
 ├── managed/
 │   ├── AGENTS.md
 │   ├── setup-claude-harness.sh
@@ -185,7 +205,8 @@ tron-claude-config/
 │   │   └── rules/
 │   │       ├── harness-enforcement.md
 │   │       ├── agent-isolation.md
-│   │       └── harness-patterns.md
+│   │       ├── harness-patterns.md
+│   │       └── caveman.md
 │   ├── git-hooks/
 │   │   ├── pre-commit
 │   │   └── pre-push

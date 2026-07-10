@@ -10,6 +10,7 @@ const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
 const { installEccRules } = require('./lib/install-ecc-rules');
+const { ensureCodebaseMemoryMcp } = require('./lib/ensure-codebase-memory');
 
 const DRY = process.env.DRY === '1';
 const IS_CI = !!(process.env.CI || process.env.CONTINUOUS_INTEGRATION || process.env.GITHUB_ACTIONS);
@@ -119,27 +120,15 @@ function installGsd() {
 }
 
 function installCodebaseMemoryMcp() {
-  const alreadyInstalled = (() => {
-    try {
-      const mcpConfigPath = path.join(os.homedir(), '.claude', '.mcp.json');
-      if (!fs.existsSync(mcpConfigPath)) return false;
-      const config = JSON.parse(fs.readFileSync(mcpConfigPath, 'utf8'));
-      return Object.keys(config.mcpServers || {}).some(k => k.includes('codebase-memory'));
-    } catch { return false; }
-  })();
-
-  if (alreadyInstalled) return;
-
-  const isWindows = process.platform === 'win32';
-  const cmd = isWindows
-    ? 'powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.ps1 -OutFile $env:TEMP\\cmm-install.ps1; & $env:TEMP\\cmm-install.ps1"'
-    : 'curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.sh | bash';
-
-  try {
-    execSync(cmd, { stdio: 'ignore', shell: true, timeout: 60000 });
-    log('codebase-memory-mcp installed');
-  } catch {
-    log('WARN: codebase-memory-mcp install failed — see: https://github.com/DeusData/codebase-memory-mcp');
+  // Required by agent-isolation / AGENTS.md — must be registered in ~/.claude/.mcp.json
+  // Official installers: https://github.com/DeusData/codebase-memory-mcp (macOS/Linux + Windows)
+  const result = ensureCodebaseMemoryMcp();
+  if (!result.ok) {
+    log('FATAL: codebase-memory-mcp is required and could not be installed');
+    process.exit(1);
+  }
+  if (result.alreadyReady) {
+    log('codebase-memory-mcp already registered');
   }
 }
 
@@ -229,6 +218,15 @@ function installHarnessPatterns() {
   fs.copyFileSync(src, dest);
 }
 
+function installCavemanRule() {
+  // Always overwrite — caveman communication is harness-enforced, not optional
+  const dest = path.join(os.homedir(), '.claude', 'rules', 'caveman.md');
+  const src = path.join(PACKAGE_ROOT, 'managed', 'claude', 'rules', 'caveman.md');
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(src, dest);
+  log('caveman rule enforced → ~/.claude/rules/caveman.md');
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 // Machine-level tools: install for developers, skip in CI
@@ -244,6 +242,7 @@ if (!IS_CI) {
   installEnforcementRule();
   installAgentIsolationRule();
   installHarnessPatterns();
+  installCavemanRule();
 }
 
 // Consumer-repo-specific setup

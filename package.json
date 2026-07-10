@@ -1,10 +1,11 @@
 {
   "name": "@tron/claude-config",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "description": "Claude Code enforcement harness for tron repos",
   "private": true,
   "scripts": {
-    "postinstall": "node scripts/postinstall.js"
+    "postinstall": "node scripts/postinstall.js",
+    "ensure:codebase-memory": "node scripts/lib/ensure-codebase-memory.js"
   },
   "engines": {
     "node": ">=18.0.0"
