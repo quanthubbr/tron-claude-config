@@ -34,6 +34,8 @@ tron-claude-config/
 │   │   ├── pre-commit             # blocks direct terminal git commit
 │   │   └── pre-push               # blocks direct terminal git push to main
 │   └── skills/
+│       ├── commit-changes/
+│       │   └── SKILL.md           # canonical /commit-changes skill — installed to ~/.claude/commands/, install-if-missing
 │       └── make-pr/
 │           └── SKILL.md           # canonical /make-pr skill — installed to ~/.claude/commands/, install-if-missing
 ├── MAINTAINER.md                  # this file
@@ -49,6 +51,7 @@ tron-claude-config/
 | `.claude/hooks/bootstrap-check.sh` | **Package** | Do not edit in consumer repos |
 | `.git/hooks/pre-commit` | **Package** | Installed/overwritten by setup |
 | `.git/hooks/pre-push` | **Package** | Installed/overwritten by setup |
+| `~/.claude/commands/commit-changes.md` | **Package (install-if-missing, global)** | Installed once per machine, never overwrites an existing customized `/commit-changes`. Creates `.claude/.commit-authorized` before commits. |
 | `~/.claude/commands/make-pr.md` | **Package (install-if-missing, global)** | Installed once per machine, never overwrites an existing customized `/make-pr`. Enforcement of the PR template happens in the hook regardless of which version is present. |
 | `.claude/.pr-body-draft.md` | **Ephemeral (repo, gitignored)** | Written by `/make-pr` per PR, read by `bypass-check.sh` for template validation, deleted after `gh pr create` succeeds |
 | `.claude/commands/*.md` (repo-local, other than `make-pr.md`) | **Repo** | Skills — repo-specific, never overwritten |

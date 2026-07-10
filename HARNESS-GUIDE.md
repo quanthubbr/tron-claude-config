@@ -19,7 +19,7 @@ Files installed into every consumer repo:
 | `package.json` → `postinstall` | Runs setup automatically on every `npm install` / `bun install` / `pnpm install`. |
 
 **What is enforced:**
-- `/commit-changes` → only path to commit via Claude (runs `/code-review` + `/security-review` automatically)
+- `/commit-changes` → only path to commit via Claude (runs `/code-review` + `/security-review` automatically); installed automatically (install-if-missing at `~/.claude/commands/commit-changes.md`)
 - `/make-pr` → only path to open a PR via Claude, and installed automatically by the package (install-if-missing at `~/.claude/commands/make-pr.md` — never overwrites a developer's own customized version)
 - PR body template → every `gh pr create` is blocked unless the body (written to `.claude/.pr-body-draft.md`, passed via `--body-file`) has all 5 canonical sections: Resumo, Principais mudanças, Arquitetura & implementação, Antes → Agora, Roteiro de teste. Enforced by `bypass-check.sh`, so it applies even if a repo has its own customized `/make-pr`.
 - `git commit` directly in terminal → blocked by `pre-commit` git hook
@@ -82,7 +82,7 @@ Done. The `postinstall` script runs automatically and sets everything up. No fur
 - Copies `.claude/hooks/bypass-check.sh` and `bootstrap-check.sh`
 - Installs `.git/hooks/pre-commit` and `.git/hooks/pre-push`
 - Adds token/draft files (including `.claude/.pr-body-draft.md`) to the project's `.gitignore`
-- Installs ECC rules, Karpathy skill, enforcement rule, `/make-pr` skill, gsd, and caveman (developer machines only)
+- Installs ECC rules, Karpathy skill, enforcement rule, `/commit-changes` and `/make-pr` skills, gsd, and caveman (developer machines only)
 
 ---
 
@@ -174,6 +174,8 @@ tron-claude-config/
 │   │   ├── andrej-karpathy-skills/
 │   │   │   └── karpathy-guidelines/
 │   │   │       └── SKILL.md                ← Karpathy skill (bundled)
+│   │   ├── commit-changes/
+│   │   │   └── SKILL.md                    ← canonical /commit-changes skill (installed to ~/.claude/commands/, install-if-missing)
 │   │   └── make-pr/
 │   │       └── SKILL.md                    ← canonical /make-pr skill (installed to ~/.claude/commands/, install-if-missing)
 │   └── setup-claude-harness.sh             ← idempotent setup script

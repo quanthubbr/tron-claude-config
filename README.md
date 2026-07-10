@@ -70,6 +70,7 @@ Global (machine-level, installed once):
 ```
 ~/.claude/rules/harness-enforcement.md                        ← priority rules + Karpathy principles (always-on)
 ~/.claude/skills/andrej-karpathy-skills/karpathy-guidelines/  ← Karpathy skill (explicit invocations)
+~/.claude/commands/commit-changes.md                          ← canonical /commit-changes skill (install-if-missing)
 ~/.claude/commands/make-pr.md                                 ← canonical /make-pr skill (install-if-missing, see PR enforcement below)
 ```
 
@@ -143,10 +144,12 @@ Folders outside the detected scope are removed on the next sync. State is record
 
 ## Skill requirements
 
-This harness assumes your Claude Code setup has the `/commit-changes` skill. `/make-pr` is installed automatically by `postinstall.js` (install-if-missing — an existing customized `/make-pr` is never overwritten). If you're using this outside of a Tron repo, you'll need to either:
+`/commit-changes` and `/make-pr` are installed automatically by `postinstall.js` (install-if-missing — an existing customized skill is never overwritten). Both are required for the harness bypass tokens to work:
 
-- Add `/commit-changes` to your `~/.claude/commands/` folder, **or**
-- Edit `.claude/hooks/bypass-check.sh` to remove the bypass mechanism (makes the hooks block all commits and PRs)
+- `/commit-changes` → creates `.claude/.commit-authorized`, runs review, then commits
+- `/make-pr` → creates `.claude/.pr-authorized`, writes the PR body draft, then opens the PR
+
+If you're using this outside of a Tron repo and want to disable the gates, edit `.claude/hooks/bypass-check.sh` (makes the hooks block all commits and PRs unless you also remove the git hooks).
 
 ---
 
