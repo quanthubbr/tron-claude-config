@@ -20,12 +20,12 @@ Steps:
 4. **Authorship:** commits are authored solely by the repository's configured git identity (the current user). NEVER pass `--author`, and NEVER add `Co-Authored-By`, "Generated with", Claude, Cursor, or any AI/agent mention to the message or trailer.
 5. **Leak / sensitive-data scan (before push):** use the project's available tooling to confirm nothing sensitive is going out:
    - Run the repo's secret scanner if present (e.g. `gitleaks git --staged` or `gitleaks detect --staged`; it also runs on the commit hook — respect its result).
-   - Invoke the `/security-review` skill on the staged diff (or do a focused security pass if the skill is unavailable).
+   - **Required:** invoke `/security-review` on the staged (or branch) diff. Do not skip. If it reports CRITICAL or HIGH findings, fix them before continuing — do not create the bypass token yet.
    - Verify no real `.env*` file is staged (only `*.env.example`/template files with placeholder values are allowed) and that no tokens, API keys, credentials, private certs, or PII appear in the diff.
    - If anything leaks, STOP, unstage/amend as needed, and report — do not push.
 6. **Mandatory cleanup (before push):** Remove all comments, logs and debuggers from all modified files before pushing.
-7. **Quick code review (before push):** invoke `/code-review` at low or medium effort on the branch diff (or do a focused inline review if the skill is unavailable). Fix trivial findings; surface anything non-trivial to the user.
-8. **Create the bypass token before each commit:** `touch .claude/.commit-authorized` (or write via the Write tool). Without this file, both the Claude Code PreToolUse hook and the git `pre-commit` hook block `git commit`.
+7. **Quick code review (before push):** **Required:** invoke `/code-review` on the staged (or branch) diff. Do not skip. Fix CRITICAL/HIGH findings before continuing; surface MEDIUM/LOW to the user. Do not create the bypass token until `/code-review` passes (no unresolved CRITICAL/HIGH).
+8. **Create the bypass token before each commit:** `touch .claude/.commit-authorized` (or write via the Write tool). Without this file, both the Claude Code PreToolUse hook and the git `pre-commit` hook block `git commit`. Only create this token **after** `/security-review` and `/code-review` have passed.
 9. Commit with a HEREDOC message:
    `git commit -m "$(cat <<'EOF'`
    `Commit message here.`

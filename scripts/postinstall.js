@@ -181,6 +181,24 @@ function installCommitChangesSkill() {
   log('commit-changes skill installed → ~/.claude/commands/commit-changes.md');
 }
 
+function installCodeReviewSkill() {
+  const dest = path.join(os.homedir(), '.claude', 'commands', 'code-review.md');
+  if (fs.existsSync(dest)) return;
+  const src = path.join(PACKAGE_ROOT, 'managed', 'skills', 'code-review', 'SKILL.md');
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(src, dest);
+  log('code-review skill installed → ~/.claude/commands/code-review.md');
+}
+
+function installSecurityReviewSkill() {
+  const dest = path.join(os.homedir(), '.claude', 'commands', 'security-review.md');
+  if (fs.existsSync(dest)) return;
+  const src = path.join(PACKAGE_ROOT, 'managed', 'skills', 'security-review', 'SKILL.md');
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(src, dest);
+  log('security-review skill installed → ~/.claude/commands/security-review.md');
+}
+
 function installMakePrSkill() {
   const dest = path.join(os.homedir(), '.claude', 'commands', 'make-pr.md');
   if (fs.existsSync(dest)) return;
@@ -220,6 +238,8 @@ if (!IS_CI) {
   installCaveman();
   installKarpathySkill();
   installCommitChangesSkill();
+  installCodeReviewSkill();
+  installSecurityReviewSkill();
   installMakePrSkill();
   installEnforcementRule();
   installAgentIsolationRule();
