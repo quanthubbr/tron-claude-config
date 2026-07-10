@@ -1,6 +1,6 @@
 # tron-claude-config — Maintainer Guide
 
-Owner playbook for the shared Claude enforcement harness (`@tron/claude-config` **v1.6.1**).
+Owner playbook for the shared Claude enforcement harness (`@tron/claude-config` **v1.6.2**).
 
 Consumer docs: [README.md](README.md) · Operator cheat sheet: [HARNESS-GUIDE.md](HARNESS-GUIDE.md)
 
@@ -14,7 +14,7 @@ On consumer `npm install` / `bun install` / `pnpm install`, `scripts/postinstall
 2. Copies `AGENTS.md` and `scripts/setup-claude-harness.sh`
 3. Installs `.git/hooks/pre-commit` and `pre-push`
 4. Syncs **scoped** ECC rules into `.claude/rules/ecc/` (detect stack → copy matching folders → prune stale ones)
-5. On developer machines (not CI): install-if-missing skills + Karpathy rules, gsd, caveman, codebase-memory-mcp
+5. On developer machines (not CI): install-if-missing skills + Karpathy rules, gsd, caveman; **guarantee** codebase-memory-mcp via `scripts/lib/ensure-codebase-memory.js` (official DeusData installers for macOS/Linux + Windows, retries, npm fallback; `process.exit(1)` if still missing)
 6. Thereafter, `bootstrap-check.sh` self-updates the package about once per day
 
 Non-technical users get gates without extra setup. Engineers get them on install.
@@ -31,7 +31,8 @@ tron-claude-config/
 │   ├── sync-ecc-rules.js              # CLI wrapper for ECC sync
 │   └── lib/
 │       ├── detect-project-scope.js    # package.json + markers → folder list
-│       └── install-ecc-rules.js       # clone ECC, copy, prune, write .ecc-scope.json
+│       ├── install-ecc-rules.js       # clone ECC, copy, prune, write .ecc-scope.json
+│       └── ensure-codebase-memory.js  # required MCP guarantee (Win + Unix)
 ├── managed/
 │   ├── AGENTS.md
 │   ├── setup-claude-harness.sh        # also re-syncs ECC on auto-update
@@ -43,7 +44,8 @@ tron-claude-config/
 │   │   └── rules/
 │   │       ├── harness-enforcement.md
 │   │       ├── agent-isolation.md
-│   │       └── harness-patterns.md
+│   │       ├── harness-patterns.md
+│   │       └── caveman.md              # always-on communication enforce
 │   ├── git-hooks/
 │   │   ├── pre-commit
 │   │   └── pre-push
@@ -74,6 +76,8 @@ tron-claude-config/
 | `~/.claude/commands/code-review.md` | **Package** (install-if-missing) | Required by `/commit-changes` |
 | `~/.claude/commands/security-review.md` | **Package** (install-if-missing) | Required by `/commit-changes` |
 | `~/.claude/commands/make-pr.md` | **Package** (install-if-missing) | PR template still enforced by hook |
+| `~/.claude/rules/caveman.md` | **Package** (always overwrite) | Caveman communication — mandatory every session |
+| `~/.claude/.mcp.json` (`codebase-memory*`) | **Package** (ensure on install) | Required MCP — hard-fail postinstall/setup if missing |
 | `.claude/.pr-body-draft.md` | **Ephemeral** (gitignored) | Written by `/make-pr`, validated by hook |
 | `.claude/.commit-authorized` / `.pr-authorized` | **Ephemeral** (gitignored) | One-shot bypass tokens |
 | Repo-local `.claude/commands/*` (other) | **Repo** | Never overwritten |
@@ -165,6 +169,10 @@ Silent by design. At most one status line in the session.
 node --check scripts/postinstall.js
 node --check scripts/lib/detect-project-scope.js
 node --check scripts/lib/install-ecc-rules.js
+node --check scripts/lib/ensure-codebase-memory.js
+
+# codebase-memory readiness (no install if already registered)
+node -e "console.log(require('./scripts/lib/ensure-codebase-memory').isCodebaseMemoryReady())"
 
 # Scope detection (no network)
 node -e "console.log(require('./scripts/lib/detect-project-scope').detectProjectScope('.'))"
@@ -183,6 +191,8 @@ Integration checklist in a throwaway clone:
 - [ ] `.claude/rules/ecc/common` exists; stack folders match the app  
 - [ ] `~/.claude/commands/{commit-changes,code-review,security-review,make-pr}.md` present (or intentionally left as pre-existing customs)  
 - [ ] Raw `git commit` blocked; token path works  
+- [ ] `~/.claude/.mcp.json` has a `codebase-memory*` server (or CI skipped machine installs)  
+- [ ] `~/.claude/rules/caveman.md` present after install  
 
 ---
 
@@ -197,7 +207,7 @@ git push && git push --tags
 Pin a consumer in an emergency:
 
 ```json
-"@tron/claude-config": "git+https://github.com/zaqueu-1/tron-claude-config.git#v1.6.1"
+"@tron/claude-config": "git+https://github.com/zaqueu-1/tron-claude-config.git#v1.6.2"
 ```
 
 ---

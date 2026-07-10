@@ -103,10 +103,16 @@ if ! npx --yes gsd-core --version &>/dev/null 2>&1 && ! command -v gsd &>/dev/nu
   MISSING+=("gsd")
 fi
 
-# Check codebase-memory-mcp (check if the MCP server is registered)
-if ! node -e "
+# Ensure codebase-memory-mcp (auto-install if missing; never blocks the prompt)
+ENSURE_CBM="node_modules/@tron/claude-config/scripts/lib/ensure-codebase-memory.js"
+if [ -f "$ENSURE_CBM" ]; then
+  if ! node "$ENSURE_CBM" >/dev/null 2>&1; then
+    MISSING+=("codebase-memory-mcp")
+  fi
+elif ! node -e "
   const fs = require('fs');
-  const p = process.env.HOME + '/.claude/.mcp.json';
+  const os = require('os');
+  const p = require('path').join(os.homedir(), '.claude', '.mcp.json');
   if (!fs.existsSync(p)) process.exit(1);
   const d = JSON.parse(fs.readFileSync(p, 'utf8'));
   const keys = Object.keys(d.mcpServers || {});
@@ -125,7 +131,9 @@ if [ ${#MISSING[@]} -gt 0 ]; then
         echo "  gsd: npm install -g gsd-core"
         ;;
       codebase-memory-mcp)
-        echo "  codebase-memory-mcp: see ~/.claude/skills/codebase-memory/SKILL.md"
+        echo "  macOS/Linux: curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.sh | bash"
+        echo "  Windows: see https://github.com/DeusData/codebase-memory-mcp (install.ps1 + Unblock-File)"
+        echo "  Or: node node_modules/@tron/claude-config/scripts/lib/ensure-codebase-memory.js"
         ;;
     esac
   done

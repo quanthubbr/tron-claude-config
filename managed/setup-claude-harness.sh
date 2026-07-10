@@ -71,9 +71,18 @@ else
   MISSING+=("gsd")
 fi
 
-if node -e "
+ENSURE_CBM="$REPO_ROOT/node_modules/@tron/claude-config/scripts/lib/ensure-codebase-memory.js"
+if [ -f "$ENSURE_CBM" ]; then
+  if node "$ENSURE_CBM"; then
+    log "   ✓ codebase-memory-mcp"
+  else
+    log "   ✗ codebase-memory-mcp — install failed (required)"
+    MISSING+=("codebase-memory-mcp")
+  fi
+elif node -e "
   const fs = require('fs');
-  const p = process.env.HOME + '/.claude/.mcp.json';
+  const os = require('os');
+  const p = require('path').join(os.homedir(), '.claude', '.mcp.json');
   if (!fs.existsSync(p)) process.exit(1);
   const d = JSON.parse(fs.readFileSync(p, 'utf8'));
   if (!Object.keys(d.mcpServers||{}).some(k=>k.includes('codebase-memory'))) process.exit(1);
@@ -98,8 +107,12 @@ if [ ${#MISSING[@]} -gt 0 ]; then
         esac
         ;;
       codebase-memory-mcp)
-        log "   codebase-memory-mcp: see ~/.claude/skills/codebase-memory/SKILL.md"
-        log "         (register the MCP server in Claude Code settings)"
+        log "   codebase-memory-mcp (macOS/Linux):"
+        log "     curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.sh | bash"
+        log "   codebase-memory-mcp (Windows PowerShell):"
+        log "     Invoke-WebRequest -Uri https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.ps1 -OutFile install.ps1"
+        log "     Unblock-File .\\install.ps1; .\\install.ps1"
+        log "   Or: node node_modules/@tron/claude-config/scripts/lib/ensure-codebase-memory.js"
         ;;
     esac
   done
