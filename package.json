@@ -1,6 +1,6 @@
 {
   "name": "@tron/claude-config",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "description": "Claude Code enforcement harness for tron repos",
   "private": true,
   "scripts": {
