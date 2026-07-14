@@ -8,7 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const { installEccRules } = require('./lib/install-ecc-rules');
 const { ensureCodebaseMemoryMcp } = require('./lib/ensure-codebase-memory');
 
@@ -27,9 +27,11 @@ const MANAGED_FILES = [
   ['managed/AGENTS.md',                      'AGENTS.md'],
 ];
 
+// Each entry: [src relative to PACKAGE_ROOT, hook name]. The destination
+// directory is resolved at runtime — see installGitHooks().
 const GIT_HOOKS = [
-  ['managed/git-hooks/pre-commit', '.git/hooks/pre-commit'],
-  ['managed/git-hooks/pre-push',   '.git/hooks/pre-push'],
+  ['managed/git-hooks/pre-commit', 'pre-commit'],
+  ['managed/git-hooks/pre-push',   'pre-push'],
 ];
 
 // Entries to add to .gitignore if not already present
@@ -63,7 +65,65 @@ function copyFile(src, destRel) {
   }
   fs.copyFileSync(srcAbs, destAbs);
   // Make shell scripts executable
-  if (destAbs.endsWith('.sh') || destRel.startsWith('.git/hooks/')) {
+  if (destAbs.endsWith('.sh')) {
+    fs.chmodSync(destAbs, 0o755);
+  }
+}
+
+function git(...args) {
+  return execFileSync('git', args, {
+    cwd: CONSUMER_ROOT,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim();
+}
+
+// Resolve the directory git actually reads hooks from.
+//
+// `<root>/.git/hooks` is only valid in a primary checkout. In a linked worktree
+// `.git` is a file pointing at the real gitdir, so hardcoding that path makes
+// mkdir fail with ENOTDIR. `git rev-parse --git-path` returns the correct
+// location in both layouts.
+//
+// Returns null when core.hooksPath is set: hooks are owned by another tool
+// (husky, lefthook, ...) and git ignores .git/hooks entirely. Writing there
+// would be dead code, and writing into the managed directory would clobber
+// that tool's hooks.
+function resolveGitHooksDir() {
+  try {
+    if (git('config', '--get', 'core.hooksPath')) return null;
+  } catch {
+    // Exit code 1 simply means the key is unset — that is the common case.
+  }
+
+  try {
+    return path.resolve(CONSUMER_ROOT, git('rev-parse', '--git-path', 'hooks'));
+  } catch (err) {
+    log(`WARN: could not resolve git hooks directory: ${err.message}`);
+    return null;
+  }
+}
+
+function installGitHooks() {
+  const hooksDir = resolveGitHooksDir();
+  if (!hooksDir) {
+    log('git hooks skipped: core.hooksPath is managed by another tool');
+    return;
+  }
+
+  for (const [src, name] of GIT_HOOKS) {
+    const srcAbs = path.join(PACKAGE_ROOT, src);
+    const destAbs = path.join(hooksDir, name);
+    if (!fs.existsSync(srcAbs)) {
+      log(`WARN: source not found: ${src}`);
+      continue;
+    }
+    if (DRY) {
+      log(`DRY: would copy ${src} → ${destAbs}`);
+      continue;
+    }
+    fs.mkdirSync(hooksDir, { recursive: true });
+    fs.copyFileSync(srcAbs, destAbs);
     fs.chmodSync(destAbs, 0o755);
   }
 }
@@ -263,9 +323,7 @@ if (!IS_CI) {
 }
 
 // Install git hooks
-for (const [src, dest] of GIT_HOOKS) {
-  copyFile(src, dest);
-}
+installGitHooks();
 
 // Update .gitignore
 installGitIgnoreEntries();
