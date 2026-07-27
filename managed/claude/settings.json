@@ -44,7 +44,9 @@
       "Bash(mkdir*)",
       "Bash(cp*)",
       "Bash(mv*)",
-      "Bash(chmod*)"
+      "Bash(chmod*)",
+      "Bash(python3*)",
+      "Bash(python*)"
     ]
   },
   "hooks": {
