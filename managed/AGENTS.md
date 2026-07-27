@@ -70,6 +70,29 @@ Full contract: `~/.claude/rules/caveman.md`.
 
 ---
 
+## Frontend skills — mandatory for UI tasks
+
+On ANY frontend/UI task (pages, components, styling, layout, redesign, landing, dashboard):
+
+1. **Load the `frontend-design` skill** (`~/.claude/skills/frontend-design/SKILL.md`) — guides aesthetic direction, typography, layout, and deliberate design choices that avoid templated defaults.
+2. **Load the `ui-ux-pro-max` skill** (`~/.claude/skills/ui-ux-pro-max/SKILL.md`) — run the design system generator before building: `python3 ~/.claude/skills/ui-ux-pro-max/scripts/search.py "<product_type> <keywords>" --design-system -p "Project Name"`. Use the search tool for style, color, typography, UX, and stack-specific guidance.
+3. **Both skills are mandatory.** Do not skip either. The frontend-design skill governs creative direction; ui-ux-pro-max governs design system generation, accessibility, and technical UI quality.
+
+**When these skills apply:**
+- Creating new pages, components, or views
+- Restyling or redesigning existing UI
+- Implementing landing pages, dashboards, forms, or navigation
+- Color, typography, spacing, layout, or animation decisions
+- Responsive design, accessibility, or UX improvements
+- Any task where the output is visible to a user
+
+**When these skills do NOT apply:**
+- Pure backend logic, API design, database migrations
+- Infrastructure, DevOps, CI/CD configuration
+- Non-visual scripts, tooling, or build configuration
+
+---
+
 ## Karpathy principles
 
 Applied automatically to every write/edit/refactor task:

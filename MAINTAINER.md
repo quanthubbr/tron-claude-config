@@ -1,6 +1,6 @@
 # tron-claude-config — Maintainer Guide
 
-Owner playbook for the shared Claude enforcement harness (`@tron/claude-config` **v1.6.2**).
+Owner playbook for the shared Claude enforcement harness (`@tron/claude-config` **v1.6.4**).
 
 Consumer docs: [README.md](README.md) · Operator cheat sheet: [HARNESS-GUIDE.md](HARNESS-GUIDE.md)
 
@@ -54,6 +54,8 @@ tron-claude-config/
 │       ├── code-review/SKILL.md       # → ~/.claude/commands/code-review.md
 │       ├── security-review/SKILL.md   # → ~/.claude/commands/security-review.md
 │       ├── make-pr/SKILL.md           # → ~/.claude/commands/make-pr.md
+│       ├── frontend-design/SKILL.md   # → ~/.claude/skills/frontend-design/
+│       ├── ui-ux-pro-max/SKILL.md     # → ~/.claude/skills/ui-ux-pro-max/ (full via CLI)
 │       └── andrej-karpathy-skills/... # → ~/.claude/skills/...
 ├── docs/assets/                       # README banner / diagrams
 ├── MAINTAINER.md
@@ -207,7 +209,7 @@ git push && git push --tags
 Pin a consumer in an emergency:
 
 ```json
-"@tron/claude-config": "git+https://github.com/zaqueu-1/tron-claude-config.git#v1.6.2"
+"@tron/claude-config": "git+https://github.com/zaqueu-1/tron-claude-config.git#v1.6.4"
 ```
 
 ---

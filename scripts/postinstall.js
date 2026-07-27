@@ -257,6 +257,46 @@ function installMakePrSkill() {
   log('make-pr skill installed → ~/.claude/commands/make-pr.md');
 }
 
+function installFrontendDesignSkill() {
+  const destDir = path.join(os.homedir(), '.claude', 'skills', 'frontend-design');
+  const dest = path.join(destDir, 'SKILL.md');
+  if (fs.existsSync(dest)) return;
+  const src = path.join(PACKAGE_ROOT, 'managed', 'skills', 'frontend-design', 'SKILL.md');
+  fs.mkdirSync(destDir, { recursive: true });
+  fs.copyFileSync(src, dest);
+  log('frontend-design skill installed → ~/.claude/skills/frontend-design/');
+}
+
+function installUiUxProMaxSkill() {
+  const skillDir = path.join(os.homedir(), '.claude', 'skills', 'ui-ux-pro-max');
+  const skillMd = path.join(skillDir, 'SKILL.md');
+
+  // If full skill already installed (has scripts/ directory), skip
+  if (fs.existsSync(path.join(skillDir, 'scripts', 'search.py'))) return;
+
+  // Try full install via uipro CLI (installs SKILL.md + scripts + data)
+  if (!fs.existsSync(skillMd)) {
+    try {
+      execSync(
+        'npx --yes ui-ux-pro-max-cli init --ai claude --global --force',
+        { stdio: 'ignore', shell: true, timeout: 60000 }
+      );
+      log('ui-ux-pro-max skill installed (full) → ~/.claude/skills/ui-ux-pro-max/');
+      return;
+    } catch {
+      // CLI failed — fall back to local SKILL.md only
+    }
+  }
+
+  // Fallback: install vendored SKILL.md only (scripts won't be available)
+  if (!fs.existsSync(skillMd)) {
+    const src = path.join(PACKAGE_ROOT, 'managed', 'skills', 'ui-ux-pro-max', 'SKILL.md');
+    fs.mkdirSync(skillDir, { recursive: true });
+    fs.copyFileSync(src, skillMd);
+    log('ui-ux-pro-max skill installed (SKILL.md only — run `npx ui-ux-pro-max-cli init --ai claude --global` for full features)');
+  }
+}
+
 function installEnforcementRule() {
   const dest = path.join(os.homedir(), '.claude', 'rules', 'harness-enforcement.md');
   const src = path.join(PACKAGE_ROOT, 'managed', 'claude', 'rules', 'harness-enforcement.md');
@@ -299,6 +339,8 @@ if (!IS_CI) {
   installCodeReviewSkill();
   installSecurityReviewSkill();
   installMakePrSkill();
+  installFrontendDesignSkill();
+  installUiUxProMaxSkill();
   installEnforcementRule();
   installAgentIsolationRule();
   installHarnessPatterns();
