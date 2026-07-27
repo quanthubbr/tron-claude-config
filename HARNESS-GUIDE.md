@@ -3,7 +3,7 @@
 > Quick reference: what the harness installs, what it enforces, and how to operate it day to day.  
 > Consumer pitch + install story: [README.md](README.md) · Releases: [MAINTAINER.md](MAINTAINER.md)
 
-**Current package version:** `1.6.2`
+**Current package version:** `1.6.4`
 
 ---
 
@@ -50,6 +50,8 @@
 | Karpathy enforcement rule | `~/.claude/rules/harness-enforcement.md` | Copied from package |
 | Agent isolation / harness patterns | `~/.claude/rules/` | Copied from package |
 | Karpathy skill | `~/.claude/skills/andrej-karpathy-skills/` | Copied from package |
+| frontend-design | `~/.claude/skills/frontend-design/` | install-if-missing; mandatory on UI |
+| ui-ux-pro-max | `~/.claude/skills/ui-ux-pro-max/` | CLI full install, SKILL.md fallback |
 | gsd | global `$PATH` | `npm install -g gsd-core` (or bun/pnpm) |
 | caveman skill/plugin | `~/.claude/skills/caveman/` (or plugin) | Official install script |
 | **Caveman rule (enforced)** | `~/.claude/rules/caveman.md` | Always overwritten from package — terse replies mandatory |
@@ -186,7 +188,7 @@ rm .git/hooks/pre-commit .git/hooks/pre-push
 
 ```
 tron-claude-config/
-├── package.json                              # v1.6.2
+├── package.json                              # v1.6.4
 ├── scripts/
 │   ├── postinstall.js                        # orchestrator
 │   ├── sync-ecc-rules.js                     # ECC re-sync CLI
@@ -215,6 +217,8 @@ tron-claude-config/
 │       ├── code-review/SKILL.md
 │       ├── security-review/SKILL.md
 │       ├── make-pr/SKILL.md
+│       ├── frontend-design/SKILL.md
+│       ├── ui-ux-pro-max/SKILL.md
 │       └── andrej-karpathy-skills/.../SKILL.md
 ├── docs/assets/                              # README visuals
 ├── HARNESS-GUIDE.md

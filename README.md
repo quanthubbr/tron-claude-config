@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <img alt="version" src="https://img.shields.io/badge/version-1.6.2-0F766E?style=for-the-badge"/>
+  <img alt="version" src="https://img.shields.io/badge/version-1.6.4-0F766E?style=for-the-badge"/>
   <img alt="node" src="https://img.shields.io/badge/node-%3E%3D18-38BDF8?style=for-the-badge&logo=node.js&logoColor=white"/>
   <img alt="pm" src="https://img.shields.io/badge/npm%20%7C%20pnpm%20%7C%20bun-ready-A78BFA?style=for-the-badge"/>
   <img alt="license" src="https://img.shields.io/badge/private-Tron-1E293B?style=for-the-badge"/>
@@ -98,6 +98,7 @@ your-project/
 Also installed:
 
 - Karpathy guidelines skill + always-on rules under `~/.claude/rules/`
+- **frontend-design** + **ui-ux-pro-max** skills (install-if-missing) — mandatory on any UI task; see `AGENTS.md`
 - **Caveman** (`caveman.md`): terse replies enforced every session ([JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman)) — always overwritten from the package
 - **codebase-memory-mcp** ([DeusData](https://github.com/DeusData/codebase-memory-mcp)): required MCP for graph-first codebase navigation — install is **guaranteed** on macOS, Linux, and Windows (`install.sh` / `install.ps1` + `Unblock-File`, retries, npm fallback). `postinstall` exits `1` if registration in `~/.claude/.mcp.json` still fails
 
@@ -199,7 +200,7 @@ npm uninstall @tron/claude-config
 
 ```
 tron-claude-config/
-├── package.json                 # v1.6.2 · postinstall entry
+├── package.json                 # v1.6.4 · postinstall entry
 ├── scripts/
 │   ├── postinstall.js           # install orchestrator
 │   ├── sync-ecc-rules.js        # manual ECC re-sync CLI
@@ -213,7 +214,8 @@ tron-claude-config/
 │   ├── claude/                  # settings, hooks, rules (incl. caveman)
 │   ├── git-hooks/               # pre-commit, pre-push
 │   └── skills/                  # commit-changes, code-review,
-│                                # security-review, make-pr, karpathy
+│                                # security-review, make-pr, karpathy,
+│                                # frontend-design, ui-ux-pro-max
 ├── docs/assets/                 # README visuals
 ├── HARNESS-GUIDE.md
 ├── MAINTAINER.md
