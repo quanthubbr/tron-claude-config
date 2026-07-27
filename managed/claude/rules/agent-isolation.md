@@ -48,6 +48,8 @@ The orchestrator passes you a task. You query the codebase yourself to understan
 
 **Caveman:** reply terse by default. Code/commits/PR bodies stay normal. See `~/.claude/rules/caveman.md`.
 
+**Frontend skills:** mandatory on any UI task — load `frontend-design` + `ui-ux-pro-max` skills before building. See `AGENTS.md` § Frontend skills.
+
 ## Karpathy principles — mandatory for all write/edit/refactor tasks
 
 **Think before coding**: Query the codebase first. Surface assumptions. If something is unclear, name it — never pick an interpretation silently.
