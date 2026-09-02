@@ -1,6 +1,6 @@
 # tron-claude-config — Maintainer Guide
 
-Owner playbook for the shared Claude enforcement harness (`@tron/claude-config` **v1.6.4**).
+Owner playbook for the shared Claude enforcement harness (`@tron/claude-config` **v1.6.5**).
 
 Consumer docs: [README.md](README.md) · Operator cheat sheet: [HARNESS-GUIDE.md](HARNESS-GUIDE.md)
 
@@ -12,9 +12,9 @@ On consumer `npm install` / `bun install` / `pnpm install`, `scripts/postinstall
 
 1. Copies managed Claude settings + hooks into `.claude/`
 2. Copies `AGENTS.md` and `scripts/setup-claude-harness.sh`
-3. Installs `.git/hooks/pre-commit` and `pre-push`
+3. Installs git `pre-commit` / `pre-push` hooks (via `git rev-parse --git-path hooks`, respects `core.hooksPath`)
 4. Syncs **scoped** ECC rules into `.claude/rules/ecc/` (detect stack → copy matching folders → prune stale ones)
-5. On developer machines (not CI): install-if-missing skills + Karpathy rules, gsd, caveman; **guarantee** codebase-memory-mcp via `scripts/lib/ensure-codebase-memory.js` (official DeusData installers for macOS/Linux + Windows, retries, npm fallback; `process.exit(1)` if still missing)
+5. On developer machines (not CI): install-if-missing skills + Karpathy rules, gsd, caveman; **attempt** codebase-memory-mcp via `scripts/lib/ensure-codebase-memory.js` (retries + npm fallback on Windows/WSL; warns instead of aborting postinstall if still missing)
 6. Thereafter, `bootstrap-check.sh` self-updates the package about once per day
 
 Non-technical users get gates without extra setup. Engineers get them on install.
@@ -77,9 +77,11 @@ tron-claude-config/
 | `~/.claude/commands/commit-changes.md` | **Package** (install-if-missing) | Must run `/security-review` + `/code-review` before token |
 | `~/.claude/commands/code-review.md` | **Package** (install-if-missing) | Required by `/commit-changes` |
 | `~/.claude/commands/security-review.md` | **Package** (install-if-missing) | Required by `/commit-changes` |
-| `~/.claude/commands/make-pr.md` | **Package** (install-if-missing) | PR template still enforced by hook |
+| `~/.claude/commands/make-pr.md` | **Package** (always synced) | PT-BR PR template; overwrites stale English skills |
 | `~/.claude/rules/caveman.md` | **Package** (always overwrite) | Caveman communication — mandatory every session |
-| `~/.claude/.mcp.json` (`codebase-memory*`) | **Package** (ensure on install) | Required MCP — hard-fail postinstall/setup if missing |
+| `~/.claude/.mcp.json` (`codebase-memory*`) | **Package** (ensure on install) | Required MCP — setup script warns if missing; postinstall no longer aborts |
+| `.claude/PR-TEMPLATE.md` | **Package** | Canonical PT-BR PR body scaffold |
+| `.claude/hooks/lib/pr-template-validate.js` | **Package** | PR body + `gh pr create` command validation |
 | `.claude/.pr-body-draft.md` | **Ephemeral** (gitignored) | Written by `/make-pr`, validated by hook |
 | `.claude/.commit-authorized` / `.pr-authorized` | **Ephemeral** (gitignored) | One-shot bypass tokens |
 | Repo-local `.claude/commands/*` (other) | **Repo** | Never overwritten |
@@ -172,6 +174,7 @@ node --check scripts/postinstall.js
 node --check scripts/lib/detect-project-scope.js
 node --check scripts/lib/install-ecc-rules.js
 node --check scripts/lib/ensure-codebase-memory.js
+node scripts/lib/pr-template-validate.test.js
 
 # codebase-memory readiness (no install if already registered)
 node -e "console.log(require('./scripts/lib/ensure-codebase-memory').isCodebaseMemoryReady())"
@@ -209,7 +212,7 @@ git push && git push --tags
 Pin a consumer in an emergency:
 
 ```json
-"@tron/claude-config": "git+https://github.com/zaqueu-1/tron-claude-config.git#v1.6.4"
+"@tron/claude-config": "git+https://github.com/zaqueu-1/tron-claude-config.git#v1.6.5"
 ```
 
 ---

@@ -3,7 +3,7 @@
 > Quick reference: what the harness installs, what it enforces, and how to operate it day to day.  
 > Consumer pitch + install story: [README.md](README.md) · Releases: [MAINTAINER.md](MAINTAINER.md)
 
-**Current package version:** `1.6.4`
+**Current package version:** `1.6.5`
 
 ---
 
@@ -33,7 +33,7 @@
 | `/code-review` | Required quality gate. Bundled (install-if-missing). |
 | `/security-review` | Required security gate. Bundled (install-if-missing). |
 | `/make-pr` | Only official PR path. Bundled (install-if-missing). |
-| PR body | `gh pr create` blocked unless draft has: Resumo, Principais mudanças, Arquitetura & implementação, Antes → Agora, Roteiro de teste |
+| PR body | `gh pr create` blocked unless `--body-file .claude/.pr-body-draft.md` with PT-BR headers (no inline `--body`, no `## Summary`) |
 | Terminal `git commit` | Blocked by `pre-commit` without token |
 | Push to `main`/`master` | Blocked by `pre-push` |
 | Missing tools | `codebase-memory-mcp`: auto-ensure (hard fail on install/setup). `gsd`: warning in session |
@@ -188,7 +188,7 @@ rm .git/hooks/pre-commit .git/hooks/pre-push
 
 ```
 tron-claude-config/
-├── package.json                              # v1.6.4
+├── package.json                              # v1.6.5
 ├── scripts/
 │   ├── postinstall.js                        # orchestrator
 │   ├── sync-ecc-rules.js                     # ECC re-sync CLI
