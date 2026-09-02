@@ -201,6 +201,62 @@ Integration checklist in a throwaway clone:
 
 ---
 
+## quanthubbr mirror sync
+
+[quanthubbr/tron-claude-config](https://github.com/quanthubbr/tron-claude-config) is an **org mirror** of this repo — not a GitHub fork, so there is no upstream PR button. Sync is manual or via GitHub Action.
+
+**Canonical repo:** `zaqueu-1/tron-claude-config` (development + releases)  
+**Mirror repo:** `quanthubbr/tron-claude-config` (quanthub consumer repos install from here)
+
+### One-time setup (maintainer machine)
+
+```bash
+git remote add quanthub https://github.com/quanthubbr/tron-claude-config.git
+```
+
+### Push canonical → mirror (after merge to `main`)
+
+```bash
+git checkout main && git pull origin main
+npm run sync:quanthub
+# or: bash scripts/sync-quanthub-fork.sh
+```
+
+Dry-run (ahead/behind only):
+
+```bash
+bash scripts/sync-quanthub-fork.sh --check
+```
+
+### Pull mirror-only commits → canonical (rare)
+
+If someone committed directly on quanthubbr:
+
+```bash
+bash scripts/sync-quanthub-fork.sh --pull
+git push origin main
+```
+
+### Automatic sync (GitHub Actions)
+
+Workflow `.github/workflows/sync-quanthub-mirror.yml` pushes `main` + tags on every merge to `main`.
+
+Add repo secret **`QUANTHUB_SYNC_TOKEN`** on `zaqueu-1/tron-claude-config`:
+- Fine-grained PAT with **Contents: Read and write** on `quanthubbr/tron-claude-config`
+- Or classic PAT with `repo` scope for that org repo
+
+Without the secret, the workflow skips sync (no failure).
+
+### quanthub consumer `package.json`
+
+```json
+"@tron/claude-config": "git+https://github.com/quanthubbr/tron-claude-config.git"
+```
+
+Pin versions with tags: `#v1.6.5`
+
+---
+
 ## Rollback
 
 ```bash
