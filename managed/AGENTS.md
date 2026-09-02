@@ -145,9 +145,11 @@ agent wants to commit
     → git commit (hook reads token, permits, deletes token)
 
 agent wants to open PR
+  → writes .claude/.pr-body-draft.md (PT-BR template — see .claude/PR-TEMPLATE.md)
+  → validates: node .claude/hooks/lib/validate-pr-body.js .claude/.pr-body-draft.md
   → creates .claude/.pr-authorized
   → runs /make-pr skill
-    → gh pr create (hook reads token, permits, deletes token)
+    → gh pr create --body-file .claude/.pr-body-draft.md (hook validates command + body; blocks --body inline and ## Summary)
 ```
 
 Direct `git commit` or `gh pr create` without the token is blocked by the git hooks.
