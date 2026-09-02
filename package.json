@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "postinstall": "node scripts/postinstall.js",
-    "ensure:codebase-memory": "node scripts/lib/ensure-codebase-memory.js"
+    "ensure:codebase-memory": "node scripts/lib/ensure-codebase-memory.js",
+    "sync:quanthub": "bash scripts/sync-quanthub-fork.sh"
   },
   "engines": {
     "node": ">=18.0.0"
