@@ -1,0 +1,4 @@
+*.sh text eol=lf
+managed/claude/hooks/** text eol=lf
+managed/git-hooks/** text eol=lf
+managed/setup-claude-harness.sh text eol=lf
