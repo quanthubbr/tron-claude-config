@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <img alt="version" src="https://img.shields.io/badge/version-1.6.4-0F766E?style=for-the-badge"/>
+  <img alt="version" src="https://img.shields.io/badge/version-1.6.5-0F766E?style=for-the-badge"/>
   <img alt="node" src="https://img.shields.io/badge/node-%3E%3D18-38BDF8?style=for-the-badge&logo=node.js&logoColor=white"/>
   <img alt="pm" src="https://img.shields.io/badge/npm%20%7C%20pnpm%20%7C%20bun-ready-A78BFA?style=for-the-badge"/>
   <img alt="license" src="https://img.shields.io/badge/private-Tron-1E293B?style=for-the-badge"/>
@@ -119,12 +119,13 @@ Raw `git commit` in the terminal? **Blocked** by `pre-commit`.
 
 ### PR path
 
-1. `/make-pr` writes `.claude/.pr-body-draft.md` with all 5 sections  
-2. Creates `.claude/.pr-authorized`  
-3. `gh pr create --body-file …` — hook validates token **and** headers  
+1. `/make-pr` writes `.claude/.pr-body-draft.md` from `.claude/PR-TEMPLATE.md` (5 PT-BR sections)
+2. Runs `node .claude/hooks/lib/validate-pr-body.js .claude/.pr-body-draft.md`
+3. Creates `.claude/.pr-authorized`
+4. `gh pr create --body-file .claude/.pr-body-draft.md` — hook validates token, **command**, and headers (blocks inline `--body` and English `## Summary`)
 
 Required sections: **Resumo**, **Principais mudanças**, **Arquitetura & implementação**, **Antes → Agora**, **Roteiro de teste**.  
-If a section doesn’t apply, keep the header and use `_N/A — não aplicável a esta mudança_`.
+English headers (`Summary`, `Test plan`, …) are **rejected**. If a section doesn’t apply, keep the header and use `_N/A — não aplicável a esta mudança_`.
 
 ### Scoped ECC rules
 
@@ -200,7 +201,7 @@ npm uninstall @tron/claude-config
 
 ```
 tron-claude-config/
-├── package.json                 # v1.6.4 · postinstall entry
+├── package.json                 # v1.6.5 · postinstall entry
 ├── scripts/
 │   ├── postinstall.js           # install orchestrator
 │   ├── sync-ecc-rules.js        # manual ECC re-sync CLI

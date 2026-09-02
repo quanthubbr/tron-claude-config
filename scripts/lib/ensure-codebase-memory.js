@@ -126,11 +126,29 @@ function runNpmFallback() {
   throw lastError || new Error('npm/pnpm/bun global install failed');
 }
 
+function isWsl() {
+  if (process.platform !== 'linux') return false;
+  try {
+    return fs.readFileSync('/proc/version', 'utf8').toLowerCase().includes('microsoft');
+  } catch {
+    return false;
+  }
+}
+
 function runPlatformInstaller() {
   if (process.platform === 'win32') {
     runWindowsInstaller();
   } else {
-    runUnixInstaller();
+    try {
+      runUnixInstaller();
+    } catch (err) {
+      if (isWsl()) {
+        log('codebase-memory-mcp: Unix installer failed in WSL — trying npm global fallback…');
+        runNpmFallback();
+        return;
+      }
+      throw err;
+    }
   }
 }
 
@@ -170,6 +188,20 @@ function ensureCodebaseMemoryMcp(options = {}) {
           emit('WARN: binary may not be on PATH — restart shell / Claude Code if MCP fails to start');
         }
         return { ok: true, attempts: attempt };
+      }
+
+      // Windows/WSL: try npm fallback between attempts when registration still missing
+      if (process.platform === 'win32' || isWsl()) {
+        try {
+          emit('codebase-memory-mcp: retrying via npm global install…');
+          runNpmFallback();
+          if (isCodebaseMemoryReady()) {
+            emit('codebase-memory-mcp installed via npm fallback');
+            return { ok: true, attempts: attempt };
+          }
+        } catch (npmErr) {
+          lastError = npmErr;
+        }
       }
 
       lastError = new Error('installer finished but ~/.claude/.mcp.json still missing codebase-memory entry');

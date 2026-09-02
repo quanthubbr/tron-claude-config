@@ -46,7 +46,9 @@
       "Bash(mv*)",
       "Bash(chmod*)",
       "Bash(python3*)",
-      "Bash(python*)"
+      "Bash(python*)",
+      "Bash(gh*)",
+      "Bash(touch*)"
     ]
   },
   "hooks": {

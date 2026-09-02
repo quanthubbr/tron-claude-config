@@ -20,11 +20,15 @@ const CONSUMER_ROOT = process.env.INIT_CWD || process.cwd();
 // Files that lived under node_modules/.../managed/ → consumer dest
 // Each entry: [src relative to PACKAGE_ROOT, dest relative to CONSUMER_ROOT]
 const MANAGED_FILES = [
-  ['managed/claude/settings.json',           '.claude/settings.json'],
-  ['managed/claude/hooks/bypass-check.sh',   '.claude/hooks/bypass-check.sh'],
-  ['managed/claude/hooks/bootstrap-check.sh','.claude/hooks/bootstrap-check.sh'],
-  ['managed/setup-claude-harness.sh',        'scripts/setup-claude-harness.sh'],
-  ['managed/AGENTS.md',                      'AGENTS.md'],
+  ['managed/claude/settings.json',                    '.claude/settings.json'],
+  ['managed/claude/PR-TEMPLATE.md',                   '.claude/PR-TEMPLATE.md'],
+  ['managed/claude/hooks/bypass-check.sh',            '.claude/hooks/bypass-check.sh'],
+  ['managed/claude/hooks/bootstrap-check.sh',         '.claude/hooks/bootstrap-check.sh'],
+  ['managed/claude/hooks/lib/pr-template-validate.js','.claude/hooks/lib/pr-template-validate.js'],
+  ['managed/claude/hooks/lib/validate-pr-body.js',    '.claude/hooks/lib/validate-pr-body.js'],
+  ['managed/claude/hooks/lib/pr-create-gate.js',      '.claude/hooks/lib/pr-create-gate.js'],
+  ['managed/setup-claude-harness.sh',                 'scripts/setup-claude-harness.sh'],
+  ['managed/AGENTS.md',                               'AGENTS.md'],
 ];
 
 // Each entry: [src relative to PACKAGE_ROOT, hook name]. The destination
@@ -180,19 +184,28 @@ function installGsd() {
 }
 
 function installCodebaseMemoryMcp() {
-  // Required by agent-isolation / AGENTS.md — must be registered in ~/.claude/.mcp.json
+  // Required by agent-isolation / AGENTS.md — should be registered in ~/.claude/.mcp.json
   // Official installers: https://github.com/DeusData/codebase-memory-mcp (macOS/Linux + Windows)
+  // Non-fatal here: a failed MCP install must not block copying hooks into consumer repos
+  // (especially on Windows/WSL where PowerShell/curl installers often fail on first run).
   const result = ensureCodebaseMemoryMcp();
-  if (!result.ok) {
-    log('FATAL: codebase-memory-mcp is required and could not be installed');
-    process.exit(1);
-  }
   if (result.alreadyReady) {
     log('codebase-memory-mcp already registered');
+    return result;
   }
+  if (result.ok) {
+    return result;
+  }
+  log('WARN: codebase-memory-mcp could not be installed automatically');
+  log('WARN: run manually: node node_modules/@tron/claude-config/scripts/lib/ensure-codebase-memory.js');
+  return result;
 }
 
 function installCaveman() {
+  if (process.platform === 'win32') {
+    log('WARN: caveman auto-install skipped on native Windows — use WSL/Git Bash or install from https://github.com/JuliusBrussee/caveman');
+    return;
+  }
   // Check if caveman skill already present in any known location
   const home = os.homedir();
   const knownPaths = [
@@ -249,12 +262,12 @@ function installSecurityReviewSkill() {
 }
 
 function installMakePrSkill() {
+  // Always sync — enforcement contract; stale English "Summary" skills were bypassing the PT-BR template.
   const dest = path.join(os.homedir(), '.claude', 'commands', 'make-pr.md');
-  if (fs.existsSync(dest)) return;
   const src = path.join(PACKAGE_ROOT, 'managed', 'skills', 'make-pr', 'SKILL.md');
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.copyFileSync(src, dest);
-  log('make-pr skill installed → ~/.claude/commands/make-pr.md');
+  log('make-pr skill synced → ~/.claude/commands/make-pr.md');
 }
 
 function installFrontendDesignSkill() {
@@ -329,6 +342,23 @@ function installCavemanRule() {
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
+const isConsumerRepo = fs.existsSync(path.join(CONSUMER_ROOT, '.git'));
+const isSelfInstall = path.resolve(CONSUMER_ROOT) === path.resolve(PACKAGE_ROOT);
+
+// Consumer-repo hooks/settings first — must succeed even when global tool installs fail (Windows/WSL).
+if (isConsumerRepo && !isSelfInstall) {
+  for (const [src, dest] of MANAGED_FILES) {
+    copyFile(src, dest);
+  }
+
+  if (!IS_CI) {
+    installEccRules(CONSUMER_ROOT, { dryRun: DRY, silent: DRY });
+  }
+
+  installGitHooks();
+  installGitIgnoreEntries();
+}
+
 // Machine-level tools: install for developers, skip in CI
 if (!IS_CI) {
   installGsd();
@@ -346,26 +376,3 @@ if (!IS_CI) {
   installHarnessPatterns();
   installCavemanRule();
 }
-
-// Consumer-repo-specific setup
-const isConsumerRepo = fs.existsSync(path.join(CONSUMER_ROOT, '.git'));
-if (!isConsumerRepo) process.exit(0);
-
-// Also skip if CONSUMER_ROOT === PACKAGE_ROOT (self-install)
-if (path.resolve(CONSUMER_ROOT) === path.resolve(PACKAGE_ROOT)) process.exit(0);
-
-// Copy managed files
-for (const [src, dest] of MANAGED_FILES) {
-  copyFile(src, dest);
-}
-
-// ECC rules: project-scoped sync (add/remove folders based on consumer package.json)
-if (!IS_CI) {
-  installEccRules(CONSUMER_ROOT, { dryRun: DRY, silent: DRY });
-}
-
-// Install git hooks
-installGitHooks();
-
-// Update .gitignore
-installGitIgnoreEntries();

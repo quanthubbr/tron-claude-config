@@ -7,8 +7,26 @@ SILENT="${1:-}"
 log() { [ "$SILENT" != "--silent" ] && echo "$@"; }
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-GIT_HOOKS_DIR="$REPO_ROOT/.git/hooks"
+cd "$REPO_ROOT" || exit 1
+
 SOURCE_HOOKS_DIR="$REPO_ROOT/node_modules/@tron/claude-config/managed/git-hooks"
+if [ ! -d "$SOURCE_HOOKS_DIR" ]; then
+  SOURCE_HOOKS_DIR="$REPO_ROOT/managed/git-hooks"
+fi
+
+# Resolve hooks dir the same way postinstall.js does (worktrees + core.hooksPath).
+GIT_HOOKS_DIR=""
+if git rev-parse --git-dir >/dev/null 2>&1; then
+  if git config --get core.hooksPath >/dev/null 2>&1; then
+    log "git hooks skipped: core.hooksPath is managed by another tool"
+    GIT_HOOKS_DIR=""
+  else
+    HOOKS_REL=$(git rev-parse --git-path hooks 2>/dev/null)
+    if [ -n "$HOOKS_REL" ]; then
+      GIT_HOOKS_DIR="$REPO_ROOT/$HOOKS_REL"
+    fi
+  fi
+fi
 
 # Package manager detection — used for install instructions
 detect_pm() {
@@ -37,21 +55,26 @@ fi
 # 1. Install git hooks
 log ""
 log "📎 Installing git hooks..."
-for hook in pre-commit pre-push; do
-  src="$SOURCE_HOOKS_DIR/$hook"
-  dst="$GIT_HOOKS_DIR/$hook"
-  if [ -f "$src" ]; then
-    cp "$src" "$dst"
-    chmod +x "$dst"
-    log "   ✓ $hook installed"
-  else
-    log "   ⚠ $src not found — skipping $hook"
-  fi
-done
+if [ -z "$GIT_HOOKS_DIR" ]; then
+  log "   ⚠ skipped (core.hooksPath set or not a git repo)"
+else
+  mkdir -p "$GIT_HOOKS_DIR"
+  for hook in pre-commit pre-push; do
+    src="$SOURCE_HOOKS_DIR/$hook"
+    dst="$GIT_HOOKS_DIR/$hook"
+    if [ -f "$src" ]; then
+      cp "$src" "$dst"
+      chmod +x "$dst"
+      log "   ✓ $hook installed"
+    else
+      log "   ⚠ $src not found — skipping $hook"
+    fi
+  done
+fi
 
 # 2. Ensure .claude directory and token files are gitignored
 GITIGNORE="$REPO_ROOT/.gitignore"
-for entry in ".claude/.commit-authorized" ".claude/.pr-authorized"; do
+for entry in ".claude/.commit-authorized" ".claude/.pr-authorized" ".claude/.pr-body-draft.md"; do
   if ! grep -qF "$entry" "$GITIGNORE" 2>/dev/null; then
     echo "$entry" >> "$GITIGNORE"
     log "   ✓ Added $entry to .gitignore"
