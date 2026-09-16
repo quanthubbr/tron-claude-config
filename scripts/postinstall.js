@@ -280,6 +280,32 @@ function installFrontendDesignSkill() {
   log('frontend-design skill installed → ~/.claude/skills/frontend-design/');
 }
 
+function installIssueBoardSkill() {
+  // Always sync the code files so fixes reach everyone; never touch config.json or data/,
+  // which hold each person's board and cached classification.
+  const destDir = path.join(os.homedir(), '.claude', 'skills', 'issue-board');
+  const srcDir = path.join(PACKAGE_ROOT, 'managed', 'skills', 'issue-board');
+  const existing = path.join(destDir, 'SKILL.md');
+  if (fs.existsSync(existing) && !/^name: issue-board\r?$/m.test(fs.readFileSync(existing, 'utf8'))) {
+    log('WARN: ~/.claude/skills/issue-board/ holds a different skill — left untouched');
+    return;
+  }
+  if (DRY) {
+    log('DRY: would sync issue-board skill → ~/.claude/skills/issue-board/');
+    return;
+  }
+  try {
+    fs.mkdirSync(destDir, { recursive: true });
+    for (const file of ['SKILL.md', 'board.mjs', 'config.example.json']) {
+      fs.copyFileSync(path.join(srcDir, file), path.join(destDir, file));
+    }
+    log('issue-board skill synced → ~/.claude/skills/issue-board/ (board is set in config.json on first use)');
+  } catch (err) {
+    // Optional tool: a copy failure (locked file on Windows) must not break npm install.
+    log(`WARN: issue-board skill not synced: ${err.message}`);
+  }
+}
+
 function installUiUxProMaxSkill() {
   const skillDir = path.join(os.homedir(), '.claude', 'skills', 'ui-ux-pro-max');
   const skillMd = path.join(skillDir, 'SKILL.md');
@@ -370,6 +396,7 @@ if (!IS_CI) {
   installSecurityReviewSkill();
   installMakePrSkill();
   installFrontendDesignSkill();
+  installIssueBoardSkill();
   installUiUxProMaxSkill();
   installEnforcementRule();
   installAgentIsolationRule();
