@@ -310,6 +310,31 @@ function installUiUxProMaxSkill() {
   }
 }
 
+function installDocSkill() {
+  // Always sync the code files so fixes reach everyone. The skill keeps no per-person state.
+  const destDir = path.join(os.homedir(), '.claude', 'skills', 'doc');
+  const srcDir = path.join(PACKAGE_ROOT, 'managed', 'skills', 'doc');
+  const existing = path.join(destDir, 'SKILL.md');
+  if (fs.existsSync(existing) && !/^name: doc\r?$/m.test(fs.readFileSync(existing, 'utf8'))) {
+    log('WARN: ~/.claude/skills/doc/ holds a different skill — left untouched');
+    return;
+  }
+  if (DRY) {
+    log('DRY: would sync doc skill → ~/.claude/skills/doc/');
+    return;
+  }
+  try {
+    fs.mkdirSync(destDir, { recursive: true });
+    for (const file of ['SKILL.md', 'doc.mjs']) {
+      fs.copyFileSync(path.join(srcDir, file), path.join(destDir, file));
+    }
+    log('doc skill synced → ~/.claude/skills/doc/');
+  } catch (err) {
+    // Optional tool: a copy failure (locked file on Windows) must not break npm install.
+    log(`WARN: doc skill not synced: ${err.message}`);
+  }
+}
+
 function installEnforcementRule() {
   const dest = path.join(os.homedir(), '.claude', 'rules', 'harness-enforcement.md');
   const src = path.join(PACKAGE_ROOT, 'managed', 'claude', 'rules', 'harness-enforcement.md');
@@ -375,4 +400,5 @@ if (!IS_CI) {
   installAgentIsolationRule();
   installHarnessPatterns();
   installCavemanRule();
+  installDocSkill();
 }
