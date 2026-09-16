@@ -53,6 +53,7 @@
 | frontend-design | `~/.claude/skills/frontend-design/` | install-if-missing; mandatory on UI |
 | ui-ux-pro-max | `~/.claude/skills/ui-ux-pro-max/` | CLI full install, SKILL.md fallback |
 | gsd | global `$PATH` | `npm install -g @opengsd/gsd-pi` (or bun/pnpm) |
+| doc | `~/.claude/skills/doc/` | always synced (`SKILL.md`, `doc.mjs`); no per-person state |
 | caveman skill/plugin | `~/.claude/skills/caveman/` (or plugin) | Official install script |
 | **Caveman rule (enforced)** | `~/.claude/rules/caveman.md` | Always overwritten from package — terse replies mandatory |
 | codebase-memory-mcp | `~/.claude/.mcp.json` | **Required** — `ensure-codebase-memory.js` (official install.sh / install.ps1 + Unblock-File on Windows; npm fallback; postinstall exits 1 if missing) |
@@ -214,6 +215,7 @@ tron-claude-config/
 │   │   └── pre-push
 │   └── skills/
 │       ├── commit-changes/SKILL.md
+│       ├── doc/{SKILL.md,doc.mjs}
 │       ├── code-review/SKILL.md
 │       ├── security-review/SKILL.md
 │       ├── make-pr/SKILL.md

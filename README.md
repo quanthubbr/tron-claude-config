@@ -101,6 +101,7 @@ Also installed:
 - **frontend-design** + **ui-ux-pro-max** skills (install-if-missing) — mandatory on any UI task; see `AGENTS.md`
 - **Caveman** (`caveman.md`): terse replies enforced every session ([JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman)) — always overwritten from the package
 - **codebase-memory-mcp** ([DeusData](https://github.com/DeusData/codebase-memory-mcp)): required MCP for graph-first codebase navigation — install is **guaranteed** on macOS, Linux, and Windows (`install.sh` / `install.ps1` + `Unblock-File`, retries, npm fallback). `postinstall` exits `1` if registration in `~/.claude/.mcp.json` still fails
+- **doc** skill (always synced) — `/doc` finds the repo's Obsidian documentation vault (any folder with `.obsidian/`), reads the latest session note or the current conversation, flags notes whose `file:line` references broke or point to changed code, and applies only the doc changes the user approves (never commits). No vault: warns and offers a minimal one. Works in any project
 
 Existing customized commands are **never overwritten**.
 
