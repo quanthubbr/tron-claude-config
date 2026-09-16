@@ -100,8 +100,10 @@ Also installed:
 - Karpathy guidelines skill + always-on rules under `~/.claude/rules/`
 - **frontend-design** + **ui-ux-pro-max** skills (install-if-missing) — mandatory on any UI task; see `AGENTS.md`
 - **session-handoff** skill (install-if-missing) — writes the session context as an actionable note in a central Obsidian vault (one folder per repo, never inside a repository) and reads it back to resume; the vault path lives in `~/.claude/skills/session-handoff/config.json`, asked once on first use
+- **issue-board** skill (always synced) — shows the open issues of any GitHub Project (v2) as terminal tables, split by type, priority, difficulty, status or a board field; the agent classifies what the board leaves empty. Requires `gh auth login -s read:project`. The board lives in `~/.claude/skills/issue-board/config.json`, asked once on first use, and is never overwritten
 - **Caveman** (`caveman.md`): terse replies enforced every session ([JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman)) — always overwritten from the package
 - **codebase-memory-mcp** ([DeusData](https://github.com/DeusData/codebase-memory-mcp)): required MCP for graph-first codebase navigation — install is **guaranteed** on macOS, Linux, and Windows (`install.sh` / `install.ps1` + `Unblock-File`, retries, npm fallback). `postinstall` exits `1` if registration in `~/.claude/.mcp.json` still fails
+- **doc** skill (always synced) — `/doc` finds the repo's Obsidian documentation vault (any folder with `.obsidian/`), reads the latest session note or the current conversation, flags notes whose `file:line` references broke or point to changed code, and applies only the doc changes the user approves (never commits). No vault: warns and offers a minimal one. Works in any project
 
 Existing customized commands are **never overwritten**.
 
@@ -217,7 +219,8 @@ tron-claude-config/
 │   ├── git-hooks/               # pre-commit, pre-push
 │   └── skills/                  # commit-changes, code-review,
 │                                # security-review, make-pr, karpathy,
-│                                # frontend-design, ui-ux-pro-max
+│                                # frontend-design, ui-ux-pro-max,
+│                                # issue-board
 ├── docs/assets/                 # README visuals
 ├── HARNESS-GUIDE.md
 ├── MAINTAINER.md

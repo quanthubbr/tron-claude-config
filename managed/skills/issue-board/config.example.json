@@ -1,0 +1,9 @@
+{
+  "owner": "sua-org-ou-usuario",
+  "projectNumber": 1,
+  "fields": { "status": "Status", "priority": "Priority", "size": "Size", "group": "" },
+  "doneStatuses": ["Done"],
+  "priorityMap": {},
+  "sizeMap": {},
+  "types": []
+}
