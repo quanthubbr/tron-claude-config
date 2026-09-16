@@ -51,6 +51,7 @@
 | Agent isolation / harness patterns | `~/.claude/rules/` | Copied from package |
 | Karpathy skill | `~/.claude/skills/andrej-karpathy-skills/` | Copied from package |
 | frontend-design | `~/.claude/skills/frontend-design/` | install-if-missing; mandatory on UI |
+| session-handoff | `~/.claude/skills/session-handoff/` | install-if-missing; session notes go to a central Obsidian vault set in `config.json` |
 | issue-board | `~/.claude/skills/issue-board/` | always synced (`SKILL.md`, `board.mjs`, `config.example.json`); `config.json` and `data/` stay per person |
 | ui-ux-pro-max | `~/.claude/skills/ui-ux-pro-max/` | CLI full install, SKILL.md fallback |
 | gsd | global `$PATH` | `npm install -g @opengsd/gsd-pi` (or bun/pnpm) |
