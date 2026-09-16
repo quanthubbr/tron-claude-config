@@ -99,6 +99,7 @@ Also installed:
 
 - Karpathy guidelines skill + always-on rules under `~/.claude/rules/`
 - **frontend-design** + **ui-ux-pro-max** skills (install-if-missing) — mandatory on any UI task; see `AGENTS.md`
+- **session-handoff** skill (install-if-missing) — writes the session context as an actionable note in a central Obsidian vault (one folder per repo, never inside a repository) and reads it back to resume; the vault path lives in `~/.claude/skills/session-handoff/config.json`, asked once on first use
 - **Caveman** (`caveman.md`): terse replies enforced every session ([JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman)) — always overwritten from the package
 - **codebase-memory-mcp** ([DeusData](https://github.com/DeusData/codebase-memory-mcp)): required MCP for graph-first codebase navigation — install is **guaranteed** on macOS, Linux, and Windows (`install.sh` / `install.ps1` + `Unblock-File`, retries, npm fallback). `postinstall` exits `1` if registration in `~/.claude/.mcp.json` still fails
 

@@ -270,6 +270,16 @@ function installMakePrSkill() {
   log('make-pr skill synced → ~/.claude/commands/make-pr.md');
 }
 
+function installSessionHandoffSkill() {
+  const destDir = path.join(os.homedir(), '.claude', 'skills', 'session-handoff');
+  const dest = path.join(destDir, 'SKILL.md');
+  if (fs.existsSync(dest)) return;
+  const src = path.join(PACKAGE_ROOT, 'managed', 'skills', 'session-handoff', 'SKILL.md');
+  fs.mkdirSync(destDir, { recursive: true });
+  fs.copyFileSync(src, dest);
+  log('session-handoff skill installed → ~/.claude/skills/session-handoff/ (set sessionsVault in config.json on first use)');
+}
+
 function installFrontendDesignSkill() {
   const destDir = path.join(os.homedir(), '.claude', 'skills', 'frontend-design');
   const dest = path.join(destDir, 'SKILL.md');
@@ -369,6 +379,7 @@ if (!IS_CI) {
   installCodeReviewSkill();
   installSecurityReviewSkill();
   installMakePrSkill();
+  installSessionHandoffSkill();
   installFrontendDesignSkill();
   installUiUxProMaxSkill();
   installEnforcementRule();
