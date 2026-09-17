@@ -7,6 +7,8 @@ description: Mostra no terminal, em tabelas, as issues abertas que o dev tem par
 
 Tudo roda por `node board.mjs`, ao lado deste arquivo. Não tem dependências: basta Node 18+ e `gh`.
 
+Para ver, prefira `render.py`, também ao lado: desenha as mesmas tabelas com o pacote Python `rich` (badges de prioridade, cor por status, número da issue clicável). Aceita as mesmas flags do `render`. Sem `rich` instalado, ele avisa e cai no render do `board.mjs`. Para instalar: `pip install rich`.
+
 A skill não conhece nenhum projeto. O board (owner e número), os nomes dos campos e a lista de tipos moram em `config.json`, que é por pessoa e nunca vai versionado. Sem `types` no config, valem os tipos neutros embutidos: bug, feature, interface, dados, performance, segurança, infra, outros.
 
 ## 1. Pré-requisitos
@@ -43,7 +45,8 @@ node $S/board.mjs fetch        # lê o board; padrão = issues atribuídas a que
 node $S/board.mjs pending      # JSON com os tipos válidos e as issues ainda sem classificação
 # classifique (seção 3), grave num arquivo temporário FORA do repo (ex.: $TMPDIR) e aplique:
 node $S/board.mjs classify <arquivo.json>
-node $S/board.mjs render       # tabelas agrupadas por tipo
+python $S/render.py           # tabelas agrupadas por tipo (python3 ou py -3 se python faltar)
+node $S/board.mjs render       # mesmo conteúdo, sem rich; --json devolve a visão para outro renderizador
 ```
 
 Flags de escopo e filtro (valem para `pending` e `render`):
@@ -57,7 +60,7 @@ Flags de escopo e filtro (valem para `pending` e `render`):
 
 O cache fica em `data/<owner>-<número>/`, então boards diferentes não se misturam.
 
-A saída do Bash nem sempre aparece para o usuário. **Depois de rodar o `render`, cole a tabela na resposta dentro de um bloco ```text```.** Outra opção é sugerir `! node ~/.claude/skills/issue-board/board.mjs render`, que mostra direto e com cores.
+A saída do Bash nem sempre aparece para o usuário. **Depois de rodar o `render`, cole a tabela na resposta dentro de um bloco ```text```.** Outra opção é sugerir `! python ~/.claude/skills/issue-board/render.py`, que mostra direto, com cores e links.
 
 ## 3. Como classificar
 

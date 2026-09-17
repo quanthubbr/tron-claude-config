@@ -15,7 +15,7 @@ const BODY_LIMIT = 1500
 const EXIT_AUTH = 2
 const EXIT_CONFIG = 3
 const EXIT_NO_GH = 4
-const BOOLEAN_FLAGS = new Set(['all', 'color', 'no-color'])
+const BOOLEAN_FLAGS = new Set(['all', 'color', 'no-color', 'json'])
 const MIN_TITLE_WIDTH = 20
 
 const DEFAULT_FIELDS = { status: 'Status', priority: 'Priority', size: 'Size', group: '' }
@@ -292,7 +292,10 @@ const GROUPS = {
   repo: (r) => r.repo,
 }
 
-function cmdRender(config, flags) {
+const rank = (p) => (PRIORITIES.includes(p) ? PRIORITIES.indexOf(p) : 9)
+
+// Filtra, agrupa e ordena: a mesma visão serve à tabela ANSI e ao --json do render.py.
+function buildView(config, flags) {
   const classes = readJson(join(config.dataDir, 'classification.json'), {})
   const list = (v) => (typeof v === 'string' ? v.split(',').map((s) => fold(s.trim())) : null)
   const filters = [
@@ -306,17 +309,49 @@ function cmdRender(config, flags) {
   const rows = scopeItems(config, flags)
     .map((i) => resolve(i, classes, config))
     .filter((r) => filters.every(([want, get]) => !want || want.some((w) => fold(get(r)).includes(w))))
+  const groupBy = GROUPS[flags.por] ? flags.por : 'tipo'
+  const order = groupBy === 'tipo' ? [...config.types.map((t) => t.name), 'Sem tipo'] : null
+  const groups = new Map()
+  for (const r of rows) {
+    const g = GROUPS[groupBy](r)
+    groups.set(g, [...(groups.get(g) || []), r])
+  }
+  const names = [...groups.keys()].sort((a, b) => (order ? order.indexOf(a) - order.indexOf(b) : String(a).localeCompare(String(b))))
+  return {
+    board: `${config.owner}#${config.projectNumber}`,
+    user: flags.all ? null : flags.user || readJson(join(config.dataDir, 'items.json'), {}).me || null,
+    groupBy,
+    groupField: config.fields.group || null,
+    total: rows.length,
+    counts: Object.fromEntries(PRIORITIES.map((p) => [p, rows.filter((r) => r.priority === p).length])),
+    groups: names.map((name) => ({
+      name,
+      rows: groups
+        .get(name)
+        .sort((a, b) => rank(a.priority) - rank(b.priority) || (a.difficulty || 9) - (b.difficulty || 9))
+        .map(({ key, repo, number, title, url, status, group, type, priority, prioritySuggested, difficulty, difficultySuggested, note }) => ({
+          key, repo, number, title, url, status, group, type, priority, prioritySuggested, difficulty, difficultySuggested, note,
+        })),
+    })),
+  }
+}
+
+function cmdRender(config, flags) {
+  const view = buildView(config, flags)
+  if (flags.json) {
+    console.log(JSON.stringify(view))
+    return
+  }
   const paint = makePaint(flags.color === true || (flags['no-color'] === undefined && process.stdout.isTTY))
-  if (!rows.length) {
+  if (!view.total) {
     console.log('Nenhuma issue nesse escopo. Tente --all para ver o board inteiro.')
     return
   }
 
-  const counts = PRIORITIES.map((p) => `${p} ${rows.filter((r) => r.priority === p).length}`).join('  ·  ')
-  console.log(paint.bold(`${rows.length} issues  |  ${counts}`))
+  const counts = PRIORITIES.map((p) => `${p} ${view.counts[p]}`).join('  ·  ')
+  console.log(paint.bold(`${view.total} issues  |  ${counts}`))
   console.log(paint.dim('Dificuldade ■□□ fácil  ■■□ média  ■■■ difícil   ~ = sugestão do agente (campo vazio no board)\n'))
 
-  const groupBy = GROUPS[flags.por] ? flags.por : 'tipo'
   const width = Math.max(60, Math.min(process.stdout.columns || 140, 180))
   const title = { label: 'Título', width: 0, get: (r) => (r.note ? `${r.title} [${r.note}]` : r.title) }
   const columns = [
@@ -327,8 +362,8 @@ function cmdRender(config, flags) {
     { label: 'Status', width: 12, get: (r) => r.status || '—' },
   ]
   const optional = []
-  if (config.fields.group) optional.push({ label: config.fields.group, width: 10, get: (r) => r.group || '—' })
-  if (groupBy !== 'tipo') optional.push({ label: 'Tipo', width: 18, get: (r) => r.type })
+  if (view.groupField) optional.push({ label: view.groupField, width: 10, get: (r) => r.group || '—' })
+  if (view.groupBy !== 'tipo') optional.push({ label: 'Tipo', width: 18, get: (r) => r.type })
   const spare = (cols) => width - cols.reduce((sum, c) => sum + c.width + 3, 0) - 1
   // Terminal estreito: a coluna opcional sai antes de o título ficar ilegível.
   for (const col of optional) {
@@ -336,18 +371,9 @@ function cmdRender(config, flags) {
   }
   title.width = Math.max(MIN_TITLE_WIDTH, spare(columns))
 
-  const order = groupBy === 'tipo' ? [...config.types.map((t) => t.name), 'Sem tipo'] : null
-  const groups = new Map()
-  for (const r of rows) {
-    const g = GROUPS[groupBy](r)
-    groups.set(g, [...(groups.get(g) || []), r])
-  }
-  const names = [...groups.keys()].sort((a, b) => (order ? order.indexOf(a) - order.indexOf(b) : String(a).localeCompare(String(b))))
-  const rank = (p) => (PRIORITIES.includes(p) ? PRIORITIES.indexOf(p) : 9)
-  for (const name of names) {
-    const groupRows = groups.get(name).sort((a, b) => rank(a.priority) - rank(b.priority) || (a.difficulty || 9) - (b.difficulty || 9))
-    console.log(paint.bold(`▌ ${name}  (${groupRows.length})`))
-    console.log(table(groupRows, columns, paint))
+  for (const group of view.groups) {
+    console.log(paint.bold(`▌ ${group.name}  (${group.rows.length})`))
+    console.log(table(group.rows, columns, paint))
     console.log('')
   }
 }
@@ -356,7 +382,7 @@ const { flags, positional } = parseArgs(process.argv.slice(2))
 const command = positional.shift()
 const commands = { fetch: cmdFetch, pending: cmdPending, classify: (c) => cmdClassify(c, positional), render: cmdRender }
 if (!commands[command]) {
-  fail('Uso: node board.mjs <fetch|pending|classify|render> [--owner x --project-number n] [--all] [--user login] [--por tipo|prioridade|dificuldade|campo|status|repo] [--prioridade P0,P1] [--dificuldade fácil] [--tipo bug] [--campo valor] [--repo nome] [--status ready] [--color|--no-color]')
+  fail('Uso: node board.mjs <fetch|pending|classify|render> [--owner x --project-number n] [--all] [--user login] [--por tipo|prioridade|dificuldade|campo|status|repo] [--prioridade P0,P1] [--dificuldade fácil] [--tipo bug] [--campo valor] [--repo nome] [--status ready] [--color|--no-color] [--json]')
 }
 if (command === 'fetch') requireAuth()
 commands[command](loadConfig(flags), flags)

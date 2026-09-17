@@ -52,7 +52,7 @@
 | Karpathy skill | `~/.claude/skills/andrej-karpathy-skills/` | Copied from package |
 | frontend-design | `~/.claude/skills/frontend-design/` | install-if-missing; mandatory on UI |
 | session-handoff | `~/.claude/skills/session-handoff/` | install-if-missing; session notes go to a central Obsidian vault set in `config.json` |
-| issue-board | `~/.claude/skills/issue-board/` | always synced (`SKILL.md`, `board.mjs`, `config.example.json`); `config.json` and `data/` stay per person |
+| issue-board | `~/.claude/skills/issue-board/` | always synced (`SKILL.md`, `board.mjs`, `render.py`, `config.example.json`); `config.json` and `data/` stay per person |
 | ui-ux-pro-max | `~/.claude/skills/ui-ux-pro-max/` | CLI full install, SKILL.md fallback |
 | gsd | global `$PATH` | `npm install -g @opengsd/gsd-pi` (or bun/pnpm) |
 | doc | `~/.claude/skills/doc/` | always synced (`SKILL.md`, `doc.mjs`); no per-person state |
@@ -222,7 +222,7 @@ tron-claude-config/
 │       ├── security-review/SKILL.md
 │       ├── make-pr/SKILL.md
 │       ├── frontend-design/SKILL.md
-│       ├── issue-board/{SKILL.md,board.mjs,config.example.json}
+│       ├── issue-board/{SKILL.md,board.mjs,render.py,config.example.json}
 │       ├── ui-ux-pro-max/SKILL.md
 │       └── andrej-karpathy-skills/.../SKILL.md
 ├── docs/assets/                              # README visuals

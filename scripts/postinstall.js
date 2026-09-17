@@ -306,7 +306,7 @@ function installIssueBoardSkill() {
   }
   try {
     fs.mkdirSync(destDir, { recursive: true });
-    for (const file of ['SKILL.md', 'board.mjs', 'config.example.json']) {
+    for (const file of ['SKILL.md', 'board.mjs', 'render.py', 'config.example.json']) {
       fs.copyFileSync(path.join(srcDir, file), path.join(destDir, file));
     }
     log('issue-board skill synced → ~/.claude/skills/issue-board/ (board is set in config.json on first use)');
