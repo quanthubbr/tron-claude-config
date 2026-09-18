@@ -123,7 +123,7 @@ Raw `git commit` in the terminal? **Blocked** by `pre-commit`.
 ### PR path
 
 1. `/make-pr` writes `.claude/.pr-body-draft.md` from `.claude/PR-TEMPLATE.md` (5 PT-BR sections)
-2. Runs `node .claude/hooks/lib/validate-pr-body.js .claude/.pr-body-draft.md`
+2. Runs `node .claude/hooks/lib/validate-pr-body.cjs .claude/.pr-body-draft.md`
 3. Creates `.claude/.pr-authorized`
 4. `gh pr create --body-file .claude/.pr-body-draft.md` — hook validates token, **command**, and headers (blocks inline `--body` and English `## Summary`)
 

@@ -10,7 +10,7 @@
 const {
   readHookCommandFromStdin,
   validateGhPrCreateCommand,
-} = require('./pr-template-validate');
+} = require('./pr-template-validate.cjs');
 
 function block(reason) {
   process.stderr.write(JSON.stringify({ decision: 'block', reason }) + '\n');

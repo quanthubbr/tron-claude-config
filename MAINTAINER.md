@@ -81,7 +81,7 @@ tron-claude-config/
 | `~/.claude/rules/caveman.md` | **Package** (always overwrite) | Caveman communication — mandatory every session |
 | `~/.claude/.mcp.json` (`codebase-memory*`) | **Package** (ensure on install) | Required MCP — setup script warns if missing; postinstall no longer aborts |
 | `.claude/PR-TEMPLATE.md` | **Package** | Canonical PT-BR PR body scaffold |
-| `.claude/hooks/lib/pr-template-validate.js` | **Package** | PR body + `gh pr create` command validation |
+| `.claude/hooks/lib/pr-template-validate.cjs` | **Package** | PR body + `gh pr create` command validation |
 | `.claude/.pr-body-draft.md` | **Ephemeral** (gitignored) | Written by `/make-pr`, validated by hook |
 | `.claude/.commit-authorized` / `.pr-authorized` | **Ephemeral** (gitignored) | One-shot bypass tokens |
 | Repo-local `.claude/commands/*` (other) | **Repo** | Never overwritten |

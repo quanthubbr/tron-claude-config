@@ -24,9 +24,9 @@ const MANAGED_FILES = [
   ['managed/claude/PR-TEMPLATE.md',                   '.claude/PR-TEMPLATE.md'],
   ['managed/claude/hooks/bypass-check.sh',            '.claude/hooks/bypass-check.sh'],
   ['managed/claude/hooks/bootstrap-check.sh',         '.claude/hooks/bootstrap-check.sh'],
-  ['managed/claude/hooks/lib/pr-template-validate.js','.claude/hooks/lib/pr-template-validate.js'],
-  ['managed/claude/hooks/lib/validate-pr-body.js',    '.claude/hooks/lib/validate-pr-body.js'],
-  ['managed/claude/hooks/lib/pr-create-gate.js',      '.claude/hooks/lib/pr-create-gate.js'],
+  ['managed/claude/hooks/lib/pr-template-validate.cjs','.claude/hooks/lib/pr-template-validate.cjs'],
+  ['managed/claude/hooks/lib/validate-pr-body.cjs',    '.claude/hooks/lib/validate-pr-body.cjs'],
+  ['managed/claude/hooks/lib/pr-create-gate.cjs',      '.claude/hooks/lib/pr-create-gate.cjs'],
   ['managed/setup-claude-harness.sh',                 'scripts/setup-claude-harness.sh'],
   ['managed/AGENTS.md',                               'AGENTS.md'],
 ];

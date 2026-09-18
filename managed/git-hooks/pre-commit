@@ -44,6 +44,9 @@ scan_staged() {
 if [ -f "$TOKEN" ]; then
   # Token created by /commit-changes skill — allow through, but still scan.
   scan_staged || exit 1
+  # One-shot: the token authorizes this commit only. Left on disk it would
+  # authorize every later commit and push too (tron-charts-backend#1232).
+  rm -f "$TOKEN"
   exit 0
 fi
 

@@ -10,7 +10,7 @@ const {
   validateGhPrCreateCommand,
   hasInlineBodyFlag,
   extractBodyFilePath,
-} = require(path.join(__dirname, '../../managed/claude/hooks/lib/pr-template-validate'));
+} = require(path.join(__dirname, '../../managed/claude/hooks/lib/pr-template-validate.cjs'));
 
 const VALID_BODY = `## Resumo
 Objetivo da PR.

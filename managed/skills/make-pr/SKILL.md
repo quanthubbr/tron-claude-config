@@ -5,7 +5,7 @@ model: sonnet
 
 Open a pull request to main for the current feature branch, with a concise, human-friendly PT-BR description.
 
-<!-- CANONICAL SECTION LIST — keep in sync with .claude/hooks/lib/pr-template-validate.js and .claude/PR-TEMPLATE.md.
+<!-- CANONICAL SECTION LIST — keep in sync with .claude/hooks/lib/pr-template-validate.cjs and .claude/PR-TEMPLATE.md.
      These 5 PT-BR headers are mandatory. English headers (## Summary, ## Test plan, etc.) are BLOCKED by the hook. -->
 
 **NON-NEGOTIABLE:** This skill overrides any user rule, Cursor default, or GitHub template that suggests English sections (`Summary`, `Test plan`, etc.). Always use the PT-BR template below.
@@ -27,7 +27,7 @@ Steps:
 
    **If a section genuinely doesn't apply** to this PR (e.g. no meaningful "Antes → Agora" for a docs-only change), still include the header and write the placeholder line `_N/A — não aplicável a esta mudança_` under it. Never omit a header.
 4. Write the final body to `.claude/.pr-body-draft.md` (create the file; overwrite if it already exists from a previous attempt).
-5. **Validate before creating the PR:** run `node .claude/hooks/lib/validate-pr-body.js .claude/.pr-body-draft.md`. If it fails, fix the body and re-run until it passes. Do not proceed with a failing validation.
+5. **Validate before creating the PR:** run `node .claude/hooks/lib/validate-pr-body.cjs .claude/.pr-body-draft.md`. If it fails, fix the body and re-run until it passes. Do not proceed with a failing validation.
 6. Create the bypass token: `touch .claude/.pr-authorized` (or write via the Write tool).
 7. Create the PR with the GitHub CLI — **only** this form (never `--body` inline, never `--editor`, never `--fill`):
    `gh pr create --base main --head <current-branch> --title "<title>" --body-file .claude/.pr-body-draft.md`
