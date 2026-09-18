@@ -7,8 +7,9 @@ Commit the current changes with semantic commits, scan for leaks, do a quick rev
 
 <!-- CANONICAL COMMIT FLOW — keep in sync with .claude/hooks/bypass-check.sh (mode: commit)
      and .git/hooks/pre-commit. The bypass token `.claude/.commit-authorized` is the only
-     path through both hooks. Create it immediately before `git commit`; the Claude Code
-     PreToolUse hook (bypass-check.sh) deletes it after allowing the commit through. -->
+     path through both hooks. Create it immediately before `git commit`; the git
+     pre-commit hook deletes it after allowing the commit through, and pre-push deletes
+     any token left before a push. -->
 
 Steps:
 1. Run `git status --short` and `git branch --show-current`. If there is nothing to commit and nothing unpushed, say so and stop.
@@ -31,8 +32,8 @@ Steps:
    `Commit message here.`
    `EOF`
    `)"`
-   - Create a fresh `.claude/.commit-authorized` before **each** commit in a multi-commit run (the hook deletes the token after allowing one commit through).
-10. **Push:** create the bypass token again if needed for push (`touch .claude/.commit-authorized` — the `pre-push` hook accepts either commit or PR token), then `git push -u origin <current-branch>`. Never force-push and never push directly to `main`/`master`.
+   - Create a fresh `.claude/.commit-authorized` before **each** commit in a multi-commit run (the git pre-commit hook deletes the token after allowing one commit through).
+10. **Push:** create the bypass token again for push, since the commit consumed it (`touch .claude/.commit-authorized` — the `pre-push` hook accepts either commit or PR token), then `git push -u origin <current-branch>`. Never force-push and never push directly to `main`/`master`.
 11. Report: branch used, the commits created (hashes + subjects), leak-scan result, review summary, and push status.
 
 Notes:

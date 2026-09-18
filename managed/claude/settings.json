@@ -64,19 +64,21 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Bash(git commit*)",
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
+            "if": "Bash(git commit *)",
             "command": "bash .claude/hooks/bypass-check.sh commit"
           }
         ]
       },
       {
-        "matcher": "Bash(gh pr create*)",
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
+            "if": "Bash(gh pr create *)",
             "command": "bash .claude/hooks/bypass-check.sh pr"
           }
         ]

@@ -6,8 +6,11 @@
 TOKEN=".claude/.pr-authorized"
 COMMIT_TOKEN=".claude/.commit-authorized"
 
-# Allow if either skill token is present (commit-changes pushes at end)
+# Allow if either skill token is present (commit-changes pushes at end).
+# One-shot: consume both, so a token left over from an earlier commit or PR
+# cannot authorize a later push (tron-charts-backend#1232).
 if [ -f "$TOKEN" ] || [ -f "$COMMIT_TOKEN" ]; then
+  rm -f "$TOKEN" "$COMMIT_TOKEN"
   exit 0
 fi
 
