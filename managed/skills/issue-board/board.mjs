@@ -357,7 +357,8 @@ function cmdRender(config, flags) {
   const columns = [
     { label: 'Pri', width: 4, get: (r) => r.priority + (r.prioritySuggested ? '~' : ''), color: priorityColor(paint) },
     { label: 'Dif', width: 5, get: (r) => (r.difficulty ? '■'.repeat(r.difficulty) + '□'.repeat(3 - r.difficulty) : '—') + (r.difficultySuggested ? '~' : '') },
-    { label: 'Issue', width: 26, get: (r) => `${r.repo}#${r.number}` },
+    { label: 'ID', width: 5, get: (r) => `#${r.number}` },
+    { label: 'Repo', width: 19, get: (r) => r.repo },
     title,
     { label: 'Status', width: 12, get: (r) => r.status || '—' },
   ]

@@ -74,11 +74,9 @@ def difficulty_cell(row, Text):
     return cell
 
 
-def issue_cell(row, Text):
+def id_cell(row, Text):
     style = f"link {row['url']}" if row.get("url") else ""
-    cell = Text(row["repo"], style=f"{style} grey70".strip())
-    cell.append(f"#{row['number']}", style=f"{style} bold".strip())
-    return cell
+    return Text(f"#{row['number']}", style=f"{style} bold".strip())
 
 
 def title_cell(row, Text):
@@ -124,7 +122,8 @@ def group_table(view, group, Table, Text, box):
     )
     table.add_column("Pri", no_wrap=True, width=6)
     table.add_column("Dif", no_wrap=True, width=5)
-    table.add_column("Issue", no_wrap=True)
+    table.add_column("ID", no_wrap=True, justify="right")
+    table.add_column("Repo", no_wrap=True, style="grey70")
     table.add_column("Título", no_wrap=True, overflow="ellipsis", min_width=MIN_TITLE_WIDTH, ratio=1)
     table.add_column("Status", no_wrap=True)
     if view["groupField"]:
@@ -135,7 +134,8 @@ def group_table(view, group, Table, Text, box):
         cells = [
             priority_cell(row, Text),
             difficulty_cell(row, Text),
-            issue_cell(row, Text),
+            id_cell(row, Text),
+            row["repo"],
             title_cell(row, Text),
             status_cell(row, Text),
         ]
