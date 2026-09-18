@@ -352,7 +352,7 @@ function cmdRender(config, flags) {
   console.log(paint.bold(`${view.total} issues  |  ${counts}`))
   console.log(paint.dim('Dificuldade ■□□ fácil  ■■□ média  ■■■ difícil   ~ = sugestão do agente (campo vazio no board)\n'))
 
-  const width = Math.max(60, Math.min(process.stdout.columns || 140, 180))
+  const width = Math.max(60, Math.min(Number(flags.width) || process.stdout.columns || 140, 180))
   const title = { label: 'Título', width: 0, get: (r) => (r.note ? `${r.title} [${r.note}]` : r.title) }
   const columns = [
     { label: 'Pri', width: 4, get: (r) => r.priority + (r.prioritySuggested ? '~' : ''), color: priorityColor(paint) },
@@ -382,7 +382,7 @@ const { flags, positional } = parseArgs(process.argv.slice(2))
 const command = positional.shift()
 const commands = { fetch: cmdFetch, pending: cmdPending, classify: (c) => cmdClassify(c, positional), render: cmdRender }
 if (!commands[command]) {
-  fail('Uso: node board.mjs <fetch|pending|classify|render> [--owner x --project-number n] [--all] [--user login] [--por tipo|prioridade|dificuldade|campo|status|repo] [--prioridade P0,P1] [--dificuldade fácil] [--tipo bug] [--campo valor] [--repo nome] [--status ready] [--color|--no-color] [--json]')
+  fail('Uso: node board.mjs <fetch|pending|classify|render> [--owner x --project-number n] [--all] [--user login] [--por tipo|prioridade|dificuldade|campo|status|repo] [--prioridade P0,P1] [--dificuldade fácil] [--tipo bug] [--campo valor] [--repo nome] [--status ready] [--width n] [--color|--no-color] [--json]')
 }
 if (command === 'fetch') requireAuth()
 commands[command](loadConfig(flags), flags)

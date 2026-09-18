@@ -60,7 +60,7 @@ Flags de escopo e filtro (valem para `pending` e `render`):
 
 O cache fica em `data/<owner>-<número>/`, então boards diferentes não se misturam.
 
-A saída do Bash nem sempre aparece para o usuário. **Depois de rodar o `render`, cole a tabela na resposta dentro de um bloco ```text```.** Outra opção é sugerir `! python ~/.claude/skills/issue-board/render.py`, que mostra direto, com cores e links.
+A saída do Bash nem sempre aparece para o usuário. **Para colar na resposta, rode `node $S/board.mjs render --width 100` e cole a tabela dentro de um bloco ```text```, exatamente como saiu.** Sem `--width`, o Bash não é TTY e a tabela sai com 140 colunas; no chat a linha quebra e as colunas desalinham. Não tire bordas, colunas (Projeto inclusive), cabeçalho nem legenda, e não reescreva as linhas. Outra opção é sugerir `! python ~/.claude/skills/issue-board/render.py`, que mostra direto, com cores e links.
 
 ## 3. Como classificar
 
@@ -83,6 +83,5 @@ A classificação é gravada por `owner/repo#número` e reaproveitada nas próxi
 
 ## 4. Resposta ao usuário
 
-1. Primeira linha: total de issues e quantas são P0.
-2. A tabela.
-3. Uma linha dizendo o que pegar primeiro: a issue de maior prioridade e, entre elas, a de menor dificuldade.
+1. A tabela, começando pelo cabeçalho do `render` (total, contagem por prioridade e legenda). Não escreva outra linha de total antes dela: repete o cabeçalho.
+2. Uma linha dizendo o que pegar primeiro: a issue de maior prioridade e, entre elas, a de menor dificuldade.
