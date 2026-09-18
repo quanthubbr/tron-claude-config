@@ -1,5 +1,5 @@
 <!-- CANONICAL PR BODY — PT-BR only. Copy into .claude/.pr-body-draft.md before gh pr create.
-     Enforcement: bypass-check.sh + validate-pr-body.js. Do NOT use ## Summary or English headers. -->
+     Enforcement: bypass-check.sh + validate-pr-body.cjs. Do NOT use ## Summary or English headers. -->
 
 ## Resumo
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 'use strict';
 
-const { validateBodyFile } = require('./pr-template-validate');
+const { validateBodyFile } = require('./pr-template-validate.cjs');
 
 const file = process.argv[2];
 if (!file) {
-  process.stderr.write('Usage: node validate-pr-body.js <path-to-body-file>\n');
+  process.stderr.write('Usage: node validate-pr-body.cjs <path-to-body-file>\n');
   process.exit(2);
 }
 
