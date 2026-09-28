@@ -1,6 +1,6 @@
 {
   "name": "tron-kit",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "description": "Tron engineering kit for Claude Code: agents, skills, commands, hooks, language rules and MCP conventions managed by @tron/claude-config",
   "author": {
     "name": "tron"
