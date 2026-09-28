@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <img alt="version" src="https://img.shields.io/badge/version-1.7.0-0F766E?style=for-the-badge"/>
+  <img alt="version" src="https://img.shields.io/badge/version-1.9.0-0F766E?style=for-the-badge"/>
   <img alt="node" src="https://img.shields.io/badge/node-%3E%3D18-38BDF8?style=for-the-badge&logo=node.js&logoColor=white"/>
   <img alt="pm" src="https://img.shields.io/badge/npm%20%7C%20pnpm%20%7C%20bun-ready-A78BFA?style=for-the-badge"/>
   <img alt="license" src="https://img.shields.io/badge/private-Tron-1E293B?style=for-the-badge"/>
@@ -29,7 +29,7 @@ Drop one dependency into any repo. On `npm install`, Claude Code gets **hooks, g
 |---------------------|------------------|
 | Anyone (or any model) can `git commit` raw | Only `/commit-changes` after **security + code review** |
 | PRs that say “fix stuff” | Template with **5 mandatory sections** (PT-BR) |
-| Rules copied by hand (or forgotten) | **ECC rules scoped** to Vue / React / TS / … automatically |
+| Rules copied by hand (or forgotten) | **tron-kit rules scoped** to Vue / React / TS / … automatically |
 | “Did you update the package?” | **Auto-update** once per day, silent |
 | Different process per repo | **One kit** across the company |
 | Verbose AI replies | **Caveman** always on — same substance, fewer tokens |
@@ -74,8 +74,8 @@ The harness lives under `.claude/` and `.git/hooks/`. It does **not** overwrite 
 your-project/
 ├── .claude/
 │   ├── settings.json           ← Claude Code hooks
-│   ├── rules/ecc/              ← ECC rules (common + stack-matched folders)
-│   ├── .ecc-scope.json         ← last detected scope (audit trail)
+│   ├── rules/tron/             ← tron-kit rules (common + stack-matched folders)
+│   ├── .tron-scope.json        ← last detected scope (audit trail)
 │   └── hooks/
 │       ├── bypass-check.sh     ← token + PR template gate
 │       └── bootstrap-check.sh  ← tool check + daily auto-update
@@ -98,30 +98,68 @@ your-project/
 Also installed:
 
 - Karpathy guidelines skill + always-on rules under `~/.claude/rules/`
-- **Emil Kowalski** + **Impeccable** + **Taste** skills (primary DESIGN authority) + **ui-ux-pro-max** (subordinate) + **frontend-design** (supporting guardrail) — mandatory on any UI task; see `AGENTS.md`
-- **session-handoff** skill (install-if-missing) — writes the session context as an actionable note in a central Obsidian vault (one folder per repo, never inside a repository) and reads it back to resume; the vault path lives in `~/.claude/skills/session-handoff/config.json`, asked once on first use
-- **issue-board** skill (always synced) — shows the open issues of any GitHub Project (v2) as terminal tables, split by type, priority, difficulty, status or a board field; the agent classifies what the board leaves empty. `render.py` draws the tables with Python `rich` when it is installed and falls back to the plain Node render otherwise. Requires `gh auth login -s read:project`. The board lives in `~/.claude/skills/issue-board/config.json`, asked once on first use, and is never overwritten
+- **tron-kit** Claude Code plugin (`tron-kit@tron`, always synced) — agents, skills, commands, hooks, language rules and MCP conventions, vendored as a frozen snapshot under `managed/tron-kit/`, copied to `~/.claude/tron-kit/` and installed at user scope via `claude plugin`. Replaces the former upstream plugin, which postinstall uninstalls automatically (its user-level rules are migrated to `~/.claude/rules/tron/`)
+- **Emil Kowalski** + **Impeccable** + **Taste** skills (primary DESIGN authority) + **tron-design-fallback** (subordinate: charts, forms, web navigation, stack guidelines) — mandatory on any UI task; see [Frontend design skills](#frontend-design-skills--max-design-authority) and `AGENTS.md`
+- **session-handoff** skill (always synced) — session notes in a central Obsidian vault, saved and resumed; see [Workflow skills](#workflow-skills)
+- **issue-board** skill (always synced) — open issues of any GitHub Project (v2) as terminal tables; see [Workflow skills](#workflow-skills)
 - **Caveman** (`caveman.md`): terse replies enforced every session ([JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman)) — always overwritten from the package
 - **codebase-memory-mcp** ([DeusData](https://github.com/DeusData/codebase-memory-mcp)): required MCP for graph-first codebase navigation — install is **guaranteed** on macOS, Linux, and Windows (`install.sh` / `install.ps1` + `Unblock-File`, retries, npm fallback). `postinstall` exits `1` if registration in `~/.claude/.mcp.json` still fails
 - **doc** skill (always synced) — `/doc` finds the repo's Obsidian documentation vault (any folder with `.obsidian/`), reads the latest session note or the current conversation, flags notes whose `file:line` references broke or point to changed code, and applies only the doc changes the user approves (never commits). No vault: warns and offers a minimal one. Works in any project
 
 Existing customized commands are **never overwritten**.
 
+### Workflow skills
+
+Two personal-workflow skills ship with the harness. Both are always synced from the package (code files only) and keep each person's settings in a local `config.json` that is never overwritten. Their trigger phrases are PT-BR.
+
+#### `/session-handoff`
+
+Turns the current session into an actionable note for an agent that **did not see the conversation**, and resumes from the latest note. It replaces the legacy `/save-session`, `/salvar` and `/retomar`.
+
+- **When:** "handoff", "resume a sessão", "salva a sessão no obsidian", "retoma a última sessão", "continua de onde parou", or right before `/compact` or `/clear`.
+- **Save mode (default):** collects the real state of every repo touched (`git worktree list`, `git status`, `git log`, open PRs via `gh`, cited issues/PRs, `.claude/todo.md`) — collected state beats conversation memory. Writes `<vault>/<repo>/YYYY-MM-DD HHmm — <topic>.md` with a "Comece por aqui" first action, literal user decisions, a pending checklist with `verificar:` per item, risks and promotion candidates. Then rewrites `<vault>/_ULTIMA-SESSAO.md` and prepends a row to `<vault>/_Sessões — Índice.md`.
+- **Resume mode:** reads the latest note for the current repo (or `_ULTIMA-SESSAO.md`), reads the docs it lists, re-validates git/gh state, reports what changed in up to 5 lines and runs "Comece por aqui". Authorizations from the previous session do **not** carry over — commit, push, PR and prod writes are asked again.
+- **Setup (once):** the vault path lives in `sessionsVault` in `~/.claude/skills/session-handoff/config.json`. On first use the skill asks for it, creates the folder with an empty `.obsidian/` and saves the answer. One folder per repo inside the vault (`avulsas/` outside a repo).
+- **Never:** writes session notes inside a code repository; stores secrets (API keys, tokens, passwords, connection strings are replaced with `<redacted>` plus where the secret lives); edits project docs on its own (learnings go to "Candidatos a promoção").
+
+#### `/issue-board`
+
+Shows the open issues you have to do in any GitHub Project (v2) as terminal tables, grouped by type, priority, difficulty, status, repo or a board field. The agent classifies only what the board leaves empty.
+
+- **When:** "minhas issues", "o que tenho pra fazer", "mostra o board", "rankeia as issues", "separa as issues por dificuldade/tipo".
+- **Flow:** everything runs through `node ~/.claude/skills/issue-board/board.mjs` (Node 18+ and `gh`, no dependencies):
+
+  ```bash
+  S=~/.claude/skills/issue-board
+  node $S/board.mjs fetch          # read the board (default: issues assigned to you)
+  node $S/board.mjs pending        # valid types + issues still unclassified (JSON)
+  node $S/board.mjs classify <file.json>   # apply the agent's classification (file outside the repo)
+  python $S/render.py              # rich tables; falls back to the Node render without rich
+  node $S/board.mjs render         # same content, plain; --json for another renderer
+  ```
+
+  Scope and filters for `pending`/`render`: `--all`, `--user login`, `--por tipo|prioridade|dificuldade|campo|status|repo`, and `--prioridade`, `--dificuldade`, `--tipo`, `--campo`, `--repo`, `--status` (comma-separated, partial, case- and accent-insensitive). `--owner x --project-number n` looks at another board without touching the config.
+- **Classification:** each issue gets a type (from the configured `types`, or the built-in neutral list), priority `P0`–`P3`, difficulty `1`–`3` and an optional short note. Results are cached per board under `data/<owner>-<number>/` and reused.
+- **Setup (once):** `gh auth login -s read:project` (or `gh auth refresh -s read:project`). On first run the skill lists your boards and writes `owner` and `projectNumber` into `~/.claude/skills/issue-board/config.json`; field names (`status`, `priority`, `size`, `group`), `priorityMap`/`sizeMap` and custom `types` are optional there. For colored tables, `pip install rich`.
+- **Never:** edits board fields (unless you ask); overrides the board — when `Priority` or `Size` is filled on the board, that value wins and agent suggestions appear only on empty fields, marked `~`; works around missing auth; versions `config.json`.
+
 ### Frontend design skills — MAX DESIGN authority
 
-On any frontend/UI task the harness enforces a single design stack, in strict priority order:
+On any frontend/UI task the harness enforces a two-level design stack:
 
-1. **Emil Kowalski + Impeccable + Taste** — the **maximum source of truth for design**. Emil covers interaction and animation craft (`emil-design-eng`, `animate`, `mobile-native`, …), Impeccable sets design direction, the quality bar, and hook-enforced edit discipline, and Taste (`design-taste-frontend` + variants) drives high-end visual, landing, and redesign direction.
-2. **ui-ux-pro-max** — important but **subordinate**: run its design-system generator *after* the combo sets direction, then apply its stack CSVs, UX guidance, and pre-delivery checklist.
-3. **frontend-design** — optional supporting guardrail (anti-generic-AI look only).
+1. **Emil Kowalski + Impeccable + Taste** — the **maximum source of truth for design**. Emil covers interaction and animation craft (`emil-design-eng`, `animate`, `mobile-native`, …), Impeccable sets design direction, the quality bar, and hook-enforced edit discipline (plus responsive/native adaptation, performance, a11y hardening, color and typography), and Taste (`design-taste-frontend` + variants) drives high-end visual, landing, and redesign direction.
+2. **tron-design-fallback** — **subordinate**, consulted only after the combo sets direction and only for the four areas the combo does not cover: **charts and data visualization** (chart selection table + a11y rules), **form UX patterns**, **web navigation patterns**, and **stack implementation guidelines** (high-severity rules for Vue, Nuxt, React, Next.js, React Native, shadcn/ui, HTML + Tailwind), plus a short pre-delivery add-on. It never sets visual direction.
 
-**On any conflict, the Emil + Impeccable + Taste combo always wins over ui-ux-pro-max and frontend-design.** Agents announce `Using Emil + Impeccable + Taste (+ ui-ux-pro-max) for [purpose]`. Full contract: [AGENTS.md](managed/AGENTS.md).
+**On any conflict, the Emil + Impeccable + Taste combo always wins over tron-design-fallback.** Agents announce `Using Emil + Impeccable + Taste for [purpose]`, appending `(+ tron-design-fallback)` only when it was actually consulted. Full contract: [AGENTS.md](managed/AGENTS.md).
+
+The former secondary layer, **ui-ux-pro-max** and **frontend-design**, was removed: its direction-setting generator and style/color/font data competed with the combo, and everything else was already covered by it. The only genuinely missing pieces were extracted into tron-design-fallback. For the same reason, tron-kit excludes the upstream design, motion and accessibility skills that overlap the combo.
 
 Where they land on the developer machine:
 
 - **Emil** and **Taste** are vendored under `managed/skills/{emilkowalski,leonxlnx}/`, installed to `~/.agents/skills/`, then symlinked into `~/.claude/skills/` and `~/.cursor/skills/`.
 - **Impeccable** is vendored under `managed/skills/impeccable/` and copied to `~/.claude/skills/`, `~/.cursor/skills/`, **and** `~/.github/skills/impeccable/`. Its `impeccable-*` subagents copy to `~/.claude/agents/` + `~/.cursor/agents/`, and edit-discipline hooks are written into the consumer repo's `.cursor/hooks.json` and `.github/hooks/impeccable.json`. The `darwin-arm64` engine binary ships in-tree; other platforms fetch the pinned, checksum-verified binary on first run and cache it under `~/.impeccable/`.
-- **ui-ux-pro-max** and **frontend-design** install (if missing) under `~/.claude/skills/`.
+- **tron-design-fallback** is vendored under `managed/skills/tron-design-fallback/` and always synced (overwritten) to `~/.claude/skills/` and `~/.cursor/skills/`.
+- Postinstall removes leftover `ui-ux-pro-max` / `frontend-design` skill folders from `~/.claude/skills/`, `~/.cursor/skills/`, `~/.agents/skills/` and `~/.github/skills/`, and disables the official `frontend-design@claude-plugins-official` Claude Code plugin.
 - The `frontend-skills.mdc` rule (always synced to `~/.cursor/rules/`) encodes this authority order for every UI task.
 
 ---
@@ -147,16 +185,16 @@ Raw `git commit` in the terminal? **Blocked** by `pre-commit`.
 Required sections: **Resumo**, **Principais mudanças**, **Arquitetura & implementação**, **Antes → Agora**, **Roteiro de teste**.  
 English headers (`Summary`, `Test plan`, …) are **rejected**. If a section doesn’t apply, keep the header and use `_N/A — não aplicável a esta mudança_`.
 
-### Scoped ECC rules
+### Scoped tron-kit rules
 
 On install and on harness setup/update, the package:
 
 1. Detects stack from `package.json` + project markers  
-2. Clones [ECC](https://github.com/affaan-m/ECC) temporarily  
-3. Syncs **only** matching folders into `.claude/rules/ecc/`  
-4. Removes managed folders that no longer match  
+2. Reads rule folders from the bundled `managed/tron-kit/rules/` snapshot (no network)  
+3. Syncs **only** matching folders into `.claude/rules/tron/`  
+4. Removes managed folders that no longer match (and legacy rule folders from before tron-kit, if present)  
 
-Always: `common`. Conditionally: `typescript`, `vue`, `nuxt`, `react`, `react-native`, `web`, `csharp`, `python`, `golang`, and other ECC languages when detected.
+Always: `common`. Conditionally: `typescript`, `vue`, `nuxt`, `react`, `react-native`, `web`, `csharp`, `python`, `golang`, and other tron-kit languages when detected.
 
 ### Session bootstrap
 
@@ -174,11 +212,11 @@ Manual repair: `npm run ensure:codebase-memory` (or `node node_modules/@tron/cla
 
 | Layer | Where | Wins on |
 |-------|--------|---------|
-| **ECC rules** | `.claude/rules/ecc/` | Coding standards |
+| **tron-kit rules** | `.claude/rules/tron/` | Coding standards |
 | **Karpathy principles** | `~/.claude/rules/harness-enforcement.md` | Behavior: simplicity, surgical edits |
 | **Harness skills** | `~/.claude/commands/*` | Commit / PR workflow |
 
-ECC > Karpathy on standards. Karpathy > ECC on how to approach the work.
+tron-kit > Karpathy on standards. Karpathy > tron-kit on how to approach the work.
 
 ---
 
@@ -221,17 +259,21 @@ npm uninstall @tron/claude-config
 
 ```
 tron-claude-config/
-├── package.json                 # v1.7.0 · postinstall entry
+├── package.json                 # v1.9.0 · postinstall entry
 ├── scripts/
 │   ├── postinstall.js           # install orchestrator
-│   ├── sync-ecc-rules.js        # manual ECC re-sync CLI
+│   ├── sync-tron-rules.js       # manual tron-kit rules re-sync CLI
+│   ├── sync-tron-kit.js         # maintainer-only: refresh managed/tron-kit/ snapshot
 │   └── lib/
 │       ├── detect-project-scope.js
-│       ├── install-ecc-rules.js
+│       ├── install-tron-rules.js
+│       ├── install-tron-kit.js  # user-scope plugin install + legacy cleanup
 │       └── ensure-codebase-memory.js  # Win + macOS/Linux guarantee
 ├── managed/
 │   ├── AGENTS.md
 │   ├── setup-claude-harness.sh
+│   ├── tron-kit/                # frozen tron-kit plugin snapshot (skills, agents, commands, hooks, rules)
+│   ├── tron-kit.config.json     # snapshot pin, exclusions, rewrites
 │   ├── agents/                  # impeccable-* subagents
 │   ├── claude/                  # settings, hooks, rules (incl. caveman)
 │   ├── cursor/rules/            # frontend-skills.mdc (design authority)
@@ -240,7 +282,7 @@ tron-claude-config/
 │   └── skills/                  # commit-changes, code-review, security-review,
 │                                # make-pr, karpathy, session-handoff, doc,
 │                                # issue-board, emilkowalski (Emil), impeccable,
-│                                # leonxlnx (Taste), frontend-design, ui-ux-pro-max
+│                                # leonxlnx (Taste), tron-design-fallback
 ├── docs/assets/                 # README visuals
 ├── HARNESS-GUIDE.md
 ├── MAINTAINER.md

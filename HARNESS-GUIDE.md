@@ -3,7 +3,7 @@
 > Quick reference: what the harness installs, what it enforces, and how to operate it day to day.  
 > Consumer pitch + install story: [README.md](README.md) · Releases: [MAINTAINER.md](MAINTAINER.md)
 
-**Current package version:** `1.7.0`
+**Current package version:** `1.9.0`
 
 ---
 
@@ -16,12 +16,12 @@
 | `.claude/settings.json` | Claude Code hooks — blocks direct `git commit` / `gh pr create`, runs bootstrap on every prompt |
 | `.claude/hooks/bypass-check.sh` | Token gate (`.claude/.commit-authorized` / `.claude/.pr-authorized`). For `pr`, also requires all 5 PR section headers in `.claude/.pr-body-draft.md` |
 | `.claude/hooks/bootstrap-check.sh` | Every prompt: tool warnings. Daily: silent package auto-update + re-run setup |
-| `.claude/rules/ecc/` | Scoped ECC coding rules (`common` + stack-matched folders) |
-| `.claude/.ecc-scope.json` | Last detected ECC scope (folders + signals) |
+| `.claude/rules/tron/` | Scoped tron-kit coding rules (`common` + stack-matched folders) |
+| `.claude/.tron-scope.json` | Last detected tron-kit scope (folders + signals) |
 | `AGENTS.md` | Agent contract copied from the package |
 | `.git/hooks/pre-commit` | Blocks terminal `git commit` without the commit token |
 | `.git/hooks/pre-push` | Blocks direct push to `main`/`master`; prefers `/commit-changes` / `/make-pr` |
-| `scripts/setup-claude-harness.sh` | Re-runnable setup (git hooks, tool check, ECC sync) |
+| `scripts/setup-claude-harness.sh` | Re-runnable setup (git hooks, tool check, tron-kit rules sync) |
 
 `package.json` → `postinstall` runs the orchestrator on every `npm` / `bun` / `pnpm` install.
 
@@ -53,11 +53,11 @@
 | Emil Kowalski skills | `~/.agents/skills/<name>/` (symlinked → `~/.claude/skills/`, `~/.cursor/skills/`) | Vendored from `managed/skills/emilkowalski/`; **primary DESIGN authority** |
 | Impeccable | `~/.claude/skills/impeccable/`, `~/.cursor/skills/impeccable/`, `~/.github/skills/impeccable/` (+ `impeccable-*` agents in `~/.claude/agents/`, `~/.cursor/agents/`) | Vendored from `managed/skills/impeccable/`; **primary DESIGN authority**; `darwin-arm64` binary in-tree, other platforms fetch checksum-verified binary on first run |
 | Taste (leonxlnx) skills | `~/.agents/skills/<name>/` (symlinked → `~/.claude/skills/`, `~/.cursor/skills/`) | Vendored from `managed/skills/leonxlnx/`; **primary DESIGN authority** |
-| frontend-design | `~/.claude/skills/frontend-design/` | install-if-missing; optional supporting guardrail (never outranks the combo) |
+| tron-design-fallback | `~/.claude/skills/tron-design-fallback/`, `~/.cursor/skills/tron-design-fallback/` | Always synced (overwritten) from `managed/skills/tron-design-fallback/`; **subordinate** to the combo — charts, forms, web navigation, stack guidelines only |
+| Legacy design cleanup | `~/.{claude,cursor,agents,github}/skills/{ui-ux-pro-max,frontend-design}` | Removed on every run if present (symlinks unlinked); `frontend-design@claude-plugins-official` plugin disabled via `claude plugin disable` (fallback: `enabledPlugins[...] = false` in `~/.claude/settings.json`) |
 | frontend-skills rule | `~/.cursor/rules/frontend-skills.mdc` | Always synced from `managed/cursor/rules/`; encodes the design authority order |
-| session-handoff | `~/.claude/skills/session-handoff/` | install-if-missing; session notes go to a central Obsidian vault set in `config.json` |
+| session-handoff | `~/.claude/skills/session-handoff/` | always synced (`SKILL.md`, `config.example.json`); `config.json` stays per person; session notes go to a central Obsidian vault set in `config.json` |
 | issue-board | `~/.claude/skills/issue-board/` | always synced (`SKILL.md`, `board.mjs`, `render.py`, `config.example.json`); `config.json` and `data/` stay per person |
-| ui-ux-pro-max | `~/.claude/skills/ui-ux-pro-max/` | install-if-missing (full tree); **subordinate** to the combo — run its generator after the combo sets direction |
 | gsd | global `$PATH` | `npm install -g @opengsd/gsd-pi` (or bun/pnpm) |
 | doc | `~/.claude/skills/doc/` | always synced (`SKILL.md`, `doc.mjs`); no per-person state |
 | caveman skill/plugin | `~/.claude/skills/caveman/` (or plugin) | Official install script |
@@ -86,17 +86,18 @@ Skipped only when `CI` / `GITHUB_ACTIONS` / `CONTINUOUS_INTEGRATION` is set.
 
 ## Frontend design skills (MAX DESIGN authority)
 
-On ANY frontend/UI task, the harness enforces one design stack in strict priority order (full contract in `managed/AGENTS.md`):
+On ANY frontend/UI task, the harness enforces a two-level design stack (full contract in `managed/AGENTS.md`):
 
 | Priority | Layer | Role |
 |----------|-------|------|
 | 1 | **Emil Kowalski + Impeccable + Taste** | **Maximum source of truth for DESIGN.** Emil = interaction/animation craft; Impeccable = direction, quality bar, hook-enforced edit discipline; Taste = high-end visual / landing / redesign direction |
-| 2 | **ui-ux-pro-max** | Important but **subordinate** — run the design-system generator only *after* the combo sets direction, then apply stack CSVs + pre-delivery checklist |
-| 3 | **frontend-design** | Optional supporting guardrail (anti-generic-AI look only) |
+| 2 | **tron-design-fallback** | **Subordinate** — consulted only *after* the combo sets direction, and only for charts/data viz, form UX, web navigation patterns, and stack guidelines (Vue, Nuxt, React, Next.js, React Native, shadcn/ui, Tailwind); includes a pre-delivery add-on |
 
-**Conflict rule:** when ui-ux-pro-max (or frontend-design) disagrees with the Emil + Impeccable + Taste combo, **the combo always wins.**
+**Conflict rule:** when tron-design-fallback disagrees with the Emil + Impeccable + Taste combo, **the combo always wins.**
 
-**Announce on every UI task:** `Using Emil + Impeccable + Taste (+ ui-ux-pro-max) for [purpose]`
+**Announce on every UI task:** `Using Emil + Impeccable + Taste for [purpose]` — append `(+ tron-design-fallback)` only when it was consulted.
+
+The former ui-ux-pro-max and frontend-design layer was removed (direction-setting data that competed with the combo, the rest already covered); postinstall deletes their leftover skill folders and disables the `frontend-design@claude-plugins-official` plugin.
 
 ### Where the skills are vendored and installed
 
@@ -105,8 +106,7 @@ On ANY frontend/UI task, the harness enforces one design stack in strict priorit
 | Emil Kowalski | `managed/skills/emilkowalski/` | `~/.agents/skills/<name>/`, symlinked into `~/.claude/skills/` and `~/.cursor/skills/` |
 | Taste (leonxlnx) | `managed/skills/leonxlnx/` | `~/.agents/skills/<name>/`, symlinked into `~/.claude/skills/` and `~/.cursor/skills/` |
 | Impeccable | `managed/skills/impeccable/` (+ `managed/agents/impeccable-*.md`, `managed/hooks/{cursor,github}/`) | `~/.claude/skills/impeccable/`, `~/.cursor/skills/impeccable/`, `~/.github/skills/impeccable/`; `impeccable-*` agents → `~/.claude/agents/` + `~/.cursor/agents/`; hooks → consumer `.cursor/hooks.json` + `.github/hooks/impeccable.json` |
-| ui-ux-pro-max | `managed/skills/ui-ux-pro-max/` | `~/.claude/skills/ui-ux-pro-max/` (install-if-missing, full tree) |
-| frontend-design | `managed/skills/frontend-design/` | `~/.claude/skills/frontend-design/` (install-if-missing, + `LICENSE.txt`) |
+| tron-design-fallback | `managed/skills/tron-design-fallback/` (`SKILL.md` + `references/stacks/*.md`) | `~/.claude/skills/tron-design-fallback/` + `~/.cursor/skills/tron-design-fallback/` (always synced) |
 | frontend-skills rule | `managed/cursor/rules/frontend-skills.mdc` | `~/.cursor/rules/frontend-skills.mdc` (always synced) |
 
 Emil and Taste land in `~/.agents/skills/` first, then symlink into the Claude and Cursor skill dirs (falling back to a copy when symlinks are unavailable). Impeccable is copied directly into all three tool dirs. Its engine ships as a vendored `darwin-arm64` binary under `scripts/bin/`; on other platforms the launcher downloads the pinned, checksum-verified binary on first run and caches it under `~/.impeccable/bin/<version>/`.
@@ -127,16 +127,17 @@ CRITICAL/HIGH findings from either review **block** the token. Do not create `.c
 
 | Layer | Source | Priority | Scope |
 |-------|--------|----------|-------|
-| **ECC rules** | `.claude/rules/ecc/` | Highest for rules | Naming, testing, security, git |
+| **tron-kit rules** | `.claude/rules/tron/` | Highest for rules | Naming, testing, security, git |
 | **Karpathy principles** | `~/.claude/rules/harness-enforcement.md` | Highest for behavior | Simplicity, surgical changes |
 | **Harness skills** | `~/.claude/commands/*` | Workflow | Commit / PR gates |
 
-**ECC wins on coding standards.** **Karpathy wins on how to approach the task.**
+**tron-kit wins on coding standards.** **Karpathy wins on how to approach the task.**
 
-### Scoped ECC sync
+### Scoped tron-kit rules sync
 
-`scripts/lib/detect-project-scope.js` + `scripts/lib/install-ecc-rules.js`:
+`scripts/lib/detect-project-scope.js` + `scripts/lib/install-tron-rules.js`:
 
+- Source: the bundled `managed/tron-kit/rules/` snapshot — no network
 - Always install `common`
 - Add language/framework folders only when the consumer stack matches
 - Prune managed folders that fall out of scope on the next sync
@@ -145,9 +146,9 @@ CRITICAL/HIGH findings from either review **block** the token. Do not create `.c
 Manual re-sync:
 
 ```bash
-node node_modules/@tron/claude-config/scripts/sync-ecc-rules.js .
+node node_modules/@tron/claude-config/scripts/sync-tron-rules.js .
 # dry-run:
-node node_modules/@tron/claude-config/scripts/sync-ecc-rules.js . --dry-run
+node node_modules/@tron/claude-config/scripts/sync-tron-rules.js . --dry-run
 ```
 
 ---
@@ -172,10 +173,10 @@ npm install   # or bun / pnpm
 
 - Copies Claude settings + hooks  
 - Installs git hooks  
-- Syncs scoped ECC rules into `.claude/rules/ecc/`  
+- Syncs scoped tron-kit rules into `.claude/rules/tron/`  
 - Copies `AGENTS.md`  
 - Adds token/draft paths plus `.cursor/` and `.omc/` (local harness/session state) to `.gitignore`  
-- On developer machines: installs skills, Karpathy rules, gsd, caveman; **guarantees** codebase-memory-mcp (Win + macOS/Linux)  
+- On developer machines: installs skills, the `tron-kit@tron` Claude plugin (removing the legacy upstream plugin), Karpathy rules, gsd, caveman; **guarantees** codebase-memory-mcp (Win + macOS/Linux)  
 
 ---
 
@@ -224,17 +225,21 @@ rm .git/hooks/pre-commit .git/hooks/pre-push
 
 ```
 tron-claude-config/
-├── package.json                              # v1.7.0
+├── package.json                              # v1.9.0
 ├── scripts/
 │   ├── postinstall.js                        # orchestrator
-│   ├── sync-ecc-rules.js                     # ECC re-sync CLI
+│   ├── sync-tron-rules.js                    # tron-kit rules re-sync CLI
+│   ├── sync-tron-kit.js                      # maintainer-only snapshot refresh
 │   └── lib/
-│       ├── detect-project-scope.js           # stack → ECC folders
-│       ├── install-ecc-rules.js              # clone / copy / prune
+│       ├── detect-project-scope.js           # stack → tron-kit rule folders
+│       ├── install-tron-rules.js             # copy / prune (local snapshot)
+│       ├── install-tron-kit.js               # user-scope plugin + legacy cleanup
 │       └── ensure-codebase-memory.js         # required MCP (Win + Unix)
 ├── managed/
 │   ├── AGENTS.md
 │   ├── setup-claude-harness.sh
+│   ├── tron-kit/                             # frozen tron-kit plugin snapshot
+│   ├── tron-kit.config.json                  # snapshot pin, exclusions, rewrites
 │   ├── agents/                               # impeccable-* subagents
 │   ├── cursor/rules/frontend-skills.mdc      # design authority rule
 │   ├── hooks/                                # cursor/ + github/ impeccable hook templates
@@ -260,9 +265,8 @@ tron-claude-config/
 │       ├── emilkowalski/<name>/SKILL.md      # Emil — design authority
 │       ├── impeccable/{SKILL.md,reference/,scripts/}  # Impeccable — design authority
 │       ├── leonxlnx/<name>/SKILL.md          # Taste — design authority
-│       ├── frontend-design/{SKILL.md,LICENSE.txt}
+│       ├── tron-design-fallback/{SKILL.md,references/stacks/}  # subordinate to the combo
 │       ├── issue-board/{SKILL.md,board.mjs,render.py,config.example.json}
-│       ├── ui-ux-pro-max/{SKILL.md,scripts/,data/,references/}
 │       └── andrej-karpathy-skills/.../SKILL.md
 ├── docs/assets/                              # README visuals
 ├── HARNESS-GUIDE.md

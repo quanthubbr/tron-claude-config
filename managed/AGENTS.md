@@ -47,13 +47,13 @@ All agents in this repo have access to the full rule stack, applied in this prio
 
 | Priority | Layer | Source | What it governs |
 |----------|-------|--------|-----------------|
-| 1 | **ECC rules** | `.claude/rules/ecc/` | Coding standards: naming, testing, security, git workflow |
+| 1 | **tron-kit rules** | `.claude/rules/tron/` | Coding standards: naming, testing, security, git workflow |
 | 2 | **Karpathy principles** | `~/.claude/rules/agent-isolation.md` | Behavior: simplicity, surgical changes, goal-driven execution |
 | 3 | **Harness enforcement** | `~/.claude/rules/harness-enforcement.md` | Workflow: commit gates, review gates, approval flow |
 | 4 | **Caveman** | `~/.claude/rules/caveman.md` | Communication: terse replies (always on) |
 
 When rule layers conflict: higher priority wins.
-When skill layers conflict: Karpathy > ECC.
+When skill layers conflict: Karpathy > tron-kit.
 **Communication:** caveman is mandatory for chat replies; code / commits / PR bodies stay normal prose.
 
 ---
@@ -82,14 +82,13 @@ On ANY frontend/UI task (pages, components, styling, layout, redesign, landing, 
 
 Then:
 
-4. **`ui-ux-pro-max`** (important but subordinate) — **after the combo sets direction**, run the design-system generator: `python3 ~/.claude/skills/ui-ux-pro-max/scripts/search.py "<product_type> <keywords>" --design-system -p "Project Name"`. Use stack CSVs, UX guidance, and the pre-delivery checklist.
-5. **`frontend-design`** (optional supporting guardrail) — anti-generic AI look only; never outranks the combo.
+4. **`tron-design-fallback`** (subordinate) — `~/.claude/skills/tron-design-fallback/SKILL.md`. Consult **only after the combo sets direction**, and only for the four areas the combo does not cover: charts/data visualization, form UX patterns, web navigation patterns, and stack implementation guidelines (Vue, Nuxt, React, Next.js, React Native, shadcn/ui, Tailwind). Never sets visual direction. Includes a short pre-delivery add-on.
 
-**On conflict between ui-ux-pro-max (or frontend-design) and the Emil+Impeccable+Taste combo, ALWAYS prefer the combo.**
+**On conflict between tron-design-fallback and the Emil+Impeccable+Taste combo, ALWAYS prefer the combo.**
 
-Announce: `Using Emil + Impeccable + Taste (+ ui-ux-pro-max) for [purpose]`
+Announce: `Using Emil + Impeccable + Taste for [purpose]` — append `(+ tron-design-fallback)` only when it was actually consulted.
 
-**Emil + Impeccable + Taste are mandatory for UI work.** ui-ux-pro-max is mandatory but subordinate — run only after the combo establishes design direction. frontend-design is optional support.
+**Emil + Impeccable + Taste are mandatory for UI work.** tron-design-fallback is consulted on demand for its four areas, never before the combo establishes design direction.
 
 **When these skills apply:**
 - Creating new pages, components, or views
