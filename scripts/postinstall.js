@@ -9,7 +9,8 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { execSync, execFileSync } = require('child_process');
-const { installEccRules } = require('./lib/install-ecc-rules');
+const { installTronRules } = require('./lib/install-tron-rules');
+const { installTronKitPlugin, removeLegacyEcc, disablePlugin } = require('./lib/install-tron-kit');
 const { ensureCodebaseMemoryMcp } = require('./lib/ensure-codebase-memory');
 
 const DRY = process.env.DRY === '1';
@@ -269,21 +270,53 @@ function installImpeccableHooks(consumerRoot) {
   }
 }
 
-function installFrontendDesignLicense() {
-  const destDir = path.join(os.homedir(), '.claude', 'skills', 'frontend-design');
-  const dest = path.join(destDir, 'LICENSE.txt');
-  const src = path.join(PACKAGE_ROOT, 'managed', 'skills', 'frontend-design', 'LICENSE.txt');
-  if (!fs.existsSync(src)) {
-    log('WARN: frontend-design LICENSE.txt not found in managed/');
-    return;
+function installTronDesignFallback() {
+  // Always sync — subordinate to the Emil + Impeccable + Taste combo; stale copies must not linger.
+  const home = os.homedir();
+  const src = path.join(PACKAGE_ROOT, 'managed', 'skills', 'tron-design-fallback');
+  for (const dest of [
+    path.join(home, '.claude', 'skills', 'tron-design-fallback'),
+    path.join(home, '.cursor', 'skills', 'tron-design-fallback'),
+  ]) {
+    if (!DRY) fs.rmSync(dest, { recursive: true, force: true });
+    copyTree(src, dest);
   }
-  if (DRY) {
-    log('DRY: would copy frontend-design LICENSE.txt → ~/.claude/skills/frontend-design/');
-    return;
+  log(`tron-design-fallback ${DRY ? 'would be ' : ''}synced → ~/.claude/skills/, ~/.cursor/skills/`);
+}
+
+const LEGACY_DESIGN_SKILLS = ['ui-ux-pro-max', 'frontend-design'];
+const LEGACY_DESIGN_PLUGIN = 'frontend-design@claude-plugins-official';
+
+function removeLegacyDesignSkills() {
+  const home = os.homedir();
+  for (const base of ['.claude', '.cursor', '.agents', '.github']) {
+    for (const name of LEGACY_DESIGN_SKILLS) {
+      const target = path.join(home, base, 'skills', name);
+      let stat;
+      try {
+        stat = fs.lstatSync(target);
+      } catch {
+        continue;
+      }
+      const rel = `~/${base}/skills/${name}`;
+      if (DRY) {
+        log(`DRY: would remove legacy skill ${rel}`);
+        continue;
+      }
+      try {
+        if (stat.isSymbolicLink()) fs.unlinkSync(target);
+        else fs.rmSync(target, { recursive: true, force: true });
+        log(`removed legacy skill ${rel}`);
+      } catch (err) {
+        log(`WARN: could not remove legacy skill ${rel}: ${err.message}`);
+      }
+    }
   }
-  fs.mkdirSync(destDir, { recursive: true });
-  fs.copyFileSync(src, dest);
-  log('frontend-design LICENSE.txt installed → ~/.claude/skills/frontend-design/');
+  try {
+    disablePlugin(LEGACY_DESIGN_PLUGIN, { dryRun: DRY, log });
+  } catch (err) {
+    log(`WARN: ${LEGACY_DESIGN_PLUGIN} not disabled: ${err.message}`);
+  }
 }
 
 function installFrontendSkillsRule() {
@@ -539,16 +572,6 @@ function installSessionHandoffCommand() {
   log('session-handoff command synced → ~/.claude/commands/session-handoff.md');
 }
 
-function installFrontendDesignSkill() {
-  const destDir = path.join(os.homedir(), '.claude', 'skills', 'frontend-design');
-  const dest = path.join(destDir, 'SKILL.md');
-  if (fs.existsSync(dest)) return;
-  const src = path.join(PACKAGE_ROOT, 'managed', 'skills', 'frontend-design', 'SKILL.md');
-  fs.mkdirSync(destDir, { recursive: true });
-  fs.copyFileSync(src, dest);
-  log('frontend-design skill installed → ~/.claude/skills/frontend-design/');
-}
-
 function installIssueBoardSkill() {
   // Always sync the code files so fixes reach everyone; never touch config.json or data/,
   // which hold each person's board and cached classification.
@@ -573,21 +596,6 @@ function installIssueBoardSkill() {
     // Optional tool: a copy failure (locked file on Windows) must not break npm install.
     log(`WARN: issue-board skill not synced: ${err.message}`);
   }
-}
-
-function installUiUxProMaxSkill() {
-  const skillDir = path.join(os.homedir(), '.claude', 'skills', 'ui-ux-pro-max');
-  const searchPy = path.join(skillDir, 'scripts', 'search.py');
-  if (fs.existsSync(searchPy)) return;
-
-  const src = path.join(PACKAGE_ROOT, 'managed', 'skills', 'ui-ux-pro-max');
-  copyTree(src, skillDir);
-
-  if (!DRY && !fs.existsSync(searchPy)) {
-    log('WARN: ui-ux-pro-max search.py missing after install — check managed/skills/ui-ux-pro-max/');
-    return;
-  }
-  log('ui-ux-pro-max skill installed → ~/.claude/skills/ui-ux-pro-max/');
 }
 
 function installDocSkill() {
@@ -636,6 +644,21 @@ function installHarnessPatterns() {
   fs.copyFileSync(src, dest);
 }
 
+function installTronKit() {
+  // Legacy removal runs only after tron-kit is in place, so the user never ends up with neither.
+  try {
+    installTronKitPlugin({ dryRun: DRY, log });
+  } catch (err) {
+    log(`WARN: tron-kit plugin not installed: ${err.message}`);
+    return;
+  }
+  try {
+    removeLegacyEcc({ dryRun: DRY, log });
+  } catch (err) {
+    log(`WARN: legacy plugin cleanup incomplete: ${err.message}`);
+  }
+}
+
 function installCavemanRule() {
   // Always overwrite — caveman communication is harness-enforced, not optional
   const dest = path.join(os.homedir(), '.claude', 'rules', 'caveman.md');
@@ -657,7 +680,7 @@ if (isConsumerRepo && !isSelfInstall) {
   }
 
   if (!IS_CI) {
-    installEccRules(CONSUMER_ROOT, { dryRun: DRY, silent: DRY });
+    installTronRules(CONSUMER_ROOT, { dryRun: DRY, silent: DRY });
   }
 
   installGitHooks();
@@ -678,11 +701,11 @@ if (!IS_CI) {
   installSessionHandoffSkill();
   installEmilSkills();
   installImpeccable();
+  installTronKit();
   installTasteSkills();
-  installFrontendDesignSkill();
-  installFrontendDesignLicense();
+  installTronDesignFallback();
+  removeLegacyDesignSkills();
   installIssueBoardSkill();
-  installUiUxProMaxSkill();
   installFrontendSkillsRule();
   installEnforcementRule();
   installAgentIsolationRule();

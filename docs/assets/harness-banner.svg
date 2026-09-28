@@ -20,7 +20,7 @@
   <rect x="64" y="72" width="8" height="216" rx="4" fill="url(#accent)"/>
   <text x="96" y="120" fill="#F8FAFC" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="42" font-weight="700">@tron/claude-config</text>
   <text x="96" y="172" fill="#E2E8F0" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="28" font-weight="600">Enforcement harness for Claude Code</text>
-  <text x="96" y="220" fill="#94A3B8" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="20">Hooks · Reviews · Scoped ECC rules · Auto-update</text>
+  <text x="96" y="220" fill="#94A3B8" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="20">Hooks · Reviews · Scoped tron-kit rules · Auto-update</text>
   <g transform="translate(96, 260)">
     <rect width="150" height="36" rx="8" fill="rgba(45,212,191,0.15)" stroke="#2DD4BF" stroke-width="1.5"/>
     <text x="75" y="24" text-anchor="middle" fill="#5EEAD4" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="600">/commit-changes</text>

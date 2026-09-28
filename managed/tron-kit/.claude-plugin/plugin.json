@@ -1,0 +1,27 @@
+{
+  "name": "tron-kit",
+  "version": "1.9.0",
+  "description": "Tron engineering kit for Claude Code: agents, skills, commands, hooks, language rules and MCP conventions managed by @tron/claude-config",
+  "author": {
+    "name": "tron"
+  },
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "agents",
+    "skills",
+    "hooks",
+    "rules",
+    "tdd",
+    "code-review",
+    "security",
+    "workflow"
+  ],
+  "mcpServers": {},
+  "skills": [
+    "./skills/"
+  ],
+  "commands": [
+    "./commands/"
+  ]
+}

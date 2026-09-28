@@ -1,0 +1,88 @@
+{
+  "upstream": {
+    "repo": "https://github.com/affaan-m/ECC.git",
+    "ref": "38a7ebbe3294be9bfda5612c6d696742ade6fbb2"
+  },
+  "include": [
+    "agents",
+    "commands",
+    "skills",
+    "hooks",
+    "scripts",
+    "rules",
+    "schemas",
+    "manifests",
+    "config",
+    "mcp-configs",
+    ".mcp.json",
+    "LICENSE",
+    "VERSION"
+  ],
+  "exclude": [
+    "**/save-session.md",
+    "**/save-session/**",
+    "commands/auto-update.md",
+    "skills/configure-ecc/**",
+    "skills/design-system/**",
+    "skills/frontend-design-direction/**",
+    "skills/motion-foundations/**",
+    "skills/motion-patterns/**",
+    "skills/motion-advanced/**",
+    "skills/motion-ui/**",
+    "skills/liquid-glass-design/**",
+    "skills/accessibility/**",
+    "skills/frontend-a11y/**",
+    "skills/loop-design-check/**",
+    "skills/inherit-legacy-style/**",
+    "hooks/*.bak",
+    "**/.DS_Store",
+    "**/__pycache__/**",
+    "**/node_modules/**"
+  ],
+  "hooks": {
+    "file": "hooks/hooks.json",
+    "stripMatcherKeys": ["id", "description"]
+  },
+  "rewrites": [
+    {
+      "id": "inline-resolver-plugin-roots",
+      "files": ["hooks/hooks.json", "scripts/lib/resolve-ecc-root.js", "commands/*.md"],
+      "find": "var s=['ecc','ecc@ecc','marketplaces/ecc','everything-claude-code','everything-claude-code@everything-claude-code','marketplaces/everything-claude-code']",
+      "replace": "var s=['tron-kit','tron-kit@tron','marketplaces/tron']",
+      "minMatches": 30
+    },
+    {
+      "id": "inline-resolver-cache-marketplaces",
+      "files": ["hooks/hooks.json", "scripts/lib/resolve-ecc-root.js", "commands/*.md"],
+      "find": "var g=['ecc','everything-claude-code']",
+      "replace": "var g=['tron']",
+      "minMatches": 30
+    },
+    {
+      "id": "resolver-module-slugs",
+      "files": ["scripts/lib/resolve-ecc-root.js"],
+      "find": "const CURRENT_PLUGIN_SLUG = 'ecc';\nconst LEGACY_PLUGIN_SLUG = 'everything-claude-code';\nconst CURRENT_PLUGIN_HANDLE = `${CURRENT_PLUGIN_SLUG}@${CURRENT_PLUGIN_SLUG}`;\nconst LEGACY_PLUGIN_HANDLE = `${LEGACY_PLUGIN_SLUG}@${LEGACY_PLUGIN_SLUG}`;\nconst PLUGIN_CACHE_SLUGS = [CURRENT_PLUGIN_SLUG, LEGACY_PLUGIN_SLUG];\nconst PLUGIN_ROOT_SEGMENTS = [\n  [CURRENT_PLUGIN_SLUG],\n  [CURRENT_PLUGIN_HANDLE],\n  ['marketplaces', CURRENT_PLUGIN_SLUG],\n  [LEGACY_PLUGIN_SLUG],\n  [LEGACY_PLUGIN_HANDLE],\n  ['marketplaces', LEGACY_PLUGIN_SLUG],\n];",
+      "replace": "const CURRENT_PLUGIN_SLUG = 'tron-kit';\nconst MARKETPLACE_SLUG = 'tron';\nconst CURRENT_PLUGIN_HANDLE = `${CURRENT_PLUGIN_SLUG}@${MARKETPLACE_SLUG}`;\nconst PLUGIN_CACHE_SLUGS = [MARKETPLACE_SLUG];\nconst PLUGIN_ROOT_SEGMENTS = [\n  [CURRENT_PLUGIN_SLUG],\n  [CURRENT_PLUGIN_HANDLE],\n  ['marketplaces', MARKETPLACE_SLUG],\n];",
+      "minMatches": 1
+    },
+    {
+      "id": "session-handoff-replaces-save-session",
+      "files": ["commands/prp-prd.md", "commands/resume-session.md", "skills/council/SKILL.md", "skills/prompt-optimizer/SKILL.md"],
+      "find": "/save-session",
+      "replace": "/session-handoff",
+      "minMatches": 8
+    }
+  ],
+  "plugin": {
+    "name": "tron-kit",
+    "description": "Tron engineering kit for Claude Code: agents, skills, commands, hooks, language rules and MCP conventions managed by @tron/claude-config",
+    "author": { "name": "tron" },
+    "license": "MIT",
+    "keywords": ["claude-code", "agents", "skills", "hooks", "rules", "tdd", "code-review", "security", "workflow"]
+  },
+  "marketplace": {
+    "name": "tron",
+    "owner": { "name": "tron" },
+    "description": "Tron-managed Claude Code plugins"
+  }
+}

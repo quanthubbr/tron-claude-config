@@ -99,4 +99,4 @@ gitleaks git --staged 2>/dev/null || gitleaks detect --no-git --source . 2>/dev/
 
 - This command is the harness security gate for commits. Do not skip it during `/commit-changes`.
 - Prefer fixing CRITICAL/HIGH in-session; do not commit with known unresolved HIGH/CRITICAL security findings.
-- Broader ECC security patterns (payments, blockchain, CSP hardening) apply when the diff touches those domains — expand the checklist accordingly.
+- Broader tron-kit security patterns (payments, blockchain, CSP hardening) apply when the diff touches those domains — expand the checklist accordingly.

@@ -4,12 +4,12 @@
 const fs = require('fs');
 const path = require('path');
 
-/** Folders always installed from ECC. */
+/** Folders always installed from tron-kit. */
 const ALWAYS_FOLDERS = ['common'];
 
 /**
- * ECC language/domain folders installed only when project scope matches.
- * Keys must match directory names under ECC/rules/.
+ * tron-kit language/domain folders installed only when project scope matches.
+ * Keys must match directory names under managed/tron-kit/rules/.
  */
 const SCOPED_FOLDERS = [
   'csharp',
@@ -232,7 +232,7 @@ function detectScopedFolders(projectRoot, pkg, deps) {
 }
 
 /**
- * Returns ECC rule folder names to install for a consumer project.
+ * Returns tron-kit rule folder names to install for a consumer project.
  * @param {string} projectRoot
  * @returns {{ folders: string[], scoped: string[], signals: Record<string, unknown> }}
  */

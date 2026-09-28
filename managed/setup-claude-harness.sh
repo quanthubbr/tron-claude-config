@@ -44,11 +44,11 @@ log "━━━━━━━━━━━━━━━━━━━━━━━━━
 log " Claude Enforcement Harness — Setup"
 log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# 0. Sync ECC rules to project scope (add/remove language folders as needed)
-SYNC_ECC="$REPO_ROOT/node_modules/@tron/claude-config/scripts/sync-ecc-rules.js"
-if [ -f "$SYNC_ECC" ]; then
-  if ! node "$SYNC_ECC" "$REPO_ROOT" 2>&1; then
-    [ "$SILENT" != "--silent" ] && log "   ⚠ ECC rules sync failed (check internet / git)"
+# 0. Sync tron-kit rules to project scope (add/remove language folders as needed)
+SYNC_TRON_RULES="$REPO_ROOT/node_modules/@tron/claude-config/scripts/sync-tron-rules.js"
+if [ -f "$SYNC_TRON_RULES" ]; then
+  if ! node "$SYNC_TRON_RULES" "$REPO_ROOT" 2>&1; then
+    [ "$SILENT" != "--silent" ] && log "   ⚠ tron-kit rules sync failed (reinstall @tron/claude-config)"
   fi
 fi
 

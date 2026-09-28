@@ -4,11 +4,11 @@
 
 | Layer | Higher priority | Lower priority |
 |-------|----------------|---------------|
-| **Rules** | ECC (`.claude/rules/ecc/`) | Karpathy guidelines below |
-| **Skills** | `andrej-karpathy-skills:karpathy-guidelines` | ECC skills |
+| **Rules** | tron-kit (`.claude/rules/tron/`) | Karpathy guidelines below |
+| **Skills** | `andrej-karpathy-skills:karpathy-guidelines` | tron-kit skills |
 | **Communication** | Caveman (`~/.claude/rules/caveman.md`) — always on | Verbose / filler replies |
 
-When rules conflict: follow ECC.
+When rules conflict: follow tron-kit.
 When behavior/skill guidelines conflict: follow karpathy.
 **Communication style:** caveman is mandatory for conversational replies (see `caveman.md`). Code, commits, and PR bodies stay normal prose.
 

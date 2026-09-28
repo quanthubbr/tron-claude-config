@@ -1,0 +1,34 @@
+{
+  "name": "tron",
+  "owner": {
+    "name": "tron"
+  },
+  "metadata": {
+    "description": "Tron-managed Claude Code plugins"
+  },
+  "plugins": [
+    {
+      "name": "tron-kit",
+      "source": "./",
+      "description": "Tron engineering kit for Claude Code: agents, skills, commands, hooks, language rules and MCP conventions managed by @tron/claude-config",
+      "version": "1.9.0",
+      "author": {
+        "name": "tron"
+      },
+      "license": "MIT",
+      "keywords": [
+        "claude-code",
+        "agents",
+        "skills",
+        "hooks",
+        "rules",
+        "tdd",
+        "code-review",
+        "security",
+        "workflow"
+      ],
+      "category": "workflow",
+      "strict": false
+    }
+  ]
+}
