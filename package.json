@@ -1,12 +1,13 @@
 {
   "name": "@tron/claude-config",
-  "version": "1.7.1",
+  "version": "1.9.0",
   "description": "Claude Code enforcement harness for tron repos",
   "private": true,
   "scripts": {
     "postinstall": "node scripts/postinstall.js",
     "ensure:codebase-memory": "node scripts/lib/ensure-codebase-memory.js",
-    "sync:quanthub": "bash scripts/sync-quanthub-fork.sh"
+    "sync:quanthub": "bash scripts/sync-quanthub-fork.sh",
+    "sync:tron-kit": "node scripts/sync-tron-kit.js"
   },
   "engines": {
     "node": ">=18.0.0"
