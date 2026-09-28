@@ -2,7 +2,7 @@
   "repo": "https://github.com/affaan-m/ECC.git",
   "ref": "38a7ebbe3294be9bfda5612c6d696742ade6fbb2",
   "upstreamVersion": "2.0.0",
-  "syncedAt": "2026-09-28T13:42:39.244Z",
+  "syncedAt": "2026-09-28T14:29:37.980Z",
   "excluded": [
     "commands/auto-update.md",
     "commands/save-session.md",
@@ -35,6 +35,42 @@
     {
       "id": "session-handoff-replaces-save-session",
       "matches": 8
+    },
+    {
+      "id": "a11y-skill-list-refs",
+      "matches": 3
+    },
+    {
+      "id": "a11y-react-rule",
+      "matches": 1
+    },
+    {
+      "id": "a11y-architect-pointer",
+      "matches": 1
+    },
+    {
+      "id": "a11y-react-patterns-crosslink",
+      "matches": 1
+    },
+    {
+      "id": "a11y-react-testing-crosslink",
+      "matches": 1
+    },
+    {
+      "id": "a11y-skill-md-links",
+      "matches": 3
+    },
+    {
+      "id": "a11y-vue-patterns",
+      "matches": 1
+    },
+    {
+      "id": "a11y-mle-workflow",
+      "matches": 1
+    },
+    {
+      "id": "a11y-mle-workflow-table",
+      "matches": 1
     }
   ]
 }

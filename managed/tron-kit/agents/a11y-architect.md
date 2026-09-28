@@ -146,4 +146,4 @@ Button(action: close) {
 
 ## Reference
 
-- See skill `accessibility` to transform raw UI requirements into platform-specific accessible code (WAI-ARIA, SwiftUI, or Jetpack Compose) based on WCAG 2.2 criteria.
+- See the `impeccable` skill (`audit`, `harden`) to audit and harden the implemented UI against WCAG 2.2 criteria (WAI-ARIA, SwiftUI, or Jetpack Compose).

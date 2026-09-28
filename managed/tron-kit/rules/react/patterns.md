@@ -191,4 +191,4 @@ Older codebases on React 18 still need `forwardRef`.
 
 ## Skill Reference
 
-For React-specific deep dives see `skills/react-patterns/SKILL.md`. For cross-framework frontend concerns see `skills/frontend-patterns/SKILL.md`. For accessibility see `skills/accessibility/SKILL.md`.
+For React-specific deep dives see `skills/react-patterns/SKILL.md`. For cross-framework frontend concerns see `skills/frontend-patterns/SKILL.md`. For accessibility see the `impeccable` skill (`audit`, `harden`).

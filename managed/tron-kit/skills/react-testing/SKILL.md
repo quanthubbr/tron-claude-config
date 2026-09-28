@@ -244,7 +244,7 @@ Run axe in component tests for every interactive component. Catches:
 - Missing alt text on images
 - Heading order violations
 
-Cross-link: [skills/accessibility/SKILL.md](../accessibility/SKILL.md) for the broader a11y testing playbook.
+Cross-link: the `impeccable` skill (`audit`, `harden`) for the broader a11y review.
 
 ## When NOT to Use Snapshot Tests
 
@@ -356,7 +356,7 @@ CI=true vitest run --coverage
 ## Related
 
 - Rules: [rules/react/testing.md](../../rules/react/testing.md)
-- Skills: [react-patterns](../react-patterns/SKILL.md), [accessibility](../accessibility/SKILL.md), [e2e-testing](../e2e-testing/SKILL.md), [tdd-workflow](../tdd-workflow/SKILL.md)
+- Skills: [react-patterns](../react-patterns/SKILL.md), `impeccable` (audit, harden), [e2e-testing](../e2e-testing/SKILL.md), [tdd-workflow](../tdd-workflow/SKILL.md)
 - Agents: `react-reviewer` (reviews test quality during code review), `tdd-guide` (enforces TDD process)
 - Commands: `/react-test`, `/react-review`
 

@@ -71,6 +71,69 @@
       "find": "/save-session",
       "replace": "/session-handoff",
       "minMatches": 8
+    },
+    {
+      "id": "a11y-skill-list-refs",
+      "files": ["agents/react-reviewer.md", "commands/react-review.md", "commands/react-test.md"],
+      "find": "`skills/accessibility/`",
+      "replace": "`impeccable` (audit, harden)",
+      "minMatches": 3
+    },
+    {
+      "id": "a11y-react-rule",
+      "files": ["rules/react/patterns.md"],
+      "find": "For accessibility see `skills/accessibility/SKILL.md`.",
+      "replace": "For accessibility see the `impeccable` skill (`audit`, `harden`).",
+      "minMatches": 1
+    },
+    {
+      "id": "a11y-architect-pointer",
+      "files": ["agents/a11y-architect.md"],
+      "find": "See skill `accessibility` to transform raw UI requirements into platform-specific accessible code (WAI-ARIA, SwiftUI, or Jetpack Compose) based on WCAG 2.2 criteria.",
+      "replace": "See the `impeccable` skill (`audit`, `harden`) to audit and harden the implemented UI against WCAG 2.2 criteria (WAI-ARIA, SwiftUI, or Jetpack Compose).",
+      "minMatches": 1
+    },
+    {
+      "id": "a11y-react-patterns-crosslink",
+      "files": ["skills/react-patterns/SKILL.md"],
+      "find": "[skills/accessibility/SKILL.md](../accessibility/SKILL.md) covers WCAG criteria and pattern libraries",
+      "replace": "the `impeccable` skill (`audit`, `harden`) covers WCAG criteria and accessibility hardening",
+      "minMatches": 1
+    },
+    {
+      "id": "a11y-react-testing-crosslink",
+      "files": ["skills/react-testing/SKILL.md"],
+      "find": "[skills/accessibility/SKILL.md](../accessibility/SKILL.md) for the broader a11y testing playbook.",
+      "replace": "the `impeccable` skill (`audit`, `harden`) for the broader a11y review.",
+      "minMatches": 1
+    },
+    {
+      "id": "a11y-skill-md-links",
+      "files": ["skills/react-patterns/SKILL.md", "skills/react-performance/SKILL.md", "skills/react-testing/SKILL.md"],
+      "find": "[accessibility](../accessibility/SKILL.md)",
+      "replace": "`impeccable` (audit, harden)",
+      "minMatches": 3
+    },
+    {
+      "id": "a11y-vue-patterns",
+      "files": ["skills/vue-patterns/SKILL.md"],
+      "find": "- `accessibility` — ARIA, semantic HTML, focus management",
+      "replace": "- `impeccable` (audit, harden) — ARIA, semantic HTML, focus management",
+      "minMatches": 1
+    },
+    {
+      "id": "a11y-mle-workflow",
+      "files": ["skills/mle-workflow/SKILL.md"],
+      "find": "`browser-qa` / `accessibility`",
+      "replace": "`browser-qa` / `impeccable` (audit)",
+      "minMatches": 1
+    },
+    {
+      "id": "a11y-mle-workflow-table",
+      "files": ["skills/mle-workflow/SKILL.md"],
+      "find": "`browser-qa`, `accessibility`",
+      "replace": "`browser-qa`, `impeccable` (audit)",
+      "minMatches": 1
     }
   ],
   "plugin": {
