@@ -1,5 +1,5 @@
 ---
-description: Mandatory Emil + Impeccable + Taste (primary DESIGN authority) + ui-ux-pro-max for UI work
+description: Mandatory Emil + Impeccable + Taste (primary DESIGN authority) for UI work; tron-design-fallback subordinate for charts, forms, web navigation and stack guidelines
 alwaysApply: true
 ---
 
@@ -15,15 +15,12 @@ On ANY frontend/UI task — pages, components, styling, layout, redesign, polish
 
 Then:
 
-4. **`ui-ux-pro-max`** (important but subordinate) — **after the combo sets direction**, run the design-system generator:
-   `python3 ~/.cursor/skills/ui-ux-pro-max/scripts/search.py "<product-type>" --design-system -p "<project-name>"`
-   (fallback: `~/.agents/skills/ui-ux-pro-max/scripts/search.py`)
-5. **`frontend-design`** (optional supporting guardrail) — anti-generic AI look only; never outranks the combo.
+4. **`tron-design-fallback`** (subordinate) — `~/.cursor/skills/tron-design-fallback/SKILL.md` (also `~/.claude/skills/`). Consult **only after the combo sets direction**, and only for charts/data visualization, form UX patterns, web navigation patterns, and stack implementation guidelines (Vue, Nuxt, React, Next.js, React Native, shadcn/ui, Tailwind). Never sets visual direction.
 
-**On conflict between ui-ux-pro-max (or frontend-design) and the Emil+Impeccable+Taste combo, ALWAYS prefer the combo.**
+**On conflict between tron-design-fallback and the Emil+Impeccable+Taste combo, ALWAYS prefer the combo.**
 
-Announce: `Using Emil + Impeccable + Taste (+ ui-ux-pro-max) for [purpose]`
+Announce: `Using Emil + Impeccable + Taste for [purpose]` — append `(+ tron-design-fallback)` only when it was actually consulted.
 
-Follow stack guidelines (React/Next.js/shadcn when relevant) and the ui-ux-pro-max pre-delivery checklist (cursor-pointer, hover, contrast, focus, responsive).
+Before delivery, after the combo's polish/audit pass, run the tron-design-fallback pre-delivery add-on (cursor-pointer on non-button clickables, chart legend + non-color encoding + table fallback, form a11y, focus on route change, z-index scale).
 
 Skip only for pure backend/infra with zero UI surface. Existing project design systems still win for tokens/components — skills guide quality and direction, not invent a second system.

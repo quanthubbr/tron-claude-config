@@ -61,14 +61,14 @@ The orchestrator passes you a task. You query the codebase yourself to understan
 
 | Priority | Source | Scope |
 |----------|--------|-------|
-| 1 — highest | ECC rules (`.claude/rules/ecc/`) | Coding standards: naming, testing, security, git |
+| 1 — highest | tron-kit rules (`.claude/rules/tron/`) | Coding standards: naming, testing, security, git |
 | 2 | Karpathy principles (below) | Behavioral: how to think and act |
 | 3 | Harness enforcement (`harness-enforcement.md`) | Workflow: commit gates, review gates |
 | 4 | Caveman (`caveman.md`) | Communication: terse replies (always on) |
 
 **Caveman:** reply terse by default. Code/commits/PR bodies stay normal. See `~/.claude/rules/caveman.md`.
 
-**Frontend skills:** mandatory on any UI task. **Maximum source of truth for DESIGN** = combo: (1) Emil Kowalski, (2) Impeccable, (3) Taste (`design-taste-frontend` + task-matched variants); then (4) ui-ux-pro-max (subordinate), (5) frontend-design (optional guardrail). **On conflict between ui-ux-pro-max (or frontend-design) and the Emil+Impeccable+Taste combo, ALWAYS prefer the combo.** Load in that order. Announce: `Using Emil + Impeccable + Taste (+ ui-ux-pro-max) for [purpose]`. See `AGENTS.md` § Frontend skills.
+**Frontend skills:** mandatory on any UI task. **Maximum source of truth for DESIGN** = combo: (1) Emil Kowalski, (2) Impeccable, (3) Taste (`design-taste-frontend` + task-matched variants); then (4) tron-design-fallback (subordinate; only after the combo set direction, only for charts, forms, web navigation and stack guidelines). **On conflict between tron-design-fallback and the Emil+Impeccable+Taste combo, ALWAYS prefer the combo.** Load in that order. Announce: `Using Emil + Impeccable + Taste for [purpose]`, appending `(+ tron-design-fallback)` only when it was consulted. See `AGENTS.md` § Frontend skills.
 
 ## Karpathy principles — mandatory for all write/edit/refactor tasks
 
