@@ -118,7 +118,7 @@ tron-claude-config/
 | `~/.{claude,cursor,agents,github}/skills/{ui-ux-pro-max,frontend-design}` | **Package** (removed if present) | Legacy design layer; plugin `frontend-design@claude-plugins-official` disabled |
 | `~/.cursor/rules/frontend-skills.mdc` | **Package** (always synced) | Encodes the design authority order |
 | `~/.claude/tron-kit/` + plugin `tron-kit@tron` | **Package** (always synced) | Version stamped from `package.json`; installed via `claude plugin`, settings.json fallback |
-| `~/.claude/rules/caveman.md` | **Package** (always overwrite) | Caveman communication — mandatory every session |
+| `~/.claude/rules/caveman.md` | **Package** (always overwrite) | Caveman communication — mandatory every session, unless `~/.claude/.sem-caveman` exists (then removed, and caveman lines stripped from the other rules) |
 | `~/.claude/.mcp.json` (`codebase-memory*`) | **Package** (ensure on install) | Required MCP — setup script warns if missing; postinstall no longer aborts |
 | `.claude/PR-TEMPLATE.md` | **Package** | Canonical PT-BR PR body scaffold |
 | `.claude/hooks/lib/pr-template-validate.cjs` | **Package** | PR body + `gh pr create` command validation |

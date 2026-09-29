@@ -61,7 +61,7 @@
 | gsd | global `$PATH` | `npm install -g @opengsd/gsd-pi` (or bun/pnpm) |
 | doc | `~/.claude/skills/doc/` | always synced (`SKILL.md`, `doc.mjs`); no per-person state |
 | caveman skill/plugin | `~/.claude/skills/caveman/` (or plugin) | Official install script |
-| **Caveman rule (enforced)** | `~/.claude/rules/caveman.md` | Always overwritten from package — terse replies mandatory |
+| **Caveman rule (enforced)** | `~/.claude/rules/caveman.md` | Always overwritten from package — terse replies mandatory. Opt-out per machine: `touch ~/.claude/.sem-caveman` |
 | codebase-memory-mcp | `~/.claude/.mcp.json` | **Required** — `ensure-codebase-memory.js` (official install.sh / install.ps1 + Unblock-File on Windows; npm fallback; postinstall exits 1 if missing) |
 
 ---

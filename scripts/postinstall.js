@@ -12,6 +12,7 @@ const { execSync, execFileSync } = require('child_process');
 const { installTronRules } = require('./lib/install-tron-rules');
 const { installTronKitPlugin, removeLegacyEcc, disablePlugin } = require('./lib/install-tron-kit');
 const { ensureCodebaseMemoryMcp } = require('./lib/ensure-codebase-memory');
+const { isCavemanOptedOut, stripCaveman } = require('./lib/caveman-opt-out');
 
 const DRY = process.env.DRY === '1';
 const IS_CI = !!(process.env.CI || process.env.CONTINUOUS_INTEGRATION || process.env.GITHUB_ACTIONS);
@@ -463,6 +464,10 @@ function installCodebaseMemoryMcp() {
 }
 
 function installCaveman() {
+  if (isCavemanOptedOut()) {
+    log('caveman skipped — opted out via ~/.claude/.sem-caveman');
+    return;
+  }
   if (process.platform === 'win32') {
     log('WARN: caveman auto-install skipped on native Windows — use WSL/Git Bash or install from https://github.com/JuliusBrussee/caveman');
     return;
@@ -627,6 +632,10 @@ function installEnforcementRule() {
   const dest = path.join(os.homedir(), '.claude', 'rules', 'harness-enforcement.md');
   const src = path.join(PACKAGE_ROOT, 'managed', 'claude', 'rules', 'harness-enforcement.md');
   fs.mkdirSync(path.dirname(dest), { recursive: true });
+  if (isCavemanOptedOut()) {
+    fs.writeFileSync(dest, stripCaveman(fs.readFileSync(src, 'utf8')));
+    return;
+  }
   fs.copyFileSync(src, dest);
 }
 
@@ -634,6 +643,10 @@ function installAgentIsolationRule() {
   const dest = path.join(os.homedir(), '.claude', 'rules', 'agent-isolation.md');
   const src = path.join(PACKAGE_ROOT, 'managed', 'claude', 'rules', 'agent-isolation.md');
   fs.mkdirSync(path.dirname(dest), { recursive: true });
+  if (isCavemanOptedOut()) {
+    fs.writeFileSync(dest, stripCaveman(fs.readFileSync(src, 'utf8')));
+    return;
+  }
   fs.copyFileSync(src, dest);
 }
 
@@ -660,8 +673,13 @@ function installTronKit() {
 }
 
 function installCavemanRule() {
-  // Always overwrite — caveman communication is harness-enforced, not optional
+  // Always overwrite — caveman communication is harness-enforced, unless this machine opted out
   const dest = path.join(os.homedir(), '.claude', 'rules', 'caveman.md');
+  if (isCavemanOptedOut()) {
+    fs.rmSync(dest, { force: true });
+    log('caveman rule removed — opted out via ~/.claude/.sem-caveman');
+    return;
+  }
   const src = path.join(PACKAGE_ROOT, 'managed', 'claude', 'rules', 'caveman.md');
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.copyFileSync(src, dest);
