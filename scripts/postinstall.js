@@ -29,6 +29,7 @@ const MANAGED_FILES = [
   ['managed/claude/hooks/lib/pr-template-validate.cjs','.claude/hooks/lib/pr-template-validate.cjs'],
   ['managed/claude/hooks/lib/validate-pr-body.cjs',    '.claude/hooks/lib/validate-pr-body.cjs'],
   ['managed/claude/hooks/lib/pr-create-gate.cjs',      '.claude/hooks/lib/pr-create-gate.cjs'],
+  ['managed/claude/hooks/lib/harness-sha.cjs',         '.claude/hooks/lib/harness-sha.cjs'],
   ['managed/setup-claude-harness.sh',                 'scripts/setup-claude-harness.sh'],
   ['managed/AGENTS.md',                               'AGENTS.md'],
 ];

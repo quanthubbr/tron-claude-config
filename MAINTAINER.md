@@ -1,6 +1,6 @@
 # tron-claude-config — Maintainer Guide
 
-Owner playbook for the shared Claude enforcement harness (`@tron/claude-config` **v1.15.0**).
+Owner playbook for the shared Claude enforcement harness (`@tron/claude-config` **v1.15.1**).
 
 Consumer docs: [README.md](README.md) · Operator cheat sheet: [HARNESS-GUIDE.md](HARNESS-GUIDE.md)
 
@@ -175,8 +175,8 @@ Consumers pick up the release on the next daily bootstrap check, or immediately 
 `UserPromptSubmit` → `bootstrap-check.sh`:
 
 1. Skip if `.claude/.harness-last-update` is less than 24h old  
-2. Compare installed git SHA / version to remote  
-3. If outdated: package-manager install of `@tron/claude-config`, then `setup-claude-harness.sh --silent` (hooks + **tron-kit rules re-sync**)  
+2. Compare installed git SHA to remote HEAD (`hooks/lib/harness-sha.cjs`: npm `_resolved`, package `.git`, or the pnpm/bun/yarn lockfile)  
+3. If outdated: package-manager install of `@tron/claude-config@<consumer spec>`, then `setup-claude-harness.sh --silent` (hooks + **tron-kit rules re-sync**)  
 4. Refresh the timestamp  
 
 Silent by design. At most one status line in the session.
