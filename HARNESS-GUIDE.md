@@ -3,7 +3,7 @@
 > Quick reference: what the harness installs, what it enforces, and how to operate it day to day.  
 > Consumer pitch + install story: [README.md](README.md) · Releases: [MAINTAINER.md](MAINTAINER.md)
 
-**Current package version:** `1.15.0`
+**Current package version:** `1.15.1`
 
 ---
 
@@ -232,7 +232,7 @@ Agents never skip hooks: tron-kit refuses hook-skipping git commands, and an age
 
 ```
 tron-claude-config/
-├── package.json                              # v1.15.0
+├── package.json                              # v1.15.1
 ├── scripts/
 │   ├── postinstall.js                        # orchestrator
 │   ├── sync-tron-rules.js                    # tron-kit rules re-sync CLI

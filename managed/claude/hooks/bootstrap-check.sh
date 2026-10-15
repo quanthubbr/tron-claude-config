@@ -61,23 +61,22 @@ if [ "$SHOULD_UPDATE" = true ]; then
       catch(e) { process.stdout.write(''); }
     " 2>/dev/null)
 
-    # For git-sourced packages: compare resolved commit vs remote HEAD.
-    # npm records this in package.json's "_resolved" field; pnpm does not,
-    # so fall back to the installed package's own .git HEAD when present.
-    INSTALLED_SHA=$(node -e "
-      try {
-        const r = require('./${PKG_JSON}')._resolved || '';
-        process.stdout.write(r.split('#')[1] || '');
-      } catch(e) { process.stdout.write(''); }
-    " 2>/dev/null)
-    if [ -z "$INSTALLED_SHA" ] && [ -d "node_modules/${PACKAGE_NAME}/.git" ]; then
-      INSTALLED_SHA=$(git -C "node_modules/${PACKAGE_NAME}" rev-parse HEAD 2>/dev/null)
-    fi
-
+    # Git-sourced package: installed commit (_resolved, .git or lockfile) vs remote HEAD.
+    SHA_LIB=".claude/hooks/lib/harness-sha.cjs"
+    [ -f "$SHA_LIB" ] || SHA_LIB="node_modules/${PACKAGE_NAME}/managed/claude/hooks/lib/harness-sha.cjs"
+    INSTALLED_SHA=""
     REMOTE_SHA=""
-    if [ -d "node_modules/${PACKAGE_NAME}/.git" ]; then
-      REMOTE_SHA=$(git -C "node_modules/${PACKAGE_NAME}" ls-remote origin HEAD 2>/dev/null | awk '{print $1}')
+    DEP_SPEC=""
+    if [ -f "$SHA_LIB" ]; then
+      INSTALLED_SHA=$(node "$SHA_LIB" installed 2>/dev/null)
+      DEP_SPEC=$(node "$SHA_LIB" spec 2>/dev/null)
+      REMOTE_URL=$(node "$SHA_LIB" remote-url 2>/dev/null)
+      if [ -n "$REMOTE_URL" ]; then
+        REMOTE_SHA=$(GIT_TERMINAL_PROMPT=0 git ls-remote "$REMOTE_URL" HEAD 2>/dev/null | awk '{print $1}')
+      fi
     fi
+    # Re-resolve the consumer's own spec: the bare name is not on the npm registry.
+    INSTALL_TARGET="${PACKAGE_NAME}${DEP_SPEC:+@$DEP_SPEC}"
 
     NEEDS_UPDATE=false
     if [ -n "$REMOTE_SHA" ] && [ -n "$INSTALLED_SHA" ] && [ "$INSTALLED_SHA" != "$REMOTE_SHA" ]; then
@@ -90,9 +89,9 @@ if [ "$SHOULD_UPDATE" = true ]; then
       echo "[harness] update available ($INSTALLED_VERSION → latest), applying..."
       # Use detected package manager — never hardcode npm
       case "$PM" in
-        bun)  bun add --dev "${PACKAGE_NAME}" 2>/dev/null ;;
-        pnpm) pnpm add --save-dev "${PACKAGE_NAME}" --silent 2>/dev/null ;;
-        *)    npm install --save-dev "${PACKAGE_NAME}" --silent 2>/dev/null ;;
+        bun)  bun add --dev "${INSTALL_TARGET}" 2>/dev/null ;;
+        pnpm) pnpm add --save-dev "${INSTALL_TARGET}" --silent 2>/dev/null ;;
+        *)    npm install --save-dev "${INSTALL_TARGET}" --silent 2>/dev/null ;;
       esac
       bash scripts/setup-claude-harness.sh --silent 2>/dev/null
       echo "[harness] updated ✓"
