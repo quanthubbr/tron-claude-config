@@ -77,11 +77,10 @@ if (require.main === module) {
   const commands = {
     installed: () => installedSha(root),
     'remote-url': () => remoteUrl(root) || '',
-    spec: () => dependencySpec(root),
   };
   const run = commands[process.argv[2]];
   if (!run) {
-    process.stderr.write('usage: harness-sha.cjs installed|remote-url|spec\n');
+    process.stderr.write('usage: harness-sha.cjs installed|remote-url\n');
     process.exit(2);
   }
   process.stdout.write(run());

@@ -6,6 +6,8 @@
 # Always exits 0 (never blocks the user's prompt).
 # Output on stdout is injected into Claude's context as a system note.
 
+# Braces: bash parses the whole file first, so postinstall can overwrite it mid-run.
+{
 LAST_CHECK_FILE=".claude/.harness-last-update"
 NOW=$(date +%s)
 
@@ -66,17 +68,13 @@ if [ "$SHOULD_UPDATE" = true ]; then
     [ -f "$SHA_LIB" ] || SHA_LIB="node_modules/${PACKAGE_NAME}/managed/claude/hooks/lib/harness-sha.cjs"
     INSTALLED_SHA=""
     REMOTE_SHA=""
-    DEP_SPEC=""
     if [ -f "$SHA_LIB" ]; then
       INSTALLED_SHA=$(node "$SHA_LIB" installed 2>/dev/null)
-      DEP_SPEC=$(node "$SHA_LIB" spec 2>/dev/null)
       REMOTE_URL=$(node "$SHA_LIB" remote-url 2>/dev/null)
       if [ -n "$REMOTE_URL" ]; then
         REMOTE_SHA=$(GIT_TERMINAL_PROMPT=0 git ls-remote "$REMOTE_URL" HEAD 2>/dev/null | awk '{print $1}')
       fi
     fi
-    # Re-resolve the consumer's own spec: the bare name is not on the npm registry.
-    INSTALL_TARGET="${PACKAGE_NAME}${DEP_SPEC:+@$DEP_SPEC}"
 
     NEEDS_UPDATE=false
     if [ -n "$REMOTE_SHA" ] && [ -n "$INSTALLED_SHA" ] && [ "$INSTALLED_SHA" != "$REMOTE_SHA" ]; then
@@ -87,14 +85,20 @@ if [ "$SHOULD_UPDATE" = true ]; then
       echo "[harness] update available ($INSTALLED_VERSION → latest), skipped: package.json pins an exact commit"
     elif [ "$NEEDS_UPDATE" = true ]; then
       echo "[harness] update available ($INSTALLED_VERSION → latest), applying..."
-      # Use detected package manager — never hardcode npm
+      # `update` re-resolves the git spec; `add` of the same spec is a no-op.
       case "$PM" in
-        bun)  bun add --dev "${INSTALL_TARGET}" 2>/dev/null ;;
-        pnpm) pnpm add --save-dev "${INSTALL_TARGET}" --silent 2>/dev/null ;;
-        *)    npm install --save-dev "${INSTALL_TARGET}" --silent 2>/dev/null ;;
+        bun)  bun update "${PACKAGE_NAME}" >/dev/null 2>&1 ;;
+        pnpm) pnpm update "${PACKAGE_NAME}" --silent >/dev/null 2>&1 ;;
+        *)    npm update "${PACKAGE_NAME}" --silent >/dev/null 2>&1 ;;
       esac
-      bash scripts/setup-claude-harness.sh --silent 2>/dev/null
-      echo "[harness] updated ✓"
+      if [ $? -ne 0 ]; then
+        echo "[harness] update failed — run: $PM update ${PACKAGE_NAME}"
+      else
+        # pnpm/bun block dependency build scripts by default, so postinstall may not have run.
+        INIT_CWD="$PWD" node "node_modules/${PACKAGE_NAME}/scripts/postinstall.js" >/dev/null 2>&1
+        bash scripts/setup-claude-harness.sh --silent 2>/dev/null
+        echo "[harness] updated ✓"
+      fi
     fi
   fi
 
@@ -179,3 +183,4 @@ if [ ${#MISSING[@]} -gt 0 ]; then
 fi
 
 exit 0
+}

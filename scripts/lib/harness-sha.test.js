@@ -59,6 +59,5 @@ assert.strictEqual(remoteUrl(registry), null);
 
 const cli = (cmd) => execFileSync('node', [LIB, cmd], { cwd: pnpm, encoding: 'utf8' });
 assert.strictEqual(cli('installed'), SHA_A);
-assert.strictEqual(cli('spec'), 'github:zaqueu-1/tron-claude-config');
 
 console.log('harness-sha: all tests passed');
