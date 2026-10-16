@@ -13,6 +13,7 @@ const { installTronKitPlugin, removeLegacyEcc, disablePlugin } = require('./lib/
 const { ensureTronGraph } = require('./lib/ensure-tron-graph');
 const { ensureTronDocs } = require('./lib/ensure-tron-docs');
 const { installTronAgents } = require('./lib/install-tron-agents');
+const { ensureEslintIgnore } = require('./lib/ensure-eslint-ignore');
 
 const DRY = process.env.DRY === '1';
 const IS_CI = !!(process.env.CI || process.env.CONTINUOUS_INTEGRATION || process.env.GITHUB_ACTIONS);
@@ -625,6 +626,7 @@ if (isConsumerRepo && !isSelfInstall) {
 
   installGitHooks();
   installGitIgnoreEntries();
+  ensureEslintIgnore(CONSUMER_ROOT, { dryRun: DRY, log });
   installTronDesignHooks(CONSUMER_ROOT);
 }
 

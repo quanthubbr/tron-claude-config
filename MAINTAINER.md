@@ -1,6 +1,6 @@
 # tron-claude-config — Maintainer Guide
 
-Owner playbook for the shared Claude enforcement harness (`@tron/claude-config` **v1.15.2**).
+Owner playbook for the shared Claude enforcement harness (`@tron/claude-config` **v1.15.3**).
 
 Consumer docs: [README.md](README.md) · Operator cheat sheet: [HARNESS-GUIDE.md](HARNESS-GUIDE.md)
 
