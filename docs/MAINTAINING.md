@@ -25,6 +25,7 @@ Everything a maintainer needs; the README is for users. Nothing in this file or 
 | `assets/adapters/`, `assets/editors/` | generated-file templates (OpenCode plugin), Cursor rule and hook templates | yes |
 | `test/` | `npm test` | no |
 | `maintainer/pege/` | upstream provenance, watch and originality gate | no |
+| `maintainer/release.js` | CI release gate: `check` (shipped change needs a version bump), `tag` (annotated tag for a new version) | no |
 | `maintainer/gen-v2-manifest.js` | regenerates `src/legacy/v2-manifest.json` from the `v2.0.0` tag | no |
 | `maintainer/mirror-sync.sh` | run, check or update the quanthub mirror sync | no |
 
@@ -87,17 +88,13 @@ Install and uninstall write into other tools' configs under the real home. Never
 
 ## Release
 
-```bash
-npm test
-npm run pege:originality
-bash maintainer/e2e-smoke.sh   # pack, global install into a temp prefix with a temp EXONOUS_HOME, install, doctor, selftests, commit denied then allowed, uninstall
-npm version minor --no-git-tag-version   # patch: fix · minor: new tool, skill or gate · major: breaks the install contract
-git commit -am "chore: release vX.Y.Z"
-git tag -a vX.Y.Z -m "vX.Y.Z"
-git push origin main --follow-tags
-```
+Releases are tagged by CI; nobody tags by hand.
 
-Use an **annotated** tag. Installs and updates resolve the tag to its peeled commit and install `github:zaqueu-1/exonous#<commit>`; the commit is verified after install. Never move or delete a published tag: `exonous doctor` warns every consumer whose tag now points elsewhere.
+- **In the PR:** a change to anything `package.json` `files` ships must raise the version (`npm version patch|minor --no-git-tag-version`; patch: fix · minor: new tool, skill or gate · major: breaks the install contract). The `version bump` job (`node maintainer/release.js check origin/main`) fails otherwise. PRs touching only CI, tests, `maintainer/` or `docs/MAINTAINING.md` need no bump; `README.md` ships, so it does.
+- **On merge to `main`:** after the test matrix, the `release tag` job runs `e2e-smoke.sh` and `pege:originality`. If `v<version>` does not exist yet and is above the newest tag, it pushes the annotated tag (`node maintainer/release.js tag`). A failed check means no tag; fix it in a new PR.
+- **Mirror:** the quanthub mirror copies the new tag within the hour; `bash maintainer/mirror-sync.sh` copies it now.
+
+Tags are annotated. Installs and updates resolve the tag to its peeled commit and install `github:zaqueu-1/exonous#<commit>`; the commit is verified after install. Never move or delete a published tag: `exonous doctor` warns every consumer whose tag now points elsewhere.
 
 Consumers move only to `vX.Y.Z` tags of the same major. Within 24 h, `kairos` (the session hook of any gated tool) runs `exonous update` in the background and leaves a one-line note for the next session. A major is announced and applied only by `exonous update --major`. A package installed from a commit or branch is never touched.
 
@@ -136,7 +133,7 @@ Shipped content is our own text; provenance lives only in `maintainer/pege/sourc
 
 ## The quanthub mirror
 
-`quanthubbr/tron-claude-config` mirrors this repo and keeps its name, so quanthub consumers install from there. `.github/workflows/sync-from-upstream.yml` runs only on the mirror. Every day it copies `main` and every missing `v*` release tag from `zaqueu-1/exonous` (repo-mode updates of `@tron/claude-config` read those tags).
+`quanthubbr/tron-claude-config` mirrors this repo and keeps its name, so quanthub consumers install from there. `.github/workflows/sync-from-upstream.yml` runs only on the mirror. Every hour it copies `main` and every missing `v*` release tag from `zaqueu-1/exonous` (repo-mode updates of `@tron/claude-config` read those tags).
 
 GitHub never lets `GITHUB_TOKEN` push changes under `.github/workflows/`. So the mirror keeps its own workflows: each sync is a new commit with the upstream tree and the mirror's `.github/workflows`, never a fast-forward. No secret or admin setting is needed. The mirror's history is generated, so fix things here, never on the mirror.
 
