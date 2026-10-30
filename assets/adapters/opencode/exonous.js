@@ -5,10 +5,27 @@ import { resolve } from "node:path";
 const NODE = "__EXONOUS_NODE__";
 const PYLE = "__EXONOUS_PYLE__";
 const KAIROS = "__EXONOUS_KAIROS__";
+const ANAMNESIS = "__EXONOUS_ANAMNESIS__";
 const SHELL_TOOLS = ["bash", "shell"];
 
+// Memory capture never blocks a session: detached, payload on stdin, errors dropped.
+function memory(event, payload) {
+  try {
+    const child = spawn(NODE, [ANAMNESIS, "--event", event, "--adapter", "opencode"], { detached: true, stdio: ["pipe", "ignore", "ignore"] });
+    child.on("error", () => {});
+    child.stdin.on("error", () => {});
+    child.stdin.end(JSON.stringify(payload));
+    child.unref();
+  } catch {}
+}
+
 export const ExonousGate = async ({ directory } = {}) => ({
+  "chat.message": async (input, output) => {
+    const prompt = (output?.parts || []).filter((p) => p?.type === "text").map((p) => p.text).join("\n");
+    if (prompt) memory("prompt", { session_id: input?.sessionID, cwd: directory || process.cwd(), prompt });
+  },
   "tool.execute.before": async (input, output) => {
+    memory("tool", { session_id: input?.sessionID, cwd: directory || process.cwd(), tool_name: input?.tool, tool_input: output?.args });
     const command = output?.args?.command;
     if (!SHELL_TOOLS.includes(input?.tool) || typeof command !== "string") return;
     const base = directory || process.cwd();
@@ -21,7 +38,12 @@ export const ExonousGate = async ({ directory } = {}) => ({
     }
   },
   event: async ({ event } = {}) => {
+    const props = event?.properties || {};
+    const session = { session_id: props.sessionID || props.info?.id, cwd: directory || process.cwd() };
+    if (event?.type === "session.idle") memory("stop", session);
+    if (event?.type === "session.deleted") memory("end", session);
     if (event?.type !== "session.created") return;
+    memory("start", session);
     try {
       // A session must start even when the update check cannot: spawn errors arrive as an event.
       const child = spawn(NODE, [KAIROS, "--adapter", "opencode"], { detached: true, stdio: "ignore" });

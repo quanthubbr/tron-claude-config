@@ -61,10 +61,10 @@ assert.strictEqual(ok(`gh pr create --base main --body "${VALID_BODY}"`), true, 
 assert.strictEqual(ok('gh pr create --base main --body "fix stuff"'), false, 'inline body without titles');
 assert.strictEqual(ok('gh pr create --base main --fill'), false, 'no body');
 
-for (let i = 0; i < 26; i += 1) fs.writeFileSync(path.join(repo, `f${i}.txt`), String(i));
+for (let i = 0; i < 31; i += 1) fs.writeFileSync(path.join(repo, `f${i}.txt`), String(i));
 run(['add', '.'], repo);
 commit('big');
-assert.strictEqual(ok('gh pr create --base main --body-file .claude/body.md'), false, '26+ files blocked');
+assert.strictEqual(ok('gh pr create --base main --body-file .claude/body.md'), false, '31+ files blocked');
 assert.strictEqual(ok('gh pr create --base missing-branch --body-file .claude/body.md'), true, 'unknown base never blocks');
 assert.strictEqual(ok('gh pr create --title "x --base missing-branch" --base main --body-file .claude/body.md'), false, 'base comes from the option, not the title');
 
@@ -74,11 +74,11 @@ run(['push', '-q', 'origin', 'main'], repo);
 run(['fetch', '-q', 'origin'], repo);
 run(['checkout', '-q', '-b', 'feat/move'], repo);
 fs.mkdirSync(path.join(repo, 'moved'));
-for (let i = 0; i < 26; i += 1) run(['mv', `f${i}.txt`, `moved/f${i}.txt`], repo);
+for (let i = 0; i < 31; i += 1) run(['mv', `f${i}.txt`, `moved/f${i}.txt`], repo);
 commit('move');
 assert.strictEqual(ok('gh pr create --base main --body-file .claude/body.md'), true, 'pure renames do not count');
 fs.writeFileSync(path.join(repo, 'moved', 'f0.txt'), 'edited');
-for (let i = 0; i < 25; i += 1) fs.writeFileSync(path.join(repo, `n${i}.txt`), `new ${i}`);
+for (let i = 0; i < 30; i += 1) fs.writeFileSync(path.join(repo, `n${i}.txt`), `new ${i}`);
 run(['add', '.'], repo);
 commit('edit');
 assert.strictEqual(ok('gh pr create --base main --body-file .claude/body.md'), false, 'a rename with edits counts');

@@ -25,6 +25,7 @@ function seed() {
   fx.write('# my command\n', ...DIR, 'commands', 'mine.md');
   fx.write(fx.CLAUDE_MCP, '.claude', '.mcp.json');
 }
+const RULE_FILES = () => ['nomos.md', 'praxis.md'].map((name) => fx.home('.claude', 'exonous', 'rules', name));
 const run = (opts = {}) => install({ external: false, execPath: process.execPath, tools: ['opencode'], ...fx.quiet(), ...opts });
 
 /** Runs the generated ESM plugin under node: calls `tool.execute.before` and the session event, prints what happened. */
@@ -62,7 +63,7 @@ test('install: plugin, instructions entry (no AGENTS.md), owned mcp, commands an
   assert.ok(!plugin.includes('__EXONOUS_'));
   const config = fx.readJson(...DIR, 'opencode.json');
   assert.strictEqual(config.theme, 'tokyonight');
-  assert.deepStrictEqual(config.instructions, ['~/notes/rules.md', fx.home('.claude', 'exonous', 'rules', 'nomos.md')]);
+  assert.deepStrictEqual(config.instructions, ['~/notes/rules.md', ...RULE_FILES()]);
   assert.deepStrictEqual(config.mcp.jira, USER_CONFIG.mcp.jira);
   assert.deepStrictEqual(config.mcp.atlas, { type: 'local', command: ['/usr/local/bin/codebase-memory-mcp', '--stdio'], enabled: true });
   assert.deepStrictEqual(config.mcp.biblos, { type: 'remote', url: 'https://mcp.context7.com/mcp', enabled: true });
@@ -108,7 +109,7 @@ test('--rewrite-jsonc edits a JSONC-only opencode.jsonc in place', () => {
   assert.ok(!fx.exists(...DIR, 'opencode.json'));
   const config = JSON.parse(fx.read(...DIR, 'opencode.jsonc'));
   assert.strictEqual(config.theme, 'x');
-  assert.deepStrictEqual(config.instructions, [fx.home('.claude', 'exonous', 'rules', 'nomos.md')]);
+  assert.deepStrictEqual(config.instructions, RULE_FILES());
 });
 
 test('the plugin blocks git commit through pyle, lets other commands and tools through, and spawns kairos on session.created', async () => {

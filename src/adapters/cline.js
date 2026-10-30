@@ -1,28 +1,30 @@
 'use strict';
 
-// Cline (soft tier): nomos as its own file in the global Rules dir; nothing gates commits.
+// Cline (soft tier): nomos and praxis as their own files in the global Rules dir; nothing gates commits.
 const fs = require('fs');
 const path = require('path');
 const paths = require('../lib/paths');
-const { renderRules } = require('../lib/render-rules');
+const { renderRules, renderPraxis } = require('../lib/render-rules');
 const { softRow } = require('./shared');
 
 const TOOL = 'cline';
 const dir = () => path.join(paths.home(), 'Documents', 'Cline');
-const rulesFile = () => path.join(dir(), 'Rules', 'exonous-nomos.md');
+const RULES = { 'exonous-nomos.md': renderRules, 'exonous-praxis.md': renderPraxis };
+const rulesFile = (name = 'exonous-nomos.md') => path.join(dir(), 'Rules', name);
 
 const detect = () => fs.existsSync(dir());
 
 function install({ home }) {
-  if (detect()) home.write(rulesFile(), renderRules('no-agents'), { tool: TOOL });
+  if (!detect()) return;
+  for (const [name, render] of Object.entries(RULES)) home.write(rulesFile(name), render('no-agents'), { tool: TOOL });
 }
 
-// The rules file is ledger-tracked, so uninstall's ledger pass removes it.
+// The rules files are ledger-tracked, so uninstall's ledger pass removes them.
 function uninstall() {}
 
 function doctor() {
   return [
-    { name: 'Cline: nomos rules', ok: fs.existsSync(rulesFile()), status: '', fix: 'exonous install' },
+    { name: 'Cline: nomos + praxis rules', ok: Object.keys(RULES).every((name) => fs.existsSync(rulesFile(name))), status: '', fix: 'exonous install' },
     softRow('Cline'),
   ];
 }

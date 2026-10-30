@@ -8,7 +8,7 @@ const { execFileSync } = require('child_process');
 const { resolveTemplate } = require('./template.cjs');
 const { gitEnv } = require('./paths.cjs');
 
-const MAX_CHANGED_FILES = 25;
+const MAX_CHANGED_FILES = 30;
 
 function normalize(text) {
   return text.normalize('NFC').toLowerCase();

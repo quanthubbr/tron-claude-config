@@ -5,7 +5,7 @@ model: sonnet
 
 Open a pull request for the current branch, with a concise, human-friendly PT-BR description.
 
-Required section titles come from the template `exonous template` prints: the repo's own `pull_request_template.md` when it has one, else the exonous PT-BR template below. The gate checks that every title of that template appears in the body and that the PR has at most 25 changed files. Run `gh pr create` alone (optionally after one `cd <dir> &&`); if the gate blocks it, read the reason, run `exonous workflow pr`, fix, retry.
+Required section titles come from the template `exonous template` prints: the repo's own `pull_request_template.md` when it has one, else the exonous PT-BR template below. The gate checks that every title of that template appears in the body and that the PR has at most 30 changed files. Run `gh pr create` alone (optionally after one `cd <dir> &&`); if the gate blocks it, read the reason, run `exonous workflow pr`, fix, retry.
 
 Steps:
 1. Confirm the current branch is **not** `main`/`master` (the only hard block — any other branch, including `develop`, `release/*` or a branch stacked on another feature branch, may open a PR). Confirm it is pushed/up to date with origin. If there are uncommitted changes or the branch isn't pushed, tell the user to run `/commit-changes` first (or run it) before continuing.
@@ -34,7 +34,7 @@ Steps:
    - `git diff --stat origin/<base>...HEAD` (files touched)
    - Read the meaningful diffs/hunks so the description reflects what really changed (don't guess).
 
-   **Size gate — max 25 changed files** (`git diff --name-only origin/<base>...HEAD | wc -l`). Above that, do not open one PR. Split the branch into smaller PRs, each with one cohesive goal that reads on its own (e.g. refactor → feature → docs); stack them when one depends on another (`feature/a` on `<base>`, `feature/b` on `feature/a`). Propose the split to the user first, then open each PR with this skill. Every PR keeps the template.
+   **Size gate — max 30 changed files** (`git diff --name-only origin/<base>...HEAD | wc -l`). Above that, do not open one PR. Split the branch into smaller PRs, each with one cohesive goal that reads on its own (e.g. refactor → feature → docs); stack them when one depends on another (`feature/a` on `<base>`, `feature/b` on `feature/a`). Propose the split to the user first, then open each PR with this skill. Every PR keeps the template.
 3. Write the PR body **in Portuguese (pt-BR)**, informal but with the voice of a senior developer — direct, no fluff, easy to skim. Keep it **concise enough to review in under 5 minutes**. Run `exonous template` and use its sections in its order; the exonous default has exactly these 5:
    - `## Resumo` — 1–2 frases sobre o objetivo da PR.
    - `## Principais mudanças` — bullets do que foi adicionado/alterado/removido.
@@ -55,4 +55,4 @@ Steps:
 Notes:
 - If `$ARGUMENTS` is provided, use it as the PR title hint or extra context (and as the base branch when it names one).
 - Requires `gh` authenticated and the branch pushed to origin (run `/commit-changes` first if needed).
-- The `gh pr create` gate checks the body it receives (`--body-file` or inline `--body`) for the template titles and blocks PRs over 25 changed files against `--base`.
+- The `gh pr create` gate checks the body it receives (`--body-file` or inline `--body`) for the template titles and blocks PRs over 30 changed files against `--base`.

@@ -78,7 +78,9 @@ test('claude: gate hooks join foreign hooks once, with the absolute node path', 
   assert.strictEqual(fs.readFileSync(home('.claude', 'settings.json'), 'utf8'), first, 'idempotent');
   const settings = readJson('.claude', 'settings.json');
   assert.strictEqual(settings.model, 'opus');
-  assert.deepStrictEqual(settings.hooks.Stop, FOREIGN_CLAUDE.hooks.Stop);
+  assert.deepStrictEqual(settings.hooks.Stop.slice(0, FOREIGN_CLAUDE.hooks.Stop.length), FOREIGN_CLAUDE.hooks.Stop);
+  const memory = Object.values(settings.hooks).flat().flatMap((e) => e.hooks || []).map((h) => h.command).filter((c) => c.includes('anamnesis.cjs'));
+  assert.deepStrictEqual(memory.map((c) => /--event (\w+)/.exec(c)[1]).sort(), ['end', 'prompt', 'start', 'stop', 'tool'], 'one memory hook per lifecycle event');
   const pre = settings.hooks.PreToolUse;
   assert.deepStrictEqual(pre[0], FOREIGN_CLAUDE.hooks.PreToolUse[0]);
   const gate = pre.filter((e) => JSON.stringify(e).includes('pyle.cjs'));

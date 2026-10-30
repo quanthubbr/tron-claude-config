@@ -1,6 +1,6 @@
 'use strict';
 
-// Cursor: nomos.mdc, skills for the commit/PR flow, design stack links, and the gate in ~/.cursor/hooks.json.
+// Cursor: nomos.mdc and praxis.mdc, skills for the commit/PR flow, design stack links, and the gate in ~/.cursor/hooks.json.
 const fs = require('fs');
 const path = require('path');
 const paths = require('../lib/paths');
@@ -22,9 +22,14 @@ function withName(content, name) {
   return /^name:/m.test(content.slice(0, end)) ? content : `---\nname: ${name}\n${content.slice(4)}`;
 }
 
-function nomosRule() {
-  const rule = fs.readFileSync(path.join(ASSETS, 'rules', 'nomos.md'), 'utf8');
-  return `---\ndescription: Exonous nomos — core rules and agent roster (enforced)\nalwaysApply: true\n---\n\n${rule}`;
+const RULES = {
+  nomos: 'Exonous nomos — core rules and agent roster (enforced)',
+  praxis: 'Exonous praxis — craft discipline per change (enforced)',
+};
+
+function alwaysApplyRule(name) {
+  const rule = fs.readFileSync(path.join(ASSETS, 'rules', `${name}.md`), 'utf8');
+  return `---\ndescription: ${RULES[name]}\nalwaysApply: true\n---\n\n${rule}`;
 }
 
 // Shell-neutral (sh and cmd.exe): node itself skips a missing launcher, then loads it with the hook verb in argv.
@@ -43,16 +48,21 @@ function uiDesignEntries(execPath) {
 
 function install({ home, dryRun, log, execPath }) {
   const opts = { tool: TOOL };
-  home.write(path.join(paths.cursorDir(), 'rules', 'nomos.mdc'), nomosRule(), opts);
+  for (const name of Object.keys(RULES)) home.write(path.join(paths.cursorDir(), 'rules', `${name}.mdc`), alwaysApplyRule(name), opts);
   home.sync(path.join(ASSETS, 'editors', 'cursor', 'frontend-skills.mdc'), path.join(paths.cursorDir(), 'rules', 'frontend-skills.mdc'), opts);
   for (const name of COMMANDS) {
     const content = fs.readFileSync(path.join(ASSETS, 'skills', name, 'SKILL.md'), 'utf8');
     home.write(path.join(paths.cursorDir(), 'skills', name, 'SKILL.md'), withName(content, name), opts);
   }
   installDesignLinks(home, paths.cursorDir(), { dryRun });
+  const memory = (event) => hookCommand(execPath, 'anamnesis.cjs', `--event ${event} --adapter cursor`);
   const gate = {
     beforeShellExecution: [{ command: hookCommand(execPath, 'pyle.cjs', 'auto --adapter cursor') }],
-    sessionStart: [{ command: hookCommand(execPath, 'kairos.cjs', '--adapter cursor') }],
+    sessionStart: [{ command: hookCommand(execPath, 'kairos.cjs', '--adapter cursor') }, { command: memory('start') }],
+    beforeSubmitPrompt: [{ command: memory('prompt') }, { command: hookCommand(execPath, 'ethos.cjs', '--adapter cursor') }],
+    postToolUse: [{ command: memory('tool') }],
+    stop: [{ command: memory('stop') }],
+    sessionEnd: [{ command: memory('end') }],
   };
   mergeOwned(hooksFile(), { format: 'cursor', entries: gate, ownedMarker: OWNED_MARKER, dryRun, log });
   mergeOwned(hooksFile(), { format: 'cursor', entries: uiDesignEntries(execPath), ownedMarker: '/.agents/skills/ui-design/scripts/', dryRun, log });
@@ -75,7 +85,7 @@ function registeredCommand() {
 
 const selftestPayload = (command, cwd) => ({ hook_event_name: 'beforeShellExecution', command, cwd });
 
-const USER_RULES = 'Cursor reads User Rules only from its settings: paste ~/.claude/exonous/rules/nomos.md into Cursor Settings → Rules → User Rules (manual, once per release)';
+const USER_RULES = 'Cursor reads User Rules only from its settings: paste ~/.claude/exonous/rules/nomos.md and praxis.md into Cursor Settings → Rules → User Rules (manual, once per release)';
 
 function doctor() {
   let hooks = '';
@@ -88,7 +98,10 @@ function doctor() {
   return [
     row('gate hook (commit, push, pr)', hooks.includes('pyle.cjs') && hooks.includes('auto --adapter cursor')),
     row('self-update hook (kairos)', hooks.includes('kairos.cjs') && hooks.includes('--adapter cursor')),
+    row('memory hooks (anamnesis)', hooks.includes('anamnesis.cjs') && hooks.includes('--adapter cursor')),
     row('nomos.mdc rule', fs.existsSync(path.join(paths.cursorDir(), 'rules', 'nomos.mdc'))),
+    row('praxis.mdc rule', fs.existsSync(path.join(paths.cursorDir(), 'rules', 'praxis.mdc'))),
+    row('rule reminder (ethos)', hooks.includes('ethos.cjs') && hooks.includes('--adapter cursor')),
     row('skills', COMMANDS.every((c) => fs.existsSync(path.join(paths.cursorDir(), 'skills', c, 'SKILL.md')))),
     mcpRow('Cursor', Object.keys(readJson(path.join(paths.cursorDir(), 'mcp.json'))?.mcpServers || {})),
     { name: 'Cursor: User Rules', ok: false, level: 'warn', status: 'cannot verify — Cursor keeps User Rules in its own settings', fix: USER_RULES },

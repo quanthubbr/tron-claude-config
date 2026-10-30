@@ -1,4 +1,4 @@
-<!-- PR body template (PT-BR). Hook checks the 5 titles below; max 25 changed files per PR. -->
+<!-- PR body template (PT-BR). Hook checks the 5 titles below; max 30 changed files per PR. -->
 
 ## Resumo
 

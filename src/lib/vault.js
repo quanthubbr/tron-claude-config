@@ -167,18 +167,17 @@ function fallbackPath(ctx) {
 
 const README = `# exonous vault
 
-Plain Markdown notes written by exonous agents: project memory, session handoffs and docs.
-Open this folder in Obsidian, or run \`exonous vault graph\` for an offline graph.
-
-Give each project its own folder and link notes with wikilinks, like [[README]].
+Plain Markdown notes written by exonous agents: project memory, session pages, handoffs and docs.
+Each project has its own folder; automatic session pages live in \`<project>/sessions/\`.
+Run \`exonous vault graph\` for an offline graph. Opening this folder in Obsidian later switches new session links to wikilinks.
 `;
 
-/** Creates the fallback vault (dir, empty `.obsidian/`, README stub); never overwrites. */
+/** Creates the plain fallback folder (README stub, no `.obsidian/`: Obsidian is absent); never overwrites. */
 function ensureFallback(dir, ctx) {
   const c = context(ctx);
   const p = pathOf(c);
   const existed = isDir(dir, c);
-  c.fs.mkdirSync(p.join(dir, '.obsidian'), { recursive: true });
+  c.fs.mkdirSync(dir, { recursive: true });
   let wroteReadme = false;
   try {
     c.fs.writeFileSync(p.join(dir, 'README.md'), README, { encoding: 'utf8', flag: 'wx' });

@@ -182,9 +182,8 @@ test('fallbackPath prefers ~/Documents and drops to ~ without it', () => {
 test('ensureFallback creates the vault once and never overwrites', () => {
   const dir = path.join(tmpHome(), 'Documents', 'exonous-vault');
   assert.deepStrictEqual(vault.ensureFallback(dir), { path: dir, created: true });
-  assert.ok(fs.statSync(path.join(dir, '.obsidian')).isDirectory());
-  assert.deepStrictEqual(fs.readdirSync(path.join(dir, '.obsidian')), []);
-  assert.match(fs.readFileSync(path.join(dir, 'README.md'), 'utf8'), /\[\[README\]\]/);
+  assert.ok(!fs.existsSync(path.join(dir, '.obsidian')), 'plain folder: Obsidian is absent');
+  assert.match(fs.readFileSync(path.join(dir, 'README.md'), 'utf8'), /<project>\/sessions\//);
   fs.writeFileSync(path.join(dir, 'README.md'), 'mine');
   assert.deepStrictEqual(vault.ensureFallback(dir), { path: dir, created: false });
   assert.strictEqual(fs.readFileSync(path.join(dir, 'README.md'), 'utf8'), 'mine');

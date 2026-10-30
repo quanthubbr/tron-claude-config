@@ -335,7 +335,7 @@ test('a fixture home with all ten tools: doctor shows every tool with the right 
   assert.match(doctor, /\nCommits gated in 7 tools; NOT gated in 4: cline, qwen, kiro, aider\.\n/);
   for (const id of ['claude', 'cursor', 'gemini', 'codex', 'opencode', 'windsurf', 'copilot']) assert.match(doctor, new RegExp(`✓ ${id}: gate self-test \\(script self-test`), id);
   for (const label of ['Cline: gate', 'Qwen Code: gate', 'Kiro: gate']) assert.match(doctor, new RegExp(`⚠ ${label} \\(soft: not enforced`), label);
-  for (const label of ['Windsurf: gate hook', 'Windsurf: nomos min rules', 'Copilot: gate hook \\(Preview\\)', 'Cline: nomos rules', 'Qwen Code: nomos rules']) assert.match(doctor, new RegExp(`✓ ${label}`), label);
+  for (const label of ['Windsurf: gate hook', 'Windsurf: nomos \\+ praxis min rules', 'Copilot: gate hook \\(Preview\\)', 'Cline: nomos \\+ praxis rules', 'Qwen Code: nomos \\+ praxis rules']) assert.match(doctor, new RegExp(`✓ ${label}`), label);
   assert.match(doctor, /⚠ Aider: unsupported/);
   assert.match(doctor, /⚠ Codex CLI: gate approved in \/hooks/);
   assert.ok(!/✗ (cline|qwen|kiro|aider): gate self-test/.test(doctor), 'soft and unsupported tools get no self-test');

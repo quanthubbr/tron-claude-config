@@ -10,7 +10,7 @@ const { test } = require('node:test');
 const { install } = require('../src/install');
 const { uninstall } = require('../src/uninstall');
 const { ADAPTERS, select } = require('../src/adapters');
-const { renderRules } = require('../src/lib/render-rules');
+const { renderRules, renderPraxis } = require('../src/lib/render-rules');
 const fx = require('./helpers/adapter-fixture');
 
 const osHome = fx.useFixtureHome();
@@ -36,9 +36,11 @@ test('Cline: own rules file only when ~/Documents/Cline exists; removed on unins
   const q = fx.quiet();
   run(['cline'], q);
   assert.strictEqual(fx.read('Documents', 'Cline', 'Rules', 'exonous-nomos.md'), renderRules('no-agents'));
+  assert.strictEqual(fx.read('Documents', 'Cline', 'Rules', 'exonous-praxis.md'), renderPraxis('no-agents'));
   assert.ok(q.logs.some((m) => /^⚠ cline: rules only — commits are NOT gated/.test(m)));
   await uninstall({ yes: true, log: () => {} });
   assert.ok(!fx.exists('Documents', 'Cline', 'Rules', 'exonous-nomos.md'));
+  assert.ok(!fx.exists('Documents', 'Cline', 'Rules', 'exonous-praxis.md'));
   assert.strictEqual(fx.read('Documents', 'Cline', 'Rules', 'mine.md'), '# mine\n');
 });
 
@@ -50,6 +52,7 @@ test('Qwen: marker section in ~/.qwen/QWEN.md only when ~/.qwen exists; uninstal
   run(['qwen']);
   const text = fx.read('.qwen', 'QWEN.md');
   assert.ok(text.startsWith(mine) && text.includes('exonous:start'));
+  assert.ok(text.includes('# Nomos') && text.includes('# Praxis'), 'both always-on rules in the section');
   run(['qwen']);
   assert.strictEqual(fx.read('.qwen', 'QWEN.md'), text);
   await uninstall({ yes: true, log: () => {} });
@@ -73,7 +76,7 @@ test('Aider: detected by ~/.aider.conf.yml or the binary; doctor hint only, inst
   assert.strictEqual(aider.detect(), true);
   const row = aider.doctor({})[0];
   assert.strictEqual(row.level, 'warn');
-  assert.match(row.fix, /read: \[~\/\.claude\/exonous\/rules\/nomos\.md\]/);
+  assert.match(row.fix, /read: \[~\/\.claude\/exonous\/rules\/nomos\.md, ~\/\.claude\/exonous\/rules\/praxis\.md\]/);
   fs.mkdirSync(fx.home('.claude'));
   const q = fx.quiet();
   install({ external: false, execPath: process.execPath, ...q });

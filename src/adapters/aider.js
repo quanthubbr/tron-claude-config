@@ -7,7 +7,7 @@ const paths = require('../lib/paths');
 const { onPath } = require('./shared');
 
 const TOOL = 'aider';
-const HINT = 'add `read: [~/.claude/exonous/rules/nomos.md]` to ~/.aider.conf.yml';
+const HINT = 'add `read: [~/.claude/exonous/rules/nomos.md, ~/.claude/exonous/rules/praxis.md]` to ~/.aider.conf.yml';
 
 const detect = () => onPath('aider') || fs.existsSync(path.join(paths.home(), '.aider.conf.yml'));
 

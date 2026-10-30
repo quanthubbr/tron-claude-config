@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const KINDS = ['adr', 'plan', 'doc']
+const READ_KINDS = [...KINDS, 'session']
 const SKIP_DIRS = new Set(['.obsidian', '.trash', 'node_modules', '.git'])
 const MAX_NOTE_BYTES = 2 * 1024 * 1024
 const DEFAULT_LIMIT = 8
@@ -22,7 +23,7 @@ const BM25_K1 = 1.2
 const BM25_B = 0.75
 
 const USAGE = `project-memory <command> [flags]
-  search <query> [--kind adr|plan|doc] [--limit N] [--full]
+  search <query> [--kind adr|plan|doc|session] [--limit N] [--full]
   show <id>
   list [--kind K] [--status S]
   add <adr|plan|doc> --title T (--body B | --body-file F) [--tag t]... [--link file:P|symbol:S]... [--evidence path:L1-L2]... [--status S]
@@ -197,7 +198,7 @@ function loadNotes(dir) {
     return {
       path,
       id: meta.id || rel,
-      kind: KINDS.includes(meta.kind) ? meta.kind : 'note',
+      kind: READ_KINDS.includes(meta.kind) ? meta.kind : 'note',
       title: meta.title || basename(path, '.md'),
       status: meta.status || '',
       tags: many(meta.tags),
@@ -307,7 +308,7 @@ function cmdList(flags) {
   const kind = one(flags.kind)
   const status = one(flags.status)
   const notes = loadNotes(context(flags).dir)
-    .filter((n) => n.kind !== 'note' && (!kind || n.kind === kind) && (!status || n.status === status))
+    .filter((n) => n.kind !== 'note' && (kind ? n.kind === kind : n.kind !== 'session') && (!status || n.status === status))
     .sort((a, b) => a.id.localeCompare(b.id))
   for (const note of notes) process.stdout.write(`${header(note)}\n`)
   if (!notes.length) process.stdout.write('No memories.\n')

@@ -12,7 +12,7 @@ exonous gates `git commit`, `git push` and `gh pr create` in every gated AI tool
 ```
 /commit-changes → /security-review → /code-review → exonous token commit → git commit   (token: one commit of the staged tree, 15 min)
 force-push or push to main/master → only on the user's explicit request → exonous token push → git push
-/make-pr → ≤ 25 changed files → body at `exonous draft-path` → exonous validate-pr <file> → gh pr create --body-file <file>
+/make-pr → ≤ 30 changed files → body at `exonous draft-path` → exonous validate-pr <file> → gh pr create --body-file <file>
 ```
 
 - Run each gated command **alone** (optionally after one `cd <dir> &&`): no `&&` chains, pipes, `;`, wrappers, `sh -c`, `-a`/`-i`/`-o`/`-p` or pathspecs on `git commit`.

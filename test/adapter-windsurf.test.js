@@ -40,7 +40,9 @@ test('install into existing files: pre_run_command gate, pre_user_prompt kairos,
   seed();
   run();
   const hooks = fx.readJson(...W, 'hooks.json').hooks;
-  assert.deepStrictEqual(hooks.post_write_code, USER_HOOKS.hooks.post_write_code);
+  assert.deepStrictEqual(hooks.post_write_code.slice(0, USER_HOOKS.hooks.post_write_code.length), USER_HOOKS.hooks.post_write_code);
+  assert.match(hooks.post_write_code.at(-1).command, /anamnesis\.cjs" --event tool --adapter windsurf$/);
+  assert.match(hooks.pre_user_prompt.at(-1).command, /anamnesis\.cjs" --event prompt --adapter windsurf$/);
   assert.match(hooks.pre_run_command[0].command, /pyle\.cjs" auto --adapter windsurf$/);
   assert.strictEqual(hooks.pre_run_command[0].show_output, true);
   assert.match(hooks.pre_user_prompt[0].command, /kairos\.cjs" --adapter windsurf$/);

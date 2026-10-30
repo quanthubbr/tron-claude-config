@@ -30,6 +30,7 @@ $M search "auth token refresh"            # ranked ids + first line; also ranks 
 $M search "auth" --kind adr --limit 3
 $M show adr-0004                          # full body only for the hit that matters
 $M list --kind plan --status open
+$M search "checkout rounding" --kind session   # automatic session pages (<project>/sessions/, written by hooks)
 ```
 
 Never read the whole vault. Search, then `show` the one or two hits you need. No hits → say so; don't fall back to reading everything.

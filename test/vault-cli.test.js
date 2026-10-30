@@ -65,7 +65,7 @@ test('install without Obsidian creates the fallback vault once and keeps it afte
   const fallback = fx.home('Documents', 'exonous-vault');
   assert.deepStrictEqual(installVault({ ctx: NATIVE }), { path: fallback, kind: 'fallback' });
   assert.ok(fs.existsSync(path.join(fallback, 'README.md')));
-  assert.ok(fs.existsSync(path.join(fallback, '.obsidian')));
+  assert.ok(!fs.existsSync(path.join(fallback, '.obsidian')), 'no Obsidian: plain folder');
   fs.writeFileSync(path.join(fallback, 'README.md'), 'mine\n');
   registry([{ path: fx.home('later'), ts: 1, open: true }]);
   const logs = [];

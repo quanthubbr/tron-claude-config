@@ -294,6 +294,30 @@
       }
     },
     {
+      "id": "praxis",
+      "repo": "https://github.com/unclebob/ub-mode.git",
+      "ref": "57a8bdd28e45ed41900ace0bafa2ff76dd9ed70f",
+      "license": "none declared — no LICENSE file upstream; principles interpreted, prose written here",
+      "kind": "content",
+      "status": "rewritten",
+      "phase": 1,
+      "local": "assets/rules/praxis.md",
+      "watch": [
+        "SKILL.md"
+      ],
+      "discover": [],
+      "notes": "Craft discipline (make it work, make it right, practice) and the crapper/dryer/mutator/uml-viewer gates, interpreted into our own always-on rule. Upstream ships no license, so no sentence may be carried over: the originality gate is the guard.",
+      "acceptedAt": "2026-10-30",
+      "originality": {
+        "upstream": [
+          "SKILL.md"
+        ],
+        "local": [
+          "assets/rules/praxis.md"
+        ]
+      }
+    },
+    {
       "id": "deliver-engine",
       "repo": "https://github.com/open-gsd/gsd-core.git",
       "ref": "87e87d34b2d8519e30d1af7d910fc98f2af4bc8d",

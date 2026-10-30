@@ -10,11 +10,14 @@ const fs = require('fs');
 const path = require('path');
 const { test } = require('node:test');
 const { HOME_SKILLS, COMMANDS, DESIGN_SKILLS } = require('../src/lib/runtime');
-const { renderRules, VARIANTS } = require('../src/lib/render-rules');
+const { renderRules, renderPraxis, VARIANTS } = require('../src/lib/render-rules');
 
 const ROOT = path.resolve(__dirname, '..');
 const ASSETS = path.join(ROOT, 'assets');
 const NOMOS_BUDGET = 4500;
+const PRAXIS_BUDGET = 3200;
+// Both always-on files are loaded on every session, by every tool.
+const ALWAYS_ON_BUDGET = 7700;
 const COMMON_RULES_BUDGET = 4000;
 const MIN_RULES_BUDGET = 3072;
 const LEGACY_ZONES = ['src/legacy/', 'maintainer/'];
@@ -69,6 +72,9 @@ test('every file install writes is shipped', () => {
   const missing = [
     path.join(ASSETS, 'machine', 'PR-TEMPLATE.md'),
     path.join(ASSETS, 'machine', 'hooks', 'pyle.cjs'),
+    path.join(ASSETS, 'machine', 'hooks', 'ethos.cjs'),
+    path.join(ASSETS, 'rules', 'nomos.md'),
+    path.join(ASSETS, 'rules', 'praxis.md'),
     path.join(ASSETS, 'editors', 'hooks', 'cursor', 'hooks.json'),
     path.join(ASSETS, 'editors', 'cursor', 'frontend-skills.mdc'),
     ...Object.entries(HOME_SKILLS).flatMap(([name, files]) => files.map((f) => path.join(ASSETS, 'skills', name, f))),
@@ -100,6 +106,9 @@ test('old names appear only inside the legacy bridge', () => {
 test('always-loaded context stays inside its byte budget', () => {
   const nomos = fs.statSync(path.join(ASSETS, 'rules', 'nomos.md')).size;
   assert.ok(nomos <= NOMOS_BUDGET, `nomos.md is ${nomos} B (budget ${NOMOS_BUDGET})`);
+  const praxis = fs.statSync(path.join(ASSETS, 'rules', 'praxis.md')).size;
+  assert.ok(praxis <= PRAXIS_BUDGET, `praxis.md is ${praxis} B (budget ${PRAXIS_BUDGET})`);
+  assert.ok(nomos + praxis <= ALWAYS_ON_BUDGET, `the always-on set is ${nomos + praxis} B (budget ${ALWAYS_ON_BUDGET})`);
   const commonDir = path.join(ASSETS, 'techne', 'rules', 'common');
   const common = fs.readdirSync(commonDir).reduce((sum, f) => sum + fs.statSync(path.join(commonDir, f)).size, 0);
   assert.ok(common <= COMMON_RULES_BUDGET, `techne rules/common is ${common} B (budget ${COMMON_RULES_BUDGET})`);
@@ -113,6 +122,21 @@ test('every rules variant fits inside the source and min fits the Windsurf budge
   }
   const min = Buffer.byteLength(renderRules('min'));
   assert.ok(min <= MIN_RULES_BUDGET, `min rules are ${min} B (budget ${MIN_RULES_BUDGET})`);
+});
+
+test('praxis variants keep the per-change loop and the min pair fits the Windsurf cap', () => {
+  const source = fs.readFileSync(path.join(ASSETS, 'rules', 'praxis.md'), 'utf8');
+  assert.strictEqual(renderPraxis('full'), source);
+  assert.strictEqual(renderPraxis('no-agents'), source, 'praxis has no roster to drop');
+  const min = renderPraxis('min');
+  assert.ok(min.startsWith('# Praxis'));
+  for (const h of ['## Make it work', '## Make it right']) assert.ok(min.includes(h), h);
+  for (const h of ['## Architecture', '## Practice']) assert.ok(!min.includes(h), h);
+  // Windsurf takes both min variants inside a 6000-char global_rules.md that also holds the user's own rules.
+  const pair = Buffer.byteLength(renderRules('min')) + Buffer.byteLength(min);
+  assert.ok(pair <= 4500, `min nomos + min praxis is ${pair} B`);
+  assert.throws(() => renderPraxis('min', '# Praxis\n\n## Make it work\n- x\n'), /Make it right/);
+  assert.throws(() => renderPraxis('tiny'), /variant/);
 });
 
 test('package.json has no install lifecycle scripts, so a git install never runs our code in a temp clone', () => {

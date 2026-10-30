@@ -24,7 +24,7 @@ exonous install
 Install also picks the vault agents write notes to, so there is nothing to configure:
 
 - It reads Obsidian's vault registry (macOS, Linux incl. Flatpak and Snap, Windows, and the Windows side from WSL). One vault is used; with several, a terminal asks (default: the open or most recent one), otherwise the most recent wins.
-- Without Obsidian it creates `~/Documents/exonous-vault` (`~/exonous-vault` if there is no `Documents`): plain markdown with `[[wikilinks]]` and an empty `.obsidian/`, so Obsidian can open it later. Uninstall never deletes it.
+- Without Obsidian it creates `~/Documents/exonous-vault` (`~/exonous-vault` if there is no `Documents`): a plain markdown folder with standard links. Opening it in Obsidian later is enough to switch to `[[wikilinks]]`. Uninstall never deletes it.
 - A vault you already configured is kept.
 
 ```bash
@@ -37,6 +37,32 @@ exonous vault graph                   # write .exonous/graph.html + graph.json i
 `.exonous/graph.html` is a self-contained offline force-directed view of notes, `[[wikilinks]]`, tags and file links (no CDN).
 
 Precedence: `PROJECT_MEMORY_VAULT` > the project-memory skill's `config.json` > `~/.claude/exonous/config.json` (`vault` key, written by install and `exonous vault set`).
+
+### Automatic session memory (anamnesis)
+
+Every session is recorded without asking, with no LLM and no API key, in Claude Code, Codex, Gemini CLI, Cursor, Copilot CLI, Windsurf and OpenCode:
+
+1. **Capture**: lifecycle hooks record each prompt, tool name, file path and shell command, after a secret scrubber (API keys, tokens, JWTs, URL credentials, private keys, `*_KEY=`-style values) runs. Tool output is never stored. The raw log stays in `~/.claude/exonous/state/anamnesis/`.
+2. **Consolidate**: at stop and session end, a rule-based page is written to `<vault>/<project>/sessions/<date>-<agent>-<id>.md` (prompts, files touched, tool counts, last commands, an abrupt-ending note) and a line is added to `sessions/log.md`.
+3. **Handoff**: session end leaves one handoff (open questions, next steps, files touched). The next session in that repo, in any agent, receives it once.
+4. **Brief**: at session start the agent gets the pending handoff, an unfinished session that was cut off, and the last 5 sessions. All of it is marked as recorded data, not instructions. Windsurf and OpenCode capture only, because they have no way to pass context back to the agent.
+
+Sessions idle for 6 h are closed into pages automatically. Search them with `project-memory search "<query>" --kind session`.
+
+The storage format follows the vault. If the vault has `.obsidian/`, links are `[[wikilinks]]`. Otherwise it is a plain folder with standard `[text](file.md)` links. To turn it off, set `EXONOUS_MEMORY=0` or put `"memory": false` in `~/.claude/exonous/config.json`.
+
+## The always-on rules
+
+Two files bind every agent in every supported tool. Neither is invoked; both are already in force, and they ship wherever a tool reads rules from (`~/.claude/rules`, `AGENTS.md`, `GEMINI.md`, `nomos.mdc`/`praxis.mdc`, `global_rules.md`, OpenCode `instructions`, the Cline Rules dir, `QWEN.md`).
+
+- **nomos** — the pillars and their order, terse communication, the engineering and context-economy rules, the verify gate, the git and PR gates, the agent roster.
+- **praxis** — craft discipline per change, in order: make it work → make it right → keep the practice. One decision in one place, a failing test first, parse foreign data where it arrives, reproduce before fixing, restructure under pinned behavior, small ordered commits.
+
+Precedence: a repo's `AGENTS.md`/`CLAUDE.md` wins over both; the scoped rules in `~/.claude/rules/exonous/` win on coding standards.
+
+A static file at the top of a long session decays, so the **ethos** hook restates the set in one line on each prompt submit (Claude Code, Cursor, Gemini CLI, Codex CLI, Copilot). Windsurf and OpenCode only get the files, because neither can return context to the model on that event. Turn the reminder off with `EXONOUS_RULES_REMINDER=0` or `"rulesReminder": false` in `~/.claude/exonous/config.json`.
+
+Install also retires rule files an older home install left in `~/.claude/rules` (they are always loaded and contradict nomos). A file is only retired when its content still matches what that install shipped, and a `.bak` copy is kept; one you edited is left alone and named by `exonous doctor`, along with your own rules.
 
 ## Platforms
 
@@ -68,7 +94,7 @@ CI runs the test suite on Ubuntu, macOS, Windows and WSL.
 - **Rules only, not gated:** Cline, Qwen Code, Kiro (Kiro is detect-only). They can commit without a token; install and doctor say so.
 - **Unsupported:** Aider (doctor prints how to add `read:` by hand), Roo.
 - **Codex:** approve the exonous hook in `/hooks`, or the gate stays pending.
-- **Cursor:** User Rules live in its settings; paste `~/.claude/exonous/rules/nomos.md` there (after each release).
+- **Cursor:** User Rules live in its settings; paste `~/.claude/exonous/rules/nomos.md` and `praxis.md` there (after each release).
 - MCP copied to other tools carries only command and arguments or an `https` URL, never headers or env, and nothing that looks like a credential.
 
 ## How the gates work
@@ -79,7 +105,7 @@ exonous workflow commit → /security-review → /code-review → exonous token 
 
 - `git commit` needs a one-shot token for exactly the tree staged at that moment (15 min). Staging at commit time (`-a`, `-p`, pathspecs) is refused. Staged changes are scanned with `gitleaks` when installed.
 - `git push` is free on ordinary branches. A force-push or a push to `main`/`master` needs `exonous token push`; pushing every branch or deleting one is always refused.
-- `gh pr create` needs the PR template's section titles and at most 25 changed files (`exonous template`, `exonous validate-pr <file>`).
+- `gh pr create` needs the PR template's section titles and at most 30 changed files (`exonous template`, `exonous validate-pr <file>`).
 - The gated command must run alone, optionally after one `cd <dir> &&`. A refusal names the next step; tools without commands get the procedure from `exonous workflow commit|pr`.
 - Commits you make in your own terminal are not gated.
 
@@ -91,7 +117,7 @@ Shared skills live in `~/.agents/skills`; the hook runtime in `~/.claude/exonous
 
 | Name | What it does | Use |
 |---|---|---|
-| **nomos** (νόμος) | the single always-on rule, under 4.5 KB | automatic |
+| **nomos** (νόμος), **praxis** (πρᾶξις) | the always-on rules: pillars and gates, craft discipline per change | automatic |
 | **deliver** | classify → plan → execute → verify → close | `/deliver <request>` |
 | **project-memory** | ADRs, plans, docs in the vault, anchored to code | via deliver, or `node ~/.claude/skills/project-memory/project-memory.mjs search "…"` |
 | **commit-changes**, **make-pr** | the only way to commit and open a PR | `/commit-changes`, `/make-pr` |
@@ -105,6 +131,7 @@ Shared skills live in `~/.agents/skills`; the hook runtime in `~/.claude/exonous
 | **pyle** (πύλη) | the commit, push and PR gate | automatic |
 | **metron** (μέτρον) | nudges large whole-file reads toward locate-first (Claude Code) | automatic |
 | **kairos** (καιρός) | shows the update note, starts the daily update | automatic |
+| **ethos** (ἦθος) | restates the always-on rules on each prompt | automatic |
 
 Agents (`exo-*`, each fixed to a model tier): `pm`, `cto`, `researcher`, `designer`, `frontend`, `backend`, `mobile`, `data-ai`, `devops`, `infra`, `qa`, `security`. Every report starts with `{"status":"done|partial|blocked","cause":"…","risks":[…]}`.
 
@@ -158,6 +185,7 @@ No telemetry. Network use: the daily `git ls-remote` against `github.com/zaqueu-
 | `EXONOUS_NO_UPDATE=1`, `CI`, `~/.claude/exonous/config.json` `{"autoUpdate": false}` | no automatic updates |
 | `EXONOUS_NO_INSTALL=1`, `{"autoInstall": false}` | `setup` from a repo copy installs nothing |
 | `{"disabledTools": ["cline"]}` | tools a plain `exonous install` skips |
+| `EXONOUS_RULES_REMINDER=0`, `{"rulesReminder": false}` | no rule reminder on prompt submit |
 | `EXONOUS_HOME=<dir>` | read and write `<dir>` as the home (safe trials; skips global installs) |
 
 ## Maintainers

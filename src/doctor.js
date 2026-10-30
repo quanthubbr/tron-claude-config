@@ -9,6 +9,7 @@ const { onPath } = require('./adapters/shared');
 const { readLedger, sha256 } = require('./lib/home');
 const { DESIGN_SKILLS, packageVersion, readInstallInfo, readInstallError } = require('./lib/runtime');
 const { LEFTOVERS } = require('./legacy/bridge');
+const { orphanRulesRow } = require('./lib/orphan-rules');
 const { current } = require('./vault-cli');
 const selfupdate = require('../assets/machine/hooks/lib/selfupdate.cjs');
 
@@ -67,6 +68,7 @@ function sharedChecks() {
     { name: 'biblos MCP (library docs)', ok: hasMcp('biblos'), fix: 'exonous install' },
     vaultCheck(),
     { name: 'no leftovers from older installs', ok: !leftovers.length, status: leftovers.map((r) => `~/${r}`).join(', '), fix: FIX },
+    orphanRulesRow(),
   ];
 }
 

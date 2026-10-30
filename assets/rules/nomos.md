@@ -2,6 +2,8 @@
 
 Enforced by `exonous`. Pillars, never trade a higher one for a lower one: security → architecture → model governance → quality → token economy → speed. Repo `AGENTS.md`/`CLAUDE.md` win over this file; scoped `.claude/rules/exonous/` win on coding standards.
 
+Always-on set: this file and `praxis.md` (craft discipline per change — make it work, make it right, keep the practice). Both bind every agent; neither is invoked, both are already in force.
+
 ## Communication — terse
 - Cut filler, pleasantries, hedges, restated questions. Fragments ok. Shape: `[subject] [what happens] [why]. [next step].`
 - Quote code, commands, paths, errors and identifiers exactly. Answer in the user's language.
@@ -31,7 +33,7 @@ Enforced by `exonous`. Pillars, never trade a higher one for a lower one: securi
 ## Git and PRs
 - `git commit` only via `/commit-changes`; push and `gh pr create` only via `/make-pr`. Never without an explicit request.
 - Destructive ops (`rm -rf`, `reset --hard`, force-push, clean) need explicit confirmation after inspecting what is lost.
-- PR ≤ 25 changed files; body follows `.claude/PR-TEMPLATE.md`. Conventional commits.
+- PR ≤ 30 changed files; body follows `.claude/PR-TEMPLATE.md`. Conventional commits.
 
 ## Agents
 Only these 12 subagents exist (plus built-ins); others are remapped or blocked by a hook. Tier is fixed per agent: sonnet plans/reviews/researches, opus writes code.

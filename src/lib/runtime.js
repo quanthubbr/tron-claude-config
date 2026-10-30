@@ -5,7 +5,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const paths = require('./paths');
-const { renderRules, VARIANTS } = require('./render-rules');
+const { renderRules, renderPraxis, VARIANTS } = require('./render-rules');
 const { RELEASE_REF } = require('./release');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..', '..');
@@ -131,6 +131,7 @@ function installRuntime(home, { dryRun = false } = {}) {
   for (const variant of VARIANTS) {
     home.write(path.join(paths.exoDir(), 'rules', variant === 'full' ? 'nomos.md' : `nomos.${variant}.md`), renderRules(variant));
   }
+  home.write(path.join(paths.exoDir(), 'rules', 'praxis.md'), renderPraxis('full'));
 }
 
 /** Absolute path of the pm binary on PATH, recorded so self-update does not depend on a later PATH. */

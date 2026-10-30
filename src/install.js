@@ -10,6 +10,7 @@ const { ensureBiblos } = require('./lib/biblos');
 const { select, ADAPTERS } = require('./adapters');
 const { ASSETS, DESIGN_SKILLS, HOME_SKILLS, sharedSkillDir, foreignSkill, packageVersion, installRuntime, writeInstallInfo, isolatedHome, guardTarget, assertOwner, recordInstallError, clearInstallError } = require('./lib/runtime');
 const legacy = require('./legacy/bridge');
+const { retireOrphanRules } = require('./lib/orphan-rules');
 const { installVault } = require('./vault-cli');
 
 function defaultLog(msg) {
@@ -74,6 +75,7 @@ function install({
   if (!selected.length) emit('WARN: no supported tool found (Claude Code, Cursor, Gemini CLI, Codex CLI, OpenCode) — only shared pieces installed; rerun after installing one');
   const home = createHome({ dryRun, log: emit, previous: legacy.previousLedger() });
   step(emit, 'legacy cleanup', () => legacy.migrateHome({ dryRun, log: emit, home }));
+  step(emit, 'orphan rules', () => retireOrphanRules({ dryRun, log: emit }));
   step(emit, 'atlas', () => {
     if (!external) emit('atlas skipped: EXONOUS_HOME is not the real home');
     else if (!ensureAtlas({ dryRun }).ok) emit('WARN: atlas not installed — run `exonous doctor` for the manual command');
