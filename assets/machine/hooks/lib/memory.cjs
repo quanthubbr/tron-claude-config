@@ -117,7 +117,7 @@ function cwdOf(input) {
 /** realpath of p, or of its nearest existing parent joined with the rest (the file may be gone). */
 function real(p) {
   try {
-    return fs.realpathSync(p);
+    return fs.realpathSync.native(p);
   } catch {
     const parent = path.dirname(p);
     return parent === p ? p : path.join(real(parent), path.basename(p));

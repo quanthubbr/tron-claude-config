@@ -110,8 +110,8 @@ const hooks = await m.ExonousGate({ directory: ${JSON.stringify(repo)} });
 try { await hooks['tool.execute.before']({ tool: 'bash' }, { args: { command: 'git commit -m exonous-selftest' } }); console.log('allow'); }
 catch (e) { console.log('deny: ' + e.message.split('\\n')[0]); }`;
   const res = spawnSync(node, ['--input-type=module', '-e', script], { encoding: 'utf8', timeout: 30000 });
-  fs.rmSync(tmp, { recursive: true, force: true });
-  fs.rmSync(repo, { recursive: true, force: true });
+  fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5 });
+  fs.rmSync(repo, { recursive: true, force: true, maxRetries: 5 });
   const out = (res.stdout || '').trim();
   return out.startsWith('deny: ') && SELFTEST_DENY.test(out)
     ? { ok: true, detail: `${SCRIPT_ONLY}: gate plugin denies an unreviewed git commit` }
