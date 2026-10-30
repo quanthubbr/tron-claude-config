@@ -1,0 +1,24 @@
+{
+  "name": "techne",
+  "version": "1.15.3",
+  "description": "techne — stack skills, commands, quality hooks and language rules, managed by exonous",
+  "author": {
+    "name": "exonous"
+  },
+  "keywords": [
+    "claude-code",
+    "skills",
+    "hooks",
+    "rules",
+    "tdd",
+    "quality",
+    "workflow"
+  ],
+  "mcpServers": {},
+  "skills": [
+    "./skills/"
+  ],
+  "commands": [
+    "./commands/"
+  ]
+}
