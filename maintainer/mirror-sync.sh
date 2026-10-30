@@ -23,7 +23,7 @@ fetch_mirror() {
 
 case "${1:-}" in
   "")
-    gh workflow run sync-from-upstream.yml -R "$MIRROR"
+    gh workflow run sync-from-upstream.yml -R "$MIRROR" --ref main
     echo "Sync started: https://github.com/${MIRROR}/actions"
     ;;
   --check)
