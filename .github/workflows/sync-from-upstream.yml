@@ -1,10 +1,7 @@
 name: Sync from upstream
 
-# Runs ONLY on quanthubbr/tron-claude-config — pulls main + tags from the canonical repo.
-# Configure on the mirror repo (Settings → Secrets → Actions):
-#   UPSTREAM_TOKEN (optional) — only if zaqueu-1/tron-claude-config is private
-#
-# On zaqueu-1/tron-claude-config this job is skipped (if guard below).
+# Runs only on the quanthub mirror: copies main and the release tags from zaqueu-1/exonous, keeping this repo's own
+# .github/workflows (GITHUB_TOKEN may push anything but workflow changes), so no secret or admin setting is needed.
 
 on:
   schedule:
@@ -22,20 +19,34 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Fast-forward from canonical upstream
-        env:
-          UPSTREAM_REPO: zaqueu-1/tron-claude-config
-          UPSTREAM_TOKEN: ${{ secrets.UPSTREAM_TOKEN }}
+      - name: Copy main and release tags from upstream
         run: |
           set -euo pipefail
-          if [ -n "${UPSTREAM_TOKEN}" ]; then
-            UPSTREAM_URL="https://x-access-token:${UPSTREAM_TOKEN}@github.com/${UPSTREAM_REPO}.git"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git remote add upstream https://github.com/zaqueu-1/exonous.git
+          git fetch --no-tags upstream main '+refs/tags/v*:refs/upstream-tags/v*'
+          base=$(git rev-parse HEAD)
+
+          mirror_tree() {
+            export GIT_INDEX_FILE="$RUNNER_TEMP/sync-index"
+            rm -f "$GIT_INDEX_FILE"
+            git read-tree "$1"
+            git rm -r -q -f --cached --ignore-unmatch -- .github/workflows
+            git read-tree --prefix=.github/workflows/ "$base:.github/workflows"
+            git write-tree
+          }
+
+          up=$(git rev-parse upstream/main)
+          tree=$(mirror_tree "$up")
+          if [ "$tree" != "$(git rev-parse "$base^{tree}")" ]; then
+            git push origin "$(git commit-tree "$tree" -p "$base" -m "sync: zaqueu-1/exonous@$up")":refs/heads/main
           else
-            UPSTREAM_URL="https://github.com/${UPSTREAM_REPO}.git"
+            echo "main already matches upstream $up"
           fi
-          git remote add upstream "$UPSTREAM_URL"
-          git fetch upstream main --tags
-          git checkout main
-          git merge --ff-only upstream/main
-          git push origin main
-          git push origin --tags || true
+
+          for tag in $(git for-each-ref --format='%(refname:lstrip=2)' refs/upstream-tags); do
+            git rev-parse -q --verify "refs/tags/$tag" >/dev/null && continue
+            src=$(git rev-parse "refs/upstream-tags/$tag^{commit}")
+            git push origin "$(git commit-tree "$(mirror_tree "$src")" -p "$base" -m "release $tag: zaqueu-1/exonous@$src")":"refs/tags/$tag"
+          done
