@@ -1,0 +1,980 @@
+{
+  "refs": {
+    "v2.0.0": "aef54a0cbdf3a8f6dca91423986e33617b3b7fc5",
+    "db1af8d": "db1af8d23a2ae97c940ac55409d71b9ae823e50d"
+  },
+  "files": {
+    ".claude/PR-TEMPLATE.md": [
+      "1533c5261f49f364647b40b9137a4f7d1ec4aa0ee79682b04566b9543fe88d46",
+      "1ce10f548c073983fb8c20babceac67e41a27311c7395460977608c705860928",
+      "cd74c319995e3bb3e33798e3991ab25cc87b1604bf0a63e7666d123646e2a7fe"
+    ],
+    ".claude/hooks/bootstrap-check.sh": [
+      "08847d054ff034f60ee8c8255d728fa7a2747f6d32b8996ef2c4e0ef85c978e6",
+      "22221bb372cffd8470f513681c9f080c9b802b8138f469cc8163fa7e73a03464",
+      "284d8e043f13ae8ba120f1d48bbf8ebdd075918f391f975b2df423de4bb988b5",
+      "3076180fc27ad7fcc6a82a5982773e49014f9f00e4ba329bafa0cea1cda9147c",
+      "3c6f4e06fdcf8cc1c0171d453fab2ce8a3932a4d039612b85ddd831d8aa5f776",
+      "4a5ec50b46d77aafa5935180efea43a8c71fd811252dcf60078a2c390be66e75",
+      "4b1b085ee217501b8a58341a99bd55fbfc27c9442c62c59c147129bf604d405a",
+      "530f15bd68a8f698ee438a962d0226bdf3a1cd6be0cdb58523cd014c878fc949",
+      "534a7baf5a1478833d510e3d6c1842cc317e18c740a8cf51c6489fe484109f61",
+      "90c2b162aff92dc6e6bb68794d3e5c811382bbe52194fb8de6467bb7fcaa426a",
+      "dfb1e0657dafc681903a7e548ce12420a5250bb047a8a73bbf0edc89c1606282"
+    ],
+    ".claude/hooks/bypass-check.sh": [
+      "0a18c5baf9e4931ac25a0d34edb05f0f06972f12e9646d9a7c2007b9c425c979",
+      "1925a5e4f46aa7eef077da3285eb659655febf7957f51f30e34d89bf27d9e2a3",
+      "601a4955cd923aca9c7e590e99794a85ebca676c42e5034a4e5c157373643822",
+      "8434fdb9b6dd65e94c6c6b2d777df1574c98146a2029da65974780eb41ea9363",
+      "cf0707ad998f466441c4f74191d3c3d0485e1e3193cd0cbcbd70825fd05c7e27",
+      "d22b40b51f77effef2df7389c0ac517ecf7227e8159b98a31257bdb0cafc2b08"
+    ],
+    ".claude/hooks/kairos.cjs": [
+      "2833763a8ec83e0f7e9d9432368ca14386964373eeaf158fcf2993d66811b748"
+    ],
+    ".claude/hooks/lib/harness-sha.cjs": [
+      "019bd235d1e4be1c9593e64ac43a8e39b4f979c0e873c10c863db70ca6a8356d",
+      "1218489169bad2f3f83d79837d5ba26b03444d4f0a77303a687c53ce53311d19"
+    ],
+    ".claude/hooks/lib/metron.cjs": [
+      "4b7ea0a334292d3ea7dc610121acb0d55c9f75a33ba16df561f23d4f5e1aa470"
+    ],
+    ".claude/hooks/lib/pr-create-gate.cjs": [
+      "67e07a2595ec930d75d0b9c37c44d7e3ce825ca4ecd8705170fe6ba02ceb0416",
+      "f139281b25fe13dfcd00315a61e7c2d33e5680ef8b93284f284f13ef3985853a"
+    ],
+    ".claude/hooks/lib/pr-create-gate.js": [
+      "d658779fe06d4177197c2d420fc9fa8d332f06094504735694893b756144ae38"
+    ],
+    ".claude/hooks/lib/pr-template-validate.cjs": [
+      "8cbfe977148529979b8632c17a75f0700420bbfb5cd9a59d319fce0b111a77d0",
+      "f0457cec51ac1b0a9021e360eb4c9b1dcefe1c35bf759c20e052a72163f88c55",
+      "f3322bd29b1a213a072d4b025222f28b616d10803ffe3563639e6b8c881cab05"
+    ],
+    ".claude/hooks/lib/pr-template-validate.js": [
+      "8cbfe977148529979b8632c17a75f0700420bbfb5cd9a59d319fce0b111a77d0"
+    ],
+    ".claude/hooks/lib/validate-pr-body.cjs": [
+      "1dd87c810638bcbc116e2d4725345972b83856e19c9fa235c77824bf37477e82",
+      "a011a1f8864c9858b2b2f9a1a750a8fe81b0ceaea0cee5a48c7d00710d496add"
+    ],
+    ".claude/hooks/lib/validate-pr-body.js": [
+      "3d06466db2cd47b1e560b317bcb43401f7f288b8ecae39e16ee94b1e30526a5c"
+    ],
+    ".claude/hooks/pyle.sh": [
+      "cf0707ad998f466441c4f74191d3c3d0485e1e3193cd0cbcbd70825fd05c7e27"
+    ],
+    ".claude/rules/exonous/angular/coding-style.md": [
+      "d3e17730c23ebdc6d8b4250733c436e30dfb93a512589d352eda092509443ca6"
+    ],
+    ".claude/rules/exonous/angular/hooks.md": [
+      "3a18cd0ecc427bc60ae47fd5b128663d6eeba776a363b29e0ebe7c44df61245e"
+    ],
+    ".claude/rules/exonous/angular/patterns.md": [
+      "018bb93975f49dc2607b68d8f7a88fa990bccf3053965665a739bc201eacee9c"
+    ],
+    ".claude/rules/exonous/angular/security.md": [
+      "7c4d6145340c3254de267d0dc97eb0926cf290303a27b2692e9d0b15d1f0c44b"
+    ],
+    ".claude/rules/exonous/angular/testing.md": [
+      "0a36a6c5685e7db4f930734f2e6cbfe888085251ae02ecc0b6869e3c4d7176bc"
+    ],
+    ".claude/rules/exonous/arkts/coding-style.md": [
+      "ae80cd3ea0252cd8606fb75299004b9b0b65a00c2f4971e671cd8de64d3223c9"
+    ],
+    ".claude/rules/exonous/arkts/hooks.md": [
+      "4cc5208fd0d32b89d10664b34858add2135dd23e6f0139b30d1e55fb7cd5a117"
+    ],
+    ".claude/rules/exonous/arkts/patterns.md": [
+      "c6a02385c32d173f6a6d0873318f8fb06f51ac29d6c04f845950304b9656385c"
+    ],
+    ".claude/rules/exonous/arkts/security.md": [
+      "62529caa842cea2bbe93e15dad984b8a414c3a41b42e1340de86dc8a7a69a20e"
+    ],
+    ".claude/rules/exonous/arkts/testing.md": [
+      "85fae2769eed4c6023d86b6b028baeec2b0ac4c50f3aaec29986ef82d0dcec05"
+    ],
+    ".claude/rules/exonous/common/agents.md": [
+      "39fffab5d4e8f9404caa9c3c06093987638364cef7905dbe908b4d10f20c8edb"
+    ],
+    ".claude/rules/exonous/common/code-review.md": [
+      "cc809a08315fdab73f35be2fa319b975794e24cd4304fd3cb54b0da71f340a45"
+    ],
+    ".claude/rules/exonous/common/coding-style.md": [
+      "2669ce0be39e74a55a45d65180bb11703b4db652f077cf4ec99fc0fbb261e179"
+    ],
+    ".claude/rules/exonous/common/development-workflow.md": [
+      "93cb073c92beb099dfbf0e9e7a021ad025afaf5b437b18363ba5b3f126f48419"
+    ],
+    ".claude/rules/exonous/common/git-workflow.md": [
+      "9f309c35c634d01d0ceb307ac2f4182ad9e567669f13f3b16bade15ffacebe6d"
+    ],
+    ".claude/rules/exonous/common/hooks.md": [
+      "25ea7ef14113fbbe1afe589917f79888c5e5defc0f536adc3bda3e8853602765"
+    ],
+    ".claude/rules/exonous/common/patterns.md": [
+      "3a37e2c0a4c243d327c8d3b2d9517a0ab59d0d20be5501fc48ec64be69ee4c45"
+    ],
+    ".claude/rules/exonous/common/performance.md": [
+      "c73ee8bcd3bae58d0a789e6fbfa2ad5dece682fe64a4a42463449312049e5361"
+    ],
+    ".claude/rules/exonous/common/security.md": [
+      "880afdd92f9169c7536c88e0050d6b15cb188930eadbf23a6d92d2e2a29ad034"
+    ],
+    ".claude/rules/exonous/common/testing.md": [
+      "df842d0cbd802821a8fcbce567f5eb5908fd8abd10afdf3c3ba176b839b73626"
+    ],
+    ".claude/rules/exonous/cpp/coding-style.md": [
+      "35ecb38beb25c135dd6f82653a853d8bf7a526fccbdc1215087348874d27d6b6"
+    ],
+    ".claude/rules/exonous/cpp/hooks.md": [
+      "55d457b7bb3baa39acafbdab61ae5c5a121ff731372d722ea571aabb3b08f25d"
+    ],
+    ".claude/rules/exonous/cpp/patterns.md": [
+      "78ab7aab31a01c2be0d7a82e7a71191d1576936b571dd5317d2733443d8ddb5f"
+    ],
+    ".claude/rules/exonous/cpp/security.md": [
+      "214377ade5fe019a2c3ca322c470f047cce8b4ab0c36856adc040dc0491e10bf"
+    ],
+    ".claude/rules/exonous/cpp/testing.md": [
+      "cbbdf696c0eca2bf91bf6dfa20e4e1b70164da47354baa06e13ae253e22147c8"
+    ],
+    ".claude/rules/exonous/csharp/coding-style.md": [
+      "321404a5526647451362180c338e79c8280ed21d60b38f0ca6c527872e595261"
+    ],
+    ".claude/rules/exonous/csharp/hooks.md": [
+      "9951dd8620436ea7e86ffbe3f84aeb222d259e613c37a2a0187aab58b7db6346"
+    ],
+    ".claude/rules/exonous/csharp/patterns.md": [
+      "811f1840c4e53d89e632ec0ae4a389e6e3b8c634c787d703c92b5027d91ebe83"
+    ],
+    ".claude/rules/exonous/csharp/security.md": [
+      "9c0f4fbf60253dfb6353a12af129fa6586193fd97189ab0e3574e18ea11fda02"
+    ],
+    ".claude/rules/exonous/csharp/testing.md": [
+      "94dd316a40fb00217ece28a159e6cebac8eac402ba16f607fc631cc426859663"
+    ],
+    ".claude/rules/exonous/dart/coding-style.md": [
+      "623a5b49ecb506c84fe6912cd7ecb81fa09af447234cd84e2a9041c502895820"
+    ],
+    ".claude/rules/exonous/dart/hooks.md": [
+      "0d49f7be591bd3e5e02fa32e3cde3d9693138013cb9148467ee56930a2fc4d57"
+    ],
+    ".claude/rules/exonous/dart/patterns.md": [
+      "0c51c76f528309663709dae44f27031196d3c0c93b0f4f402c3d2884809078b0"
+    ],
+    ".claude/rules/exonous/dart/security.md": [
+      "9116a0b540036e434471861e21e41f790f220b80b345103fccce42d27ae86952"
+    ],
+    ".claude/rules/exonous/dart/testing.md": [
+      "6fdaa34da65749718bb83e4a6e2ed13b3a003304798bb62fa4fa875f220f5f63"
+    ],
+    ".claude/rules/exonous/fsharp/coding-style.md": [
+      "660f8fcf75a18eee9e676d0837515f3ba50ca0d4e41ba88f659ec65d9be8bb48"
+    ],
+    ".claude/rules/exonous/fsharp/hooks.md": [
+      "9fae6935fa39f037aaf267870557310e4bf36ea9bccaf7f9014e254ca918b86b"
+    ],
+    ".claude/rules/exonous/fsharp/patterns.md": [
+      "03290fafcceb2bf4c8bd902415664ed0de19c55cbe7d0b24f0832ec71e64ee06"
+    ],
+    ".claude/rules/exonous/fsharp/security.md": [
+      "2f86ec87d20c7064ddb04e374c3a167f2eff68497f91645b0cb9d0bde06c558e"
+    ],
+    ".claude/rules/exonous/fsharp/testing.md": [
+      "25af7e2298fc70ce63272dfb9d97d03c153bf19c10f3d25e03a8d1a897e45029"
+    ],
+    ".claude/rules/exonous/golang/coding-style.md": [
+      "e216806f9a0595eb8d848d5a6d13f56cbe6f21c788762360ea94f465f33b9ff5"
+    ],
+    ".claude/rules/exonous/golang/hooks.md": [
+      "4a1fa4dbd0b8f67d36f2662eee9d4f6c9ee8b24b2e91e213bd6392b58ae47e18"
+    ],
+    ".claude/rules/exonous/golang/patterns.md": [
+      "f58f9b8b8922ce17559e88ede4ec8fd703646c8ba798544ad9214a0ef55b2580"
+    ],
+    ".claude/rules/exonous/golang/security.md": [
+      "3dc305452439ad67c0fee5cef5503186c02a669b83e7f52028d333c0be11ed42"
+    ],
+    ".claude/rules/exonous/golang/testing.md": [
+      "c202c45dc1a68685d96a1889e73d6d6a0942a65884d925bae30a450ccceefab8"
+    ],
+    ".claude/rules/exonous/java/coding-style.md": [
+      "14a990132012198a4c8afa633c26679767115a578c22c6f7cbbee257a78e6e1b"
+    ],
+    ".claude/rules/exonous/java/hooks.md": [
+      "bc8838a85601acbfd2d836a12fa96cbf79f6a6ce001de37abf8b9bd2130a42d7"
+    ],
+    ".claude/rules/exonous/java/patterns.md": [
+      "e9817977d29cdd3a159f10e6ea3e4af428476eeec111923c406395f03b8fea30"
+    ],
+    ".claude/rules/exonous/java/security.md": [
+      "8b7f3fbd97c3d3efdeb06b7291fd12bea255b4a4f7cf463fb5def1db455a920c"
+    ],
+    ".claude/rules/exonous/java/testing.md": [
+      "050279b05a6269eed9b46a2fe14793354c0a91fdfe76d8cb0f128325c13c120a"
+    ],
+    ".claude/rules/exonous/kotlin/coding-style.md": [
+      "852091a29abba92175422884b78fa1399698fbc8c92c8caab7e986d35c367a18"
+    ],
+    ".claude/rules/exonous/kotlin/hooks.md": [
+      "e0cb38aab8c2cbbce45ee0da1b163709235d4497418f4fa68f31d7e135375e54"
+    ],
+    ".claude/rules/exonous/kotlin/patterns.md": [
+      "fc93fb54dbb8aa0f2ccaad7f9098d8f12e7c67224e4fe9dc9d21ddf74f24bc48"
+    ],
+    ".claude/rules/exonous/kotlin/security.md": [
+      "19ff74916b5ea016fead9570bb40a49f98096679d1db885d1402e712b853e2ca"
+    ],
+    ".claude/rules/exonous/kotlin/testing.md": [
+      "49da3845843fce76bf137fe5d7cf6acff0ecd806d1ae8458da48d31c7d95e842"
+    ],
+    ".claude/rules/exonous/nuxt/coding-style.md": [
+      "7a923cdec3804dcd68eaff2ee4dd306327d70ec033ec57326b85bc1cc7740edd"
+    ],
+    ".claude/rules/exonous/nuxt/hooks.md": [
+      "9b2bf069855a2fe33e99a0bef33eb8e82e75d87709461483c2fc7a1eeefbdb65"
+    ],
+    ".claude/rules/exonous/nuxt/patterns.md": [
+      "af76f0aa42eca84b59aefced17723819ca4d7fd1fd3a5924ed161c041861bce4"
+    ],
+    ".claude/rules/exonous/nuxt/security.md": [
+      "41a5634b9c10ffed94892bc6c58508bcbdb02a7404566c9984fd9b463938988d"
+    ],
+    ".claude/rules/exonous/nuxt/testing.md": [
+      "9283b3464ed4c6676e3f914fb2c3e2b9de41475eeefc5829f3a928cdfcbbd502"
+    ],
+    ".claude/rules/exonous/perl/coding-style.md": [
+      "894ed00060639a4f183d33acb1582858fb878d4c377d62c92643625084305dd2"
+    ],
+    ".claude/rules/exonous/perl/hooks.md": [
+      "f11b99268f85544060a64608901b387fc50c59b7192db1445d3af7d2e79ff73b"
+    ],
+    ".claude/rules/exonous/perl/patterns.md": [
+      "091e06737e0f8afeaea22308779b805eb457d3caa550f0113c1b4f741cf657d0"
+    ],
+    ".claude/rules/exonous/perl/security.md": [
+      "31442110120e94636cf756e8c8832a9728341be4ef03e1f46d454b6e623d3bce"
+    ],
+    ".claude/rules/exonous/perl/testing.md": [
+      "840961e943449ee837dfbd1040ffec730db511939a5ec7c9e5977c1b95d3ae54"
+    ],
+    ".claude/rules/exonous/php/coding-style.md": [
+      "770167e77e01e05c3aef6873e7c3eae92d7d79759536688addea859263eabe85"
+    ],
+    ".claude/rules/exonous/php/hooks.md": [
+      "51693edf14f92eba1db6bf0bf406255ed7ac41b04e4af47a772beb6a007bdbe4"
+    ],
+    ".claude/rules/exonous/php/patterns.md": [
+      "ac1fb2cb30921d751f5f619e4d7401cef52804c0ac460e378361ea1d2a60ce00"
+    ],
+    ".claude/rules/exonous/php/security.md": [
+      "6b6f0229d42af6ef9af6105a14c2ff4db0f7c388039a3c365f60ba403e32d66f"
+    ],
+    ".claude/rules/exonous/php/testing.md": [
+      "fc8c8fb13226f09b9d69f3b6407750482dd9975f38e20b674a9ddc5efe86fb09"
+    ],
+    ".claude/rules/exonous/python/coding-style.md": [
+      "5cf66db9e2eceb92276944e77d0435a985ab2aeede183a8b8b5e380ef4ed2764"
+    ],
+    ".claude/rules/exonous/python/fastapi.md": [
+      "b0ea7efd44962fc6f16c04ffe1f3e2ac1f01a3b860cdb4c28870659b0c5a0f3c"
+    ],
+    ".claude/rules/exonous/python/hooks.md": [
+      "3acabeff6b4640856b54ee281c156bb0102d120e01cd563136a3fb680f44504a"
+    ],
+    ".claude/rules/exonous/python/patterns.md": [
+      "74357a15e26d0782051d0ff6e2c64f05b5eed38340f14289a80e8df883334618"
+    ],
+    ".claude/rules/exonous/python/security.md": [
+      "859e70b4774d1672b6ab2b7cfd5ac5ef0fd22fe1cf7685416b2510e4c57f2af6"
+    ],
+    ".claude/rules/exonous/python/testing.md": [
+      "eb58e48b247b50fbd82ccd0ec28a29e46f101c0c0a4c78c453244084db0c650e"
+    ],
+    ".claude/rules/exonous/react-native/accessibility.md": [
+      "d616d163c097625da9220793691d23f8df7f3118bb047d39ac68871e17fcabfa"
+    ],
+    ".claude/rules/exonous/react-native/coding-style.md": [
+      "0ba7afbe228b09ffd97b695794795b6ef910cb6b5f78ba02cdcde4babc604b58"
+    ],
+    ".claude/rules/exonous/react-native/hooks.md": [
+      "e5cfb8aade8599f700562740ab659ed109e1dce7aa2d084d41abcbee06de235a"
+    ],
+    ".claude/rules/exonous/react-native/patterns.md": [
+      "7b4caf193009a3ceb8083b45d61515f5597ea07f9432396de33da81af44fab59"
+    ],
+    ".claude/rules/exonous/react-native/performance.md": [
+      "4bff73871601eb5b308ca385cf392d91b14071773c4d75e01d93cad9c007462e"
+    ],
+    ".claude/rules/exonous/react-native/production-readiness.md": [
+      "7c12076493c910f711452dd45c73194393d0274553eda969945917d4d26b6a88"
+    ],
+    ".claude/rules/exonous/react-native/security.md": [
+      "2d7d530756a93fa85de4c090ba77422feb20d528106361c78b6922ce0cc36d63"
+    ],
+    ".claude/rules/exonous/react-native/testing.md": [
+      "f30fee2a0231b84a2da6d787d6d713ac1a6d710b6dddc7d930669b4f80132c2a"
+    ],
+    ".claude/rules/exonous/react/coding-style.md": [
+      "c7ce7c51c54d3761339f964dc8e6a8d6e98037960290db710742ccca26c01e1f"
+    ],
+    ".claude/rules/exonous/react/hooks.md": [
+      "a07800aaf3ba6d59f7d97e123644810421b149246fde635e929ebd8ec4496769"
+    ],
+    ".claude/rules/exonous/react/patterns.md": [
+      "bfa1a095bb77e608838abc0cd4535b78584214fc26a5dcc655b306bf0ba43dde"
+    ],
+    ".claude/rules/exonous/react/security.md": [
+      "a33c346e4ed74731ab9d12bc8f6a877ecf0e7789a2836ac8fc215002d337c334"
+    ],
+    ".claude/rules/exonous/react/testing.md": [
+      "7e22c07c173803dc0621a6977e53ad0e28660151a9300a3aea72b162567a934e"
+    ],
+    ".claude/rules/exonous/ruby/coding-style.md": [
+      "ab19f5aed6f7cc6c1852cc6461c2b99d50c9d42965b07bdcc3acf3521c7f3772"
+    ],
+    ".claude/rules/exonous/ruby/hooks.md": [
+      "f2aea9164fa153b1f78fa634d52e9299c6362e3362a1181948750aa89bf9c7e5"
+    ],
+    ".claude/rules/exonous/ruby/patterns.md": [
+      "40675771c40b852eed1ecf8f99627f8a1558d6e318c851c970f841afd002112f"
+    ],
+    ".claude/rules/exonous/ruby/security.md": [
+      "8a2ad7ba1bcbcc634040135a76b6fdd95942ef09fd399e04c700e3ef47b155b4"
+    ],
+    ".claude/rules/exonous/ruby/testing.md": [
+      "99b840be0b804a029cd2f6afe8984844ea0e453c822706507b41afd2981de360"
+    ],
+    ".claude/rules/exonous/rust/coding-style.md": [
+      "7c5dff340b3ccc74fdf69d14d630af0b8daf48d0be23b80a296dcd47e53f92a7"
+    ],
+    ".claude/rules/exonous/rust/hooks.md": [
+      "65cb35b813820fc28387bf0f24649bdc0408282425020d1fc3b998a0c77e6bbe"
+    ],
+    ".claude/rules/exonous/rust/patterns.md": [
+      "77591c1cf80154488679831a5e774e0a3c702266ba7faf09ed2a07b0fa0750d6"
+    ],
+    ".claude/rules/exonous/rust/security.md": [
+      "f994d03aa5f0bab754dd9133a74f4b205237e93e8e53a16a1d51b177935d9477"
+    ],
+    ".claude/rules/exonous/rust/testing.md": [
+      "01f54b8b8f5288e433d3ce8b824d62af3ddfee1d8dc809165ee119347aff8750"
+    ],
+    ".claude/rules/exonous/swift/coding-style.md": [
+      "64fe4320dc0e248373feb78bf444461904a857e54a7959aa2ad360a8c20842f0"
+    ],
+    ".claude/rules/exonous/swift/hooks.md": [
+      "ae653e5d577df336db28498d9fa49412cdc3032bd759945e6a5c13e7d0e444d1"
+    ],
+    ".claude/rules/exonous/swift/patterns.md": [
+      "b2984c3bb83474118ccecb5f44a480b6433d5bac2d67190c3e14cfbbc47ea72f"
+    ],
+    ".claude/rules/exonous/swift/security.md": [
+      "b7dcc9f592fda196a7db0b725eaffe6d12bd768d80b73d8751292f30d1dc26e5"
+    ],
+    ".claude/rules/exonous/swift/testing.md": [
+      "65a991b8211b83cc7a1b1accbbec0f4553b8a0191fd9f51ee38faba95c2d5263"
+    ],
+    ".claude/rules/exonous/typescript/coding-style.md": [
+      "81dabfbdf107e1393166060c4388d607950d81d1ba2caf0a1c588166d954b806"
+    ],
+    ".claude/rules/exonous/typescript/hooks.md": [
+      "f33b8856ac8294a4a5cd1fbaba0f4f1e33d2b76d1b44adc9cb478814b39b92bc"
+    ],
+    ".claude/rules/exonous/typescript/patterns.md": [
+      "ed8bc3213022be3295ea732d5e7e38ce460f87dcf3d0e9323c5657a6eb72a927"
+    ],
+    ".claude/rules/exonous/typescript/security.md": [
+      "9f31047b87c54e13f7ca5c2883ec05fae2d17459bcadd6db82bf52c74635ac54"
+    ],
+    ".claude/rules/exonous/typescript/testing.md": [
+      "76f07ccce2bcc21ea10802dcc346d61198cb177f7d42b5fa35b47c2b57049ff5"
+    ],
+    ".claude/rules/exonous/vue/coding-style.md": [
+      "535b04f5db0df9bbb59bcef29575eaba716237b6711753625061ea029dd0ad7b"
+    ],
+    ".claude/rules/exonous/vue/hooks.md": [
+      "67e5a51e4ea5fe85b26faec3e0eeeb0691ffb3ee95db122897e76f6ff77309e7"
+    ],
+    ".claude/rules/exonous/vue/patterns.md": [
+      "fb6d8794e22a6976a4dbb277e8e894a6e5f89aff328da5c2cb2241e205f27cb4"
+    ],
+    ".claude/rules/exonous/vue/security.md": [
+      "487b8b793e4111ffc8aa1b7f982bc941e2a0707c01cfcaf3d4ddab560926c9d2"
+    ],
+    ".claude/rules/exonous/vue/testing.md": [
+      "f71ecde2a1196c604615dad9c80420c217f9dead3af36752a5427d4631a89925"
+    ],
+    ".claude/rules/exonous/web/coding-style.md": [
+      "8b2db4bae63261899b12e7698291d73cd16c518f8e0d47147e8345bb2890b7d0"
+    ],
+    ".claude/rules/exonous/web/design-quality.md": [
+      "826c2af2a9f2588c99911510cdbf0fb7e849047f0e1365d2985a2c44ed8a46fb"
+    ],
+    ".claude/rules/exonous/web/hooks.md": [
+      "ebdf7be9035ef8a5f9f47c0e188140a6cce5c88dffaa2ebcc64d8cf4e5320548"
+    ],
+    ".claude/rules/exonous/web/patterns.md": [
+      "69d1a17beb084424d33562575a434cfd4b29bc2789bc2228c648739b3f7232fd"
+    ],
+    ".claude/rules/exonous/web/performance.md": [
+      "742323d5c4a9bcde472ab8da5236bc01e0f4e3470f36fa78714467d84df092b8"
+    ],
+    ".claude/rules/exonous/web/security.md": [
+      "b0dc1edcaef370c27e9b2af47dd0ddd434c2a01c8c733f490e864303ea33e02f"
+    ],
+    ".claude/rules/exonous/web/testing.md": [
+      "314a63c37cf1e4b85ed042414120224c66896ec3a2cc49dbd748714eabecbe9b"
+    ],
+    ".claude/rules/tron/README.md": [
+      "587f99c9361b499d3b05905fa705c1e855b49e3bfcbd672de74fc7187796e469"
+    ],
+    ".claude/rules/tron/angular/coding-style.md": [
+      "07ff77e554dad197c179c0fbd6b70dcbedbe4e038e95e60da0475134a5be856c",
+      "7b7d1698dad36e9bece5b76389387ca849f370b45883f03603da50de0c1a5399"
+    ],
+    ".claude/rules/tron/angular/hooks.md": [
+      "088f98d7b75e90c3194aa357b4dc3bcd4be2b8aea004970e507e016b4e94c05a",
+      "321620abd2771d766149f5d38edc6b0f6a70fc49cdf4467bf3d81985668fa088"
+    ],
+    ".claude/rules/tron/angular/patterns.md": [
+      "33e78a1964ad0ee6d9a0ef4b36b39dcf2e88fe846b2235d767bed3f4428eb93d",
+      "dfe588461b1d1b4d63826559c89a22dec3a61de606db5ce249b01c5cceb6b887"
+    ],
+    ".claude/rules/tron/angular/security.md": [
+      "95aa06285fa05dfac872ec631057361ec8864d69dbf7be933c8d72c16aea5155",
+      "f745237da3dd2b707ca54328f52f6fc1937d1fc7fa2f13e40dd9dc9a6e6191e5"
+    ],
+    ".claude/rules/tron/angular/testing.md": [
+      "8a7897955fb683e1d2cd59bd03a7f6c4bf47dd6221cb4404e32f968cc7519959",
+      "db8e50e1a0eadf989399c69923ff939b857a82f2b7deedc6cfeef21f182ed0cb"
+    ],
+    ".claude/rules/tron/arkts/coding-style.md": [
+      "15d865b11bdf5d0b3bbc5275311b0051b350cf302e018017ce582d17b5dfa195",
+      "6b7bd08dc321bc5acba53467918fe2ea8c24d8347ee41c91a2ad89969b2a071b"
+    ],
+    ".claude/rules/tron/arkts/hooks.md": [
+      "4167a52b2da65eb9850c62de1c56b76af3897dfe363699a0f0b9212a0d1c17d2",
+      "58bc4133ecdf5bd81fd32fb228206a552445cddb0e868228d829fd390a807b2c"
+    ],
+    ".claude/rules/tron/arkts/patterns.md": [
+      "0b475545842fcee0777c98dbace9bac552a71c581f9630648fe28e2d5d0e1394",
+      "8255206c06da031333170e088fd061f4bd69e89e88542f9672ca39f825a7607a"
+    ],
+    ".claude/rules/tron/arkts/security.md": [
+      "68c2c51e2741e9e25878e82bae0a6364c261c0d9d2ac0052c5580218355d7eee",
+      "d7a1d16b9ff263af1cfe8a939551eebe1b6f46b1e227f25524d2d9d440418f7e"
+    ],
+    ".claude/rules/tron/arkts/testing.md": [
+      "67bb8f214bab3fa20e14f4c47779b3f41e469c5dcc597391877c18fa5d29dc44",
+      "bbb059fbb062231bc992d890c3ad4d772d61b8a7cba37b113ca74bfb07e4b3b9"
+    ],
+    ".claude/rules/tron/common/agents.md": [
+      "c53bec2c059315b580874c8dfa8eab17eda22727551c361fdb956394b52775ad",
+      "f6b5612784ef32623f2632839aa50fa2652c573b77ba777d2b80a49b404cf0f8"
+    ],
+    ".claude/rules/tron/common/code-review.md": [
+      "55dadc2e085e0e234f974862080a4918b74d9dee820e85370c63bcdf0e0a4a6b",
+      "85a0646659245aaa73fbf45ee8bc6b45f50214a69f8727f8381dd67ef1cc743c"
+    ],
+    ".claude/rules/tron/common/coding-style.md": [
+      "2669ce0be39e74a55a45d65180bb11703b4db652f077cf4ec99fc0fbb261e179",
+      "f16be09179b6d83bec63d3e109a8a9a95c8657985ae36e493b5d5decaf15ae1b"
+    ],
+    ".claude/rules/tron/common/development-workflow.md": [
+      "54beaad49cd4cdde7ae6b8c730c4f7acf599d16f4b11e1cb7602ff1f0867c85d",
+      "6ac32fa528acf71e200037d21cae53459098598643dd9e1206fa7f1cdb119e82",
+      "8e16203d6a787f5dcf0c500c8defd864ff3464676c3186a6aa2602a01f3ffb2b"
+    ],
+    ".claude/rules/tron/common/git-workflow.md": [
+      "1b8e1958c637f49f2cadff1c5b2af5e08009f469ad027939ca2976e4ec8a856c",
+      "9f309c35c634d01d0ceb307ac2f4182ad9e567669f13f3b16bade15ffacebe6d"
+    ],
+    ".claude/rules/tron/common/hooks.md": [
+      "8f2882cfc363c3b691aa00ea5d407df54557957148fb54277c2c1105bbedb1e4",
+      "b3bfb0ed86bfa71d29c076de5363656265218aa5fb8abd26edf285e652a2b234"
+    ],
+    ".claude/rules/tron/common/patterns.md": [
+      "3a37e2c0a4c243d327c8d3b2d9517a0ab59d0d20be5501fc48ec64be69ee4c45",
+      "8a32c0552c8b309e961ef3f68a56ae84b0b1d411c17f23675ec26b685dea5e9a"
+    ],
+    ".claude/rules/tron/common/performance.md": [
+      "851cde9e695213b22efb4a4f7952160550b6634a62e62c71deec80bf649da86e",
+      "c73ee8bcd3bae58d0a789e6fbfa2ad5dece682fe64a4a42463449312049e5361"
+    ],
+    ".claude/rules/tron/common/security.md": [
+      "118d3ff8012d3ef139b0ea603347e0598537681dbfda0e9322815d85d932cf2f",
+      "58f0acc56331b8d554dd036b8a1d5b2305a908e3960ff1e2d7e55223d5918bc3"
+    ],
+    ".claude/rules/tron/common/testing.md": [
+      "09314a247342c12698deb308c2d0ffcf80b58341274bb8f9bba63fa03ce33323",
+      "42d7c95bc6ee85f662b83f8eb7a3482e05abf2e4271de58ae53f2471c3d64cba"
+    ],
+    ".claude/rules/tron/cpp/coding-style.md": [
+      "3d25db0df6aa37cd58117d927020102b4e991fb820b9a6ff193058f0652be611",
+      "c167de895cf27cd01957a16dbc46b68c1250e40f734b2afce6f41c73c9cf9a27"
+    ],
+    ".claude/rules/tron/cpp/hooks.md": [
+      "51c511ea9706f53399649a52030484e14317b26f717488807a1faa2a2b9e0331",
+      "ed1dc4ee60c506c740bb6f89c6c0cf836f2dc35b5cd35c9ee44c307386f7b21e"
+    ],
+    ".claude/rules/tron/cpp/patterns.md": [
+      "0d4ad5083495eb234e43f65ed6e097494c06cf6886774d870fa27e6f11ffb27c",
+      "7f02fa20bfca31333cdfda364ca34bc0fa39598c530ae2a2600133511fcae222"
+    ],
+    ".claude/rules/tron/cpp/security.md": [
+      "16ca65265e3202d59046a70bd925d8f882d7f8494152e4839f1e5b89a6c5a2cd",
+      "62374e77a25d691f701b46855d20d680293f190d515cd3478d2f0ba4efe7d11f"
+    ],
+    ".claude/rules/tron/cpp/testing.md": [
+      "07f8098577dbcf2bdefb24721ec571badd7c646fbe760cc2a2293455515da5dd",
+      "d74d92155fdce4ef2723fea60a22f1f74471063982489e950f94dade1c5108c6"
+    ],
+    ".claude/rules/tron/csharp/coding-style.md": [
+      "355de4ecd0690f7dbaa78e2fe24c9b82a153247c9f23adfa6de5a49a812ae3ce",
+      "ee259c4e1a10f9cf5878641643d4386f3f33509d65a7d8aeaa50028202fc8480"
+    ],
+    ".claude/rules/tron/csharp/hooks.md": [
+      "9975e503eedc5a9a02a8ba8cee8fbee804210632db0ec00b2185ef225e3dfa82",
+      "f42e9d155e1ff7890c9ffd00f00be642fb6924c8125a1025cb0698ab7853d070"
+    ],
+    ".claude/rules/tron/csharp/patterns.md": [
+      "05ed05365fd93ac93245244878229106eefb88164db43555d14d8bbd4999023f",
+      "514a363de597b02b7fa489a21fe4abcf7d472e4ab83cd2848a4f5ae1b2fc32e1"
+    ],
+    ".claude/rules/tron/csharp/security.md": [
+      "94b105e20d72ba2fbe457a42e9232001dd5dd338e816a091094b0d518280eb07",
+      "f7afd3c77f3cad04af141c62a44907bceec4a4398e9afda010a3a4e92a0ee860"
+    ],
+    ".claude/rules/tron/csharp/testing.md": [
+      "43ff9a857080f411596584d34557878bbeff68a5ef5208c9fab813764c305733",
+      "797db2f53f2dd34c2fb2732d9498d63b818473c6599e9124c46c668ab70226a6"
+    ],
+    ".claude/rules/tron/dart/coding-style.md": [
+      "2672644b245aba5f50c767d5a4f10e04838bedd5758d16c42c32ad4b5b7cf904",
+      "acf278be79dae9fdc323cf81059ec05fff32751617eef9bb5be3a2bdc9175f6b"
+    ],
+    ".claude/rules/tron/dart/hooks.md": [
+      "5d8cd566fd009eeaf862b053ddfc931f2ff9e2c5339559caad45a1f5833183ab",
+      "8dbf2a2cbedb962fbfed379749baddcad9164779159411ae248a42c0ebc2e9fc"
+    ],
+    ".claude/rules/tron/dart/patterns.md": [
+      "103d33ad8223cf2c98b6ee7de2fb144a2c76b949e85efa39a699a8bb4b20be13",
+      "6fc60f9f286b04f61462e2b9e469a12a715097e71e48c1194e222795fc29160e"
+    ],
+    ".claude/rules/tron/dart/security.md": [
+      "7945724035a5fe77f9b89e15fe28b5b8c405b625a3d9fb27cfae7c590df1fa2a",
+      "9d304ee510cd1dd911fc3017e6f88f46cfb6c7e7b864684b76e0f90c3bd38821"
+    ],
+    ".claude/rules/tron/dart/testing.md": [
+      "1cd7e9beea83c149ebfd2dd7ad03d8478150394e04bab20d906c0ea9eb70151e",
+      "b2d645c8e6da1958d913c82cf408013ada2ea14962126e1575566cea55465cf2"
+    ],
+    ".claude/rules/tron/fsharp/coding-style.md": [
+      "a63e0d8bd341d722ef2c01bec7235426d23034bb55356cb1080926a9a5fc721a",
+      "d1088a64bc2c3a46e9c00b17c8a8df4d94aba2a199881c21af7b004380d005ef"
+    ],
+    ".claude/rules/tron/fsharp/hooks.md": [
+      "32a9cd7aa256b8a945600a6d1eaff097b17021887c88f4fbea6cbe739da982e2",
+      "c6b9cc1afef1f8556d13c6703a13662724b413b316bfbcc832be236a998596cf"
+    ],
+    ".claude/rules/tron/fsharp/patterns.md": [
+      "a120871213cce220eb41ccf5699707ac1d711f387a8e3ccc6b1b7810701429b4",
+      "e00bab01ec52a7af52494727a932bc7c25201ba8c151a17525b7fd872cce7001"
+    ],
+    ".claude/rules/tron/fsharp/security.md": [
+      "021f0fd447be83c7f8ad47e1bcbe28ac2f15fc8a2ff9a42199ac229bc8f405b3",
+      "d88eed8d79076b673c5e465632cd7692d4db53b8a7b055c284a4c59ca607a6ed"
+    ],
+    ".claude/rules/tron/fsharp/testing.md": [
+      "254b49f908e575a6216d7eac2b7b6a3234bb7ab3c32a8d263dc22f8e109f6616",
+      "a3c7bfd41d8e4ce77dea6758a405008b115ec8a393f91c07ed928ffa7d5024ef"
+    ],
+    ".claude/rules/tron/golang/coding-style.md": [
+      "34c0a5721612bd29c47370c35fbd97ff9463407d4f7ae7bde45a10c71ec52390",
+      "c32f6a2715297a1637b35567bb2e65054b4b28064b4d91fad26ad688f758243d"
+    ],
+    ".claude/rules/tron/golang/hooks.md": [
+      "518fe31d4baa4a10e2f5ae341ececb7063bbc794ef44c4cdefd7dcf75ab50cc3",
+      "a5caeacd7277cd52ea3ac3dd04da196ac31510da0f35b9fc7df492a9ea477f63"
+    ],
+    ".claude/rules/tron/golang/patterns.md": [
+      "aca279088c39a43e8b1371d61abbb5da15206c5f52cce52443252d47ad5c5ddb",
+      "b52eff6dac09764b7ae739dafbf581196b1cb1cba25ba674c74a8ba6aa59146c"
+    ],
+    ".claude/rules/tron/golang/security.md": [
+      "3dc305452439ad67c0fee5cef5503186c02a669b83e7f52028d333c0be11ed42",
+      "72ff9516083e017b718f76e7a6f6838611fa3c02b810b3572fef7d605b38d033"
+    ],
+    ".claude/rules/tron/golang/testing.md": [
+      "5cec4867606f894c685d21fa6f12804c10346d8a77b8344b6d31885acdeb9dfe",
+      "b0fcde8be4ce98e34fe872cc2ecca63cab8c8cd87d5faa1e1667ee82f3707d74"
+    ],
+    ".claude/rules/tron/java/coding-style.md": [
+      "4ce94d84b6d23615ae5843892bb434dcccd3173938cfffb2701a61c17d1e9a67",
+      "5903e6209e7ad2283c8256d3fce53d9a3e6090f5eed0b32e2b40b1abbd2c366f"
+    ],
+    ".claude/rules/tron/java/hooks.md": [
+      "9301cb81974ee7d2c5feedb376a62c9f6802fe4ffa62d9b3fb182e9c3d3f6778",
+      "b3c2e5aa683bb14a804dc9a5b59c255e5de763d35abc94daac17c859cdb6fad7"
+    ],
+    ".claude/rules/tron/java/patterns.md": [
+      "11f26e27624feecf828ac91dcb53389e08fa88ae6755dce5cf7d6ba84d36f9e2",
+      "2bd803ce88b416158025fa1d553bfc1a14660fba0745356e5ce709639395d95d"
+    ],
+    ".claude/rules/tron/java/security.md": [
+      "622b055e3b91a8ed2277a5892d83473dd141a4afb6cb0400d382f641ae085a88",
+      "e13c649b301a3d43d365a1a2ee5444b85043c2c8258543a52c52513fc86c732a"
+    ],
+    ".claude/rules/tron/java/testing.md": [
+      "0af52504a7c8258dbfe9cbeeec9fd88d18e0fa5492e5ed2900ff5a97e9051497",
+      "c346876cf44b50fdb80cdcf2e34b0535e0a73d62b584fd32f76097d3ec736379"
+    ],
+    ".claude/rules/tron/kotlin/coding-style.md": [
+      "63c86f8bb5366901f3233f2b71880c4e9c0bde794bf2276745f2d2f6706d99c2",
+      "c18f1317d6a83441e74a5a8140fb1a2dbf0d34ffc5bff87d11d652b263fea22a"
+    ],
+    ".claude/rules/tron/kotlin/hooks.md": [
+      "a50e94f3e7c68c18ac1432b15b0cd207d75e44e94c4bda9a76c0ed9a72c512fe",
+      "f5f703d6395984d4bbbdef4df9ee7875879a77551d3cc75acdf8b1054d09142c"
+    ],
+    ".claude/rules/tron/kotlin/patterns.md": [
+      "1c043217f0a9b7a5f013ce6dbfe0ef065d56ee6afcb30010f99ccdaf22349805",
+      "b3483e15b74978a39503f7dc3c979ca78b2fda918110c99c58c10f587e68ae77"
+    ],
+    ".claude/rules/tron/kotlin/security.md": [
+      "f2cb2185afce33a401fc815fc28581eae21f5f75382cad2082b27557d9cd18ac",
+      "fe6c1941bfa90259bc4fa102b51f798b2f4bcad31ffe355c1faf78f897149a4c"
+    ],
+    ".claude/rules/tron/kotlin/testing.md": [
+      "441d35861a1297cabd698b7f3886c5f0bdc59727cb99fde135f8ecb06025f6e7",
+      "78bd04e7beacf6f3ae942ce7f37287e88c76267c2ba6c5209c39b57ac6c19d7c"
+    ],
+    ".claude/rules/tron/nuxt/coding-style.md": [
+      "33dc74dddf4c7eddeb46c9c8c3ba2014cd432c5a82becbbf445caf999f272bb4",
+      "5018e8659442b8cb64bfdaf15580573de6d1f5cbc5e0419fd3ac01b3ebf95a47"
+    ],
+    ".claude/rules/tron/nuxt/hooks.md": [
+      "0ce5d01badc5d43ebacef325bf3e2d958691ac9a08cbf67c905433690341e5c9",
+      "ccfc501f38cc67d82d3aaf646f1aa97d7d09eee907e31679027c99abb3b18872"
+    ],
+    ".claude/rules/tron/nuxt/patterns.md": [
+      "752177f220353824ae7c7a6eb9ecaa9e2638bb20233fcb8cb37d1bad0bbc79d2",
+      "af76f0aa42eca84b59aefced17723819ca4d7fd1fd3a5924ed161c041861bce4"
+    ],
+    ".claude/rules/tron/nuxt/security.md": [
+      "6b0a131fad31521dcc8d23a23a75dec0e8a11e0001f1726d6107e1ff357746d2",
+      "a8ef6f1cf0f5e059a05b06d904be9bab49ee9736be3a85444e12d278c3786f78"
+    ],
+    ".claude/rules/tron/nuxt/testing.md": [
+      "2c1c9fd0006083515eb8ace54007602f1091df0b0fa35ff5d231ba64109cecbc",
+      "ef065670879b6341c28bfc902fa261a73aff3bbcb1f8f8dc5b05c03d1015399e"
+    ],
+    ".claude/rules/tron/perl/coding-style.md": [
+      "4d630fccedf32f3ca3ec06c273270376642d1c535f4b1affb22c6ed5177e51ea",
+      "4f134e0da0e332280e6c6803c5dec6edb38088c42f4bb6270c27e81f579a853a"
+    ],
+    ".claude/rules/tron/perl/hooks.md": [
+      "a71f48f8b6068436a5b47c4f32291208ebd5d6b311b2ad1d393c1a0ad96c764d",
+      "af39d9ba047a7a5c0f01a2fbd1750847189b34a308d0c159b7302055d9ecd38e"
+    ],
+    ".claude/rules/tron/perl/patterns.md": [
+      "091e06737e0f8afeaea22308779b805eb457d3caa550f0113c1b4f741cf657d0",
+      "55a86b5bca376dc511bd9b4fa2d0b29985f4d7576aae715d68b760afe0628169"
+    ],
+    ".claude/rules/tron/perl/security.md": [
+      "c3d0311c2bd9b0fbe94d079e410561fa6a918180925f86c29dfadd06d32a00b5",
+      "ff1e0a9d1968512fc5df331363d45ece03a302cccb8acdcf4521fbbc0ccc84bb"
+    ],
+    ".claude/rules/tron/perl/testing.md": [
+      "4e8377928b5da585aebeaa278e3f293365d84df7819cb44d8efb1b5dc4631e68",
+      "74e3be627c037371541db792ef625fabe93001e24aa749f6b033fd2b38a65739"
+    ],
+    ".claude/rules/tron/php/coding-style.md": [
+      "d55900adc8ee4d27fa2be040af52cda40a735e2b24034dcee3af16f167980bf8",
+      "e6492b2e6f90a957a2f4664f2e01640fcc5ff77a81ab44c9cee42f3590be8b59"
+    ],
+    ".claude/rules/tron/php/hooks.md": [
+      "624c6126b5c245aaf9af301f71f46a2b059baf94ef3de5c6bdb5dbf859ec0090",
+      "8f9cd2e0f7c2d153ea6182692b44eeb2ea7ade4524fff0512da128e28d806f15"
+    ],
+    ".claude/rules/tron/php/patterns.md": [
+      "9d12490f878ff87be2e4e2d2fe2acb81e43b8a88a607345fd8439f0ea9167808",
+      "f370b0af1e12d067fb4263ad829f62fedbc37e6e9aedf698d3939b6ee69cd1ea"
+    ],
+    ".claude/rules/tron/php/security.md": [
+      "815e5f9509dbda0fda923df5799c7a5aa346d911cba52f1879eb8cc3cc9f434c",
+      "c3ab3949fab80c9bde6d0f6925984dbd094e66b6a790c4cba29f6d74dd07d2b2"
+    ],
+    ".claude/rules/tron/php/testing.md": [
+      "027a2fb6619fd671060a6d8283ee6cae2898eee20f26557f75626fc2d18ffdf9",
+      "f40c0c15794228c62904a4138d5ae9c4c757bdb1bf1b91ec8c6f5da011bbe7e0"
+    ],
+    ".claude/rules/tron/python/coding-style.md": [
+      "4dfed18d98220a25f80f515dd0dd1745d4e6d44293539382be8adc0af3c1f721",
+      "f9d6d7a39c5f5ea809579fecac591f390fa9264c088c7e209d464d5244747003"
+    ],
+    ".claude/rules/tron/python/fastapi.md": [
+      "b89baa9a732fce4a87c07f2e09550329a887431bb8b93a59977260d7d7c3072a",
+      "e796ecbe93c4d50de6ab34ab1d8fc35db5e6bac03144cbaef09939ae5c3b6e2a"
+    ],
+    ".claude/rules/tron/python/hooks.md": [
+      "7ebd12233f6917905d5653a63afe2361450ed732fd965de55055ed5ffd3c14a7",
+      "db5b7f948246ec64622049518e322d127e7fde77249c1a34beeb59b75b10dfd7"
+    ],
+    ".claude/rules/tron/python/patterns.md": [
+      "053660f16257427f1ce5f6cdae6eac9103f5d08fe24fd1136fcb4579f902ce3b",
+      "d9cab9b536321ea7efc6180668fd48820deaf571400db732f0ca17bdda92b7d0"
+    ],
+    ".claude/rules/tron/python/security.md": [
+      "6bbbb6c800cdfef23c3f9a5055ce31096a7724b51f0d528935f6c32970639453",
+      "a7891c2191b6556ef0bbe827f2c5c8518bfafd55e3335de7f176325a36cb2777"
+    ],
+    ".claude/rules/tron/python/testing.md": [
+      "92655aa5047ee456501ad6605c428680bac6433965f89ce531fe79627004e8c6",
+      "9582d4e14883f68b8b1ee245f391fe600afc2a59c67e68548cb1fa166ef236e6"
+    ],
+    ".claude/rules/tron/react-native/accessibility.md": [
+      "7cd8adb29406c0f07e6628334bf417e8df3d71a2781c2f830b5b74177b2b8222",
+      "d616d163c097625da9220793691d23f8df7f3118bb047d39ac68871e17fcabfa"
+    ],
+    ".claude/rules/tron/react-native/coding-style.md": [
+      "0ba7afbe228b09ffd97b695794795b6ef910cb6b5f78ba02cdcde4babc604b58",
+      "121c3c1d837828d2a648bcab8f0134fcc711f2fabdfffbdf5a095d60fdeb650f"
+    ],
+    ".claude/rules/tron/react-native/hooks.md": [
+      "9d070688aa0bec80a98d23160cd92d9a7cd35aa905c388ba8f7ac4f60e300a74",
+      "b9b2d1a70bb621b4e6899f76c23b7573ce89d27cc16773b2e5ca03edc8fdc00a"
+    ],
+    ".claude/rules/tron/react-native/patterns.md": [
+      "61ecf0979f22ba323cf03ad29fd98e67671a848127add4b12e3727f3ef76ae9f",
+      "9c6b650a4d0fbcd2861cb2ab92407b1a339036f9f4ea3cdb8c1c529add934838"
+    ],
+    ".claude/rules/tron/react-native/performance.md": [
+      "4bff73871601eb5b308ca385cf392d91b14071773c4d75e01d93cad9c007462e",
+      "66b87fce7da71f511b1382e52fd5becf3b4edaf6b4dd7a26a68de20b9e451f5d"
+    ],
+    ".claude/rules/tron/react-native/production-readiness.md": [
+      "7c12076493c910f711452dd45c73194393d0274553eda969945917d4d26b6a88",
+      "e4afb1ec82bf7fa541c07c40a71602f76f3a0cb76cc47731c98d5570f2019886"
+    ],
+    ".claude/rules/tron/react-native/security.md": [
+      "338b22911eb57506ace68f88b4c2f12f08d08aef1d0bfcbaefa80596886b9356",
+      "92819918373143837edd33da97af6873562d632d3970b66bfa4d3f4f5cbe5dbd"
+    ],
+    ".claude/rules/tron/react-native/testing.md": [
+      "08648f786ff9e60bdb6e08cc06a98b76ab1e8eeccfea3c6b5196af9293e57f21",
+      "989d2103a46e512dc7c20a7452c8c23b0301b55b0998fb92733f21721dba9382"
+    ],
+    ".claude/rules/tron/react/coding-style.md": [
+      "f2bbd25a9899c5c34737dd5b5c3692cfa019cf2f3bb342082ebd1d845b5ff552",
+      "f799684887ae82e5ebd615a59fb9aff6207328513d13052f00e97e11ac8bb008"
+    ],
+    ".claude/rules/tron/react/hooks.md": [
+      "64154bbbc881d4b6660376581babae009351ef38f7602ca2d26a640ed253d774",
+      "a07800aaf3ba6d59f7d97e123644810421b149246fde635e929ebd8ec4496769"
+    ],
+    ".claude/rules/tron/react/patterns.md": [
+      "0caf4151b2b7c6adc875f7749933e2c097cf098271091745921d280819a9a53b",
+      "100fbbbcecf769e45f1cfd816eba6799b6e157d468d8ad5a9d751cacc09485b1",
+      "36071a93eb6f4be12718f912eae4c31eb68006134a53cc1d76101944d582c2ea"
+    ],
+    ".claude/rules/tron/react/security.md": [
+      "52bf239b4b12409417e723e32ff7e1172c39c42d13fa9625eda75a45bd446cec",
+      "75086521e315d7edf7586b6ce6470e17cf7835b9676a860dd6250db43d1af251"
+    ],
+    ".claude/rules/tron/react/testing.md": [
+      "2b5673309295c977194fb2d8e805ca3da9ffeba9dcb4ae98db3768fb3a529b62",
+      "ae5d05b9e4f706f73f741c3591e880b873da49a7efd02253a381960245bf655f"
+    ],
+    ".claude/rules/tron/ruby/coding-style.md": [
+      "8dfa64f79717a61637f94a8c1f29cbf03cb87b5c3cb4511f96a3f3ad3ca77ce1",
+      "cb261721ac68d0e339e68a4a4d9611efb6b62dbad3d512582d9cdd296bd385a0"
+    ],
+    ".claude/rules/tron/ruby/hooks.md": [
+      "5c1e30923949fbdaedefbbdccdd3dbd7785e76ad1e9e48ee009bca25a15cb1a6",
+      "70d673bc40b8b1dc04d1b1a0530486506dce22712684561e3c750347a84f6b24"
+    ],
+    ".claude/rules/tron/ruby/patterns.md": [
+      "1db6847ec47825d5969e4db0243a1ffde76e6969ac346a09b53b5d5dc5f929f0",
+      "93060ad41a3f84daeceb05333e35fb84cf5982f39251f9f6d17fedb090988721"
+    ],
+    ".claude/rules/tron/ruby/security.md": [
+      "15802886a80d1ab0d7da6c4c0233eca08ee0f3828d388e82a77a882fcbef6af5",
+      "cb5e90dd3d1a9c4f0c49ce714153757db9ab815715cf1a21473c753e74d9c7f6"
+    ],
+    ".claude/rules/tron/ruby/testing.md": [
+      "1719ae4872c19937c723b4f09b886536fef759dd9c58eab166f04b63a1c97573",
+      "fe73f76d3f3902c8c94c51706935a4df873a087dfbf45890ee741bc6ec682e74"
+    ],
+    ".claude/rules/tron/rust/coding-style.md": [
+      "01c056bef1bf3b7ca7cfc516986c1d05bcd341c620d2a09ce75acdc2ed539f5f",
+      "44d6ef2ee6572f3bfc787de27348ab99dd325e8d03fa46cd7e01484d191481ed"
+    ],
+    ".claude/rules/tron/rust/hooks.md": [
+      "a7494896f1c8838f31cd72846f435e6388f91bf94e0d91eb226dd9b5b684ca55",
+      "acbfed19244656511b3ec919e839a999004eb62f2af539ea4271da812aa0386d"
+    ],
+    ".claude/rules/tron/rust/patterns.md": [
+      "08a09f7cf61991f4bdb69e388a9df546ea490c5c822aebcdd066e227cb06e16b",
+      "a351eeccbc6a6396498d292366b51db67c9f79238eb5e1218ea1e2390faf16d3"
+    ],
+    ".claude/rules/tron/rust/security.md": [
+      "09c5225869c09fc605f8495ae2c3728093e3b652dcc0ab55a9186946f5c67995",
+      "75fb9b6cfe61f2cee324f7fb954f1e896fe51f9393ac718153dad33aedb1f69d"
+    ],
+    ".claude/rules/tron/rust/testing.md": [
+      "54987d858918a433aea954c272c519d7ccb113834013fb79cc77ef7e6d571c8e",
+      "c2f5d763b1da8dc724a33b8b8c7686761938061979e5fb96441554d173cf10fa"
+    ],
+    ".claude/rules/tron/swift/coding-style.md": [
+      "0e30e83b9b130aac7b9c54ca89a433f6444284f0cd41b0a654461aade2290f1b",
+      "187d44050ed492076640f504a3fe7eb132ddabad262099d698a5b703b89d2659"
+    ],
+    ".claude/rules/tron/swift/hooks.md": [
+      "26c6731bb2e90a4ce2f4a991b176b0e547a92a3793b51efe4baf32c3c56e98aa",
+      "654da388192df405927c5e4cea2f588d01cd349ba7ba30a813a4aa7c3d3a4661"
+    ],
+    ".claude/rules/tron/swift/patterns.md": [
+      "4381cb9fa1c1ec01a600a96d80e320385148728748fb702822f9ac1c3c079860",
+      "7755fe06e21079f6c316f848895873878b29cdd0c43b6f8c9b4bfe8f2d56b510"
+    ],
+    ".claude/rules/tron/swift/security.md": [
+      "345a471220b7f448d991b9d28a0a047165aa7480a1ed758703d0c74041239b3a",
+      "6db9b26c0687d9c02b99cd81f957b8babde8deeafa7cb72a6bfe1c12aef71583"
+    ],
+    ".claude/rules/tron/swift/testing.md": [
+      "9a44133b6a8afd496a79bd4e8211985f44cb4a24f83c45b64160d26411e434e9",
+      "d0a5b64413dd642ccc541c2c0eb5e6abf6a524282528050861531bfd40c9d467"
+    ],
+    ".claude/rules/tron/typescript/coding-style.md": [
+      "81dabfbdf107e1393166060c4388d607950d81d1ba2caf0a1c588166d954b806",
+      "cb6fbe555d700a65d466fc27377fbb66d6da0e2bcf4411656918f6a45402af1a"
+    ],
+    ".claude/rules/tron/typescript/hooks.md": [
+      "58e1913317ac34145c4b5d8462669780042e6ba00181f542696eaeac9dc05f68",
+      "930bbe5d5a66e0022a55c87d5a17765d1633669620f9a3be6815f3ab4ddcd6b4"
+    ],
+    ".claude/rules/tron/typescript/patterns.md": [
+      "20870f78aa32429fe13f35b415e9f6f8f7809e39c460cf8146d181b7306159fd",
+      "ed8bc3213022be3295ea732d5e7e38ce460f87dcf3d0e9323c5657a6eb72a927"
+    ],
+    ".claude/rules/tron/typescript/security.md": [
+      "86b14a5a56f4e61750ab30ca50bd264f52f90f5358303f3028d41030a4c50f18",
+      "9f2b516a0b2a7a22571b14546400f453072f79ae938dcf6ce7a7194825b545aa"
+    ],
+    ".claude/rules/tron/typescript/testing.md": [
+      "76f07ccce2bcc21ea10802dcc346d61198cb177f7d42b5fa35b47c2b57049ff5",
+      "92e3d02b4fff30899bc1a2af043d74941adbf3b2c0e972d2fcd2c68c9c2ea70b"
+    ],
+    ".claude/rules/tron/vue/coding-style.md": [
+      "0c2d172f2b697a3a91dd35dc0ae32281e7b95513f9cdc82b690474c4042faa1b",
+      "c5b8b3068e8c758bc7d3ccd0172fdc3cb510da412b873f025541b3d7499b3737"
+    ],
+    ".claude/rules/tron/vue/hooks.md": [
+      "4af45760906f68d7d814989bac84b2f644f83180d890a8a05a0a18280253f40b",
+      "f73294ea23030ded563f2907996f5bb53d9b297eb152d3e866be25ba00adaef8"
+    ],
+    ".claude/rules/tron/vue/patterns.md": [
+      "57ab797198376c01323c775674e5a5a25a50a254ff6724730bb733187a5ff1f5",
+      "721f6e729caf139216037c25844e2cd67a03a67c53424bf61421541e4ac88d53"
+    ],
+    ".claude/rules/tron/vue/security.md": [
+      "487b8b793e4111ffc8aa1b7f982bc941e2a0707c01cfcaf3d4ddab560926c9d2",
+      "4f2abdce6ac21dfd3afb9b4e847ac4496a7896c169cf42083bfdd7c360601ca6"
+    ],
+    ".claude/rules/tron/vue/testing.md": [
+      "b02edf47b4088db53f96fd49c4e92aea14e4b27051f80bb5a4b49cb4060037ff",
+      "f71ecde2a1196c604615dad9c80420c217f9dead3af36752a5427d4631a89925"
+    ],
+    ".claude/rules/tron/web/coding-style.md": [
+      "a1ff88858d73c943ebd2145b7aff40b1adabbc3a083529eeae888acb7aa79863",
+      "cd27cc1a9f8d564e5bbd4df1bc6da5e3be11d67f265c3c490233695997bb53ea"
+    ],
+    ".claude/rules/tron/web/design-quality.md": [
+      "464743ee536c60c80b7387e4f840bdbb7592dc6aca25101e952d1d4f009ce128",
+      "ca0654b7fe31136031df8bb0a67e441949af6760ae6fda9656e4db7f171e512a"
+    ],
+    ".claude/rules/tron/web/hooks.md": [
+      "a64d5bf915bbf08d9ab1a501e904e96552151d17080480c9477d801d2b4a6cc1",
+      "fc6bc015d5c3206f357ac5f8e9ed781b17f518070c749a6b4294f7b6d1eaa2ed"
+    ],
+    ".claude/rules/tron/web/patterns.md": [
+      "334fa10d5a31ebda261e0a6bcfe58310fced2cfd371fd18ce8955496e256c15a",
+      "845c344fe8eaa13f0dde8f650b47d31dea12a46dfe74c7af414c0d02dd051895"
+    ],
+    ".claude/rules/tron/web/performance.md": [
+      "73df4d1664cc5942eaf8d33bfe75a2c9de933e6cd6035fe2d42fec0635866297",
+      "742323d5c4a9bcde472ab8da5236bc01e0f4e3470f36fa78714467d84df092b8"
+    ],
+    ".claude/rules/tron/web/security.md": [
+      "565851f9df7029baeb220cdc195bd89e5c81eb58ba3de74df9ab48f7c8ba5ff5",
+      "ea47704bcb720e426988e1835efe69d3e743e8564b10da47731598cd45e7e138"
+    ],
+    ".claude/rules/tron/web/testing.md": [
+      "1ce7194c30b5cd668d9e2ced138bd2c3807e6ad546c07f8f876522a77a2eae9a",
+      "48b540fb450eb6690b56f91f177a908a96df3d6f3e0493080501bdfda28be0f9"
+    ],
+    ".claude/settings.json": [
+      "5413b7d18a3b7bb843be4d3c08e6a5de7cfaf6f2a3183939b8f95055044398b0",
+      "73eb33d6738c994c952c945f43abd1d58c9af69650b47d5f19323071d92cac57",
+      "8fdd419344565c9744a2a1736adc4adfe8b0f3f05e3f85343e60f8778019a46c",
+      "968b1a081c8d3d10b262920d1efc51958232856551c9140ad39b8a4261449ad3",
+      "f03434dfd01c3883d80caae18128f53c746a15d41e9ff30b5242b264c2d52d32",
+      "f8d8b80cca6552efaa821d15b7ee5848601d14f8d9303b2bf1e0f607241fa72a"
+    ],
+    "AGENTS.md": [
+      "08c97415221b9592f28e860a4fceca488ff8765e174dee5c93dde454844e0ceb",
+      "203282d49e983ced0cb217a722ba860752e2e04012b4a8b28b23edc945332b09",
+      "207c08d1a7b7801185d4c247dd15c7d3465fa9264e32c01014ff17ed1fba91cf",
+      "299823f67ccdfde70f522ec3dc53c011050b06935f21cc0a2809a4605a311a4f",
+      "2c69553a8960085212cd13a5fe0658518cfc61d9c8ee03a6a8aada8e40337f06",
+      "4401ce926afb1d0e67803156e2e5b32ab910a51a5e6178d4cea52bbfb0106533",
+      "4b25bf6c8263d807490e89da652363c67d7241684ae24b770e11d82662ab1fda",
+      "4b821b13e0961def07c22c53f34a0110cd2120d79c0dc08f70a2f34d04747b8a",
+      "6f3d105e750e7c7277b12ccbc6e85b4cd8b34955fecf4e06dc8bdd45249be6bc",
+      "8195ce32335b2d396704c9f97062d2bf9fb3bfec4efb1bca947a92899edc0993",
+      "a67f77d54c963ae10825fa3a168df5b3ef73a890be7a2b4da66cef9f3026b720",
+      "b0164ce83ac695f5061d12d417baca79623d73af5731670a5390bfce5937be9f",
+      "df61ed9352d8b48b027af4ac080e7d003c312760075bb90dbd6002ae8b44190f",
+      "ee71712919e1fd7b9783b37752ea1d2ec5104406e043518d16db0f9a2e61305d"
+    ],
+    "git-hooks:pre-commit": [
+      "2e3d68e200532691e0cfcb220ddf29195a2f0b76814505d9f0b184a3852f5dfb",
+      "50b767e929d58d746f989cc4acb5209837a5c0d6d24ebfabbc014ac2ad22fb60",
+      "6d25d157dd7ba2096c27419b2af3f5e8f67194a306c9a4b4342458ad1b4c3107",
+      "b8809e7509da8043c4f01a829fb96c2bb9fbc82002c1b977ea66e777eaff4373"
+    ],
+    "git-hooks:pre-push": [
+      "4f34e1b065efb3bd8e08bb72a7e5a9eceb91d32c04f9a99fe88ab6c1b249cb06",
+      "5b6ce1ea654f9b05699f9771c99b443dee4ed8160ef3e66d05f12b9abe888033",
+      "7961ae481ab161f3ace28c0f241f9676600fac093d2aaa0e3688a33d5c691c0c",
+      "8a4b71cde86e9380ff3728db0a6a92c2f22cf9e92ffb8feee96135c54cb27782"
+    ],
+    "scripts/setup-claude-harness.sh": [
+      "0105e4f0129da9dcb98f5b0fd05d6f43fd91e091aa678e6276275be6d970e7cf",
+      "0d6daeab4c66b42df00bf930213b034f106945137c5305afa594f94079bd9c8e",
+      "2209f398363677eba180493e3c0341d77322413096dcda78017b858855e916f5",
+      "3bd5f7b1c1686c83c5d00f62cbfc187babfd43a913768eaeee9ca5ea2f681348",
+      "50d24e79dee7664ffd4a213ce590cde83fb39ce68f8f12cd23efa91090b756e0",
+      "a88573a8ec2174a4a49aef752d78d5f968235133159d7e065ac4a3804b4a855c",
+      "c68d4b8bbe4ee0a2905613ceae36c64cb7eae17bd22319a2fc00a385dbd94d77",
+      "c82cb62a4fa868b26da36b15f18aa02e20d48c60a9050082c1adfd861782b3c7",
+      "d5532f395bda1008c06edb95601e3eef2ec1393f30d55f0ddee14b27f12b7169",
+      "e057dca8e1a28ccf76188488632791f7a58fded398116c3cae84dccaa1d3b35d",
+      "f2fa7869702baafc922c5461b87a2936e1a8a45e18c49dea845c9fb0f4a90767",
+      "faf8f3b91e49910f700b54bcdc0dab9cb5fb5e894abbe2829f20860a319f6536"
+    ]
+  },
+  "settingsCommands": [
+    "bash .claude/hooks/bootstrap-check.sh",
+    "bash .claude/hooks/bypass-check.sh commit",
+    "bash .claude/hooks/bypass-check.sh pr",
+    "bash .claude/hooks/pyle.sh commit",
+    "bash .claude/hooks/pyle.sh pr",
+    "node .claude/hooks/kairos.cjs",
+    "node .claude/hooks/lib/metron.cjs"
+  ]
+}

@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="t d">
+<title id="t">Exonous</title><desc id="d">A laurel wreath around a constellation of connected nodes, the mind outside your head, framed by a Greek key border.</desc>
+<defs>
+<radialGradient id="glow" cx="75%" cy="50%" r="45%"><stop offset="0" stop-color="#17233d"/><stop offset="1" stop-color="#111a2e"/></radialGradient>
+<pattern id="keyTop" x="44" y="44" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M2 38 H38 V2 H10 V30 H30 V10 H18 V22" fill="none" stroke="#c8a45d" stroke-width="3" stroke-linecap="square"/></pattern>
+<pattern id="keyBottom" x="44" y="556" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M2 38 H38 V2 H10 V30 H30 V10 H18 V22" fill="none" stroke="#c8a45d" stroke-width="3" stroke-linecap="square"/></pattern>
+</defs>
+<rect width="1280" height="640" rx="20" fill="url(#glow)"/>
+<rect x="44" y="44" width="1192" height="40" fill="url(#keyTop)" opacity="0.5"/>
+<rect x="44" y="556" width="1192" height="40" fill="url(#keyBottom)" opacity="0.5"/>
+<rect x="24" y="24" width="1232" height="592" rx="12" fill="none" stroke="#c8a45d" stroke-opacity="0.35" stroke-width="1.5"/>
+<line x1="968.0" y1="316.0" x2="993.4" y2="252.2" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="968.0" y1="316.0" x2="1033.7" y2="298.7" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="968.0" y1="316.0" x2="1033.7" y2="363.3" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="968.0" y1="316.0" x2="974.1" y2="387.3" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="968.0" y1="316.0" x2="912.7" y2="372.8" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="968.0" y1="316.0" x2="895.5" y2="310.2" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="968.0" y1="316.0" x2="933.5" y2="262.3" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="993.4" y1="252.2" x2="1033.7" y2="298.7" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="993.4" y1="252.2" x2="933.5" y2="262.3" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="993.4" y1="252.2" x2="968.0" y2="193.1" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="993.4" y1="252.2" x2="1031.7" y2="220.9" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="1033.7" y1="298.7" x2="1082.1" y2="267.9" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="1033.7" y1="298.7" x2="1085.2" y2="336.9" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="1033.7" y1="363.3" x2="1085.2" y2="336.9" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="1033.7" y1="363.3" x2="1057.8" y2="397.8" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="974.1" y1="387.3" x2="912.7" y2="372.8" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="974.1" y1="387.3" x2="1003.3" y2="440.2" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="912.7" y1="372.8" x2="877.7" y2="398.2" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="895.5" y1="310.2" x2="933.5" y2="262.3" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="895.5" y1="310.2" x2="847.8" y2="337.3" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="895.5" y1="310.2" x2="850.5" y2="266.3" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="933.5" y1="262.3" x2="894.8" y2="206.1" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="968.0" y1="193.1" x2="1031.7" y2="220.9" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="968.0" y1="193.1" x2="894.8" y2="206.1" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="1031.7" y1="220.9" x2="1082.1" y2="267.9" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="1085.2" y1="336.9" x2="1057.8" y2="397.8" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="1057.8" y1="397.8" x2="1003.3" y2="440.2" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="1003.3" y1="440.2" x2="930.5" y2="447.7" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="930.5" y1="447.7" x2="877.7" y2="398.2" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="877.7" y1="398.2" x2="847.8" y2="337.3" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<line x1="847.8" y1="337.3" x2="850.5" y2="266.3" stroke="#efe9dd" stroke-opacity="0.32" stroke-width="1.4"/>
+<circle cx="968.0" cy="316.0" r="13" fill="none" stroke="#c8a45d" stroke-width="2"/>
+<circle cx="968.0" cy="316.0" r="6" fill="#c8a45d"/>
+<circle cx="993.4" cy="252.2" r="4.2" fill="#efe9dd" fill-opacity="0.95"/>
+<circle cx="1033.7" cy="298.7" r="4.2" fill="#efe9dd" fill-opacity="0.95"/>
+<circle cx="1033.7" cy="363.3" r="4.2" fill="#efe9dd" fill-opacity="0.95"/>
+<circle cx="974.1" cy="387.3" r="4.2" fill="#efe9dd" fill-opacity="0.95"/>
+<circle cx="912.7" cy="372.8" r="4.2" fill="#efe9dd" fill-opacity="0.95"/>
+<circle cx="895.5" cy="310.2" r="4.2" fill="#efe9dd" fill-opacity="0.95"/>
+<circle cx="933.5" cy="262.3" r="4.2" fill="#efe9dd" fill-opacity="0.95"/>
+<circle cx="968.0" cy="193.1" r="3.2" fill="#efe9dd" fill-opacity="0.7"/>
+<circle cx="1031.7" cy="220.9" r="3.2" fill="#efe9dd" fill-opacity="0.7"/>
+<circle cx="1082.1" cy="267.9" r="3.2" fill="#efe9dd" fill-opacity="0.7"/>
+<circle cx="1085.2" cy="336.9" r="3.2" fill="#efe9dd" fill-opacity="0.7"/>
+<circle cx="1057.8" cy="397.8" r="3.2" fill="#efe9dd" fill-opacity="0.7"/>
+<circle cx="1003.3" cy="440.2" r="3.2" fill="#efe9dd" fill-opacity="0.7"/>
+<circle cx="930.5" cy="447.7" r="3.2" fill="#efe9dd" fill-opacity="0.7"/>
+<circle cx="877.7" cy="398.2" r="3.2" fill="#efe9dd" fill-opacity="0.7"/>
+<circle cx="847.8" cy="337.3" r="3.2" fill="#efe9dd" fill-opacity="0.7"/>
+<circle cx="850.5" cy="266.3" r="3.2" fill="#efe9dd" fill-opacity="0.7"/>
+<circle cx="894.8" cy="206.1" r="3.2" fill="#efe9dd" fill-opacity="0.7"/>
+<path d="M954.2 513.6 L916.3 507.3 L880.3 494.0 L847.7 474.1 L819.5 448.4 L797.0 417.9 L780.9 383.6 L771.9 347.0 L770.3 309.4 L776.1 272.1 L789.2 236.7 L809.0 204.4 L834.8 176.4 L865.6 153.9 L900.3 137.7" fill="none" stroke="#c8a45d" stroke-width="2.4" stroke-linecap="round"/>
+<ellipse cx="906.5" cy="511.4" rx="12.6" ry="4.5" transform="rotate(157.1 906.5 511.4)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="909.9" cy="498.8" rx="12.6" ry="4.5" transform="rotate(233.1 909.9 498.8)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="870.2" cy="496.1" rx="12.2" ry="4.3" transform="rotate(168.3 870.2 496.1)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="875.9" cy="484.7" rx="12.2" ry="4.3" transform="rotate(244.3 875.9 484.7)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="837.7" cy="474.2" rx="11.7" ry="4.2" transform="rotate(179.4 837.7 474.2)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="845.2" cy="464.5" rx="11.7" ry="4.2" transform="rotate(255.4 845.2 464.5)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="810.1" cy="446.6" rx="11.3" ry="4.0" transform="rotate(190.6 810.1 446.6)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="819.0" cy="438.8" rx="11.3" ry="4.0" transform="rotate(266.6 819.0 438.8)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="788.4" cy="414.4" rx="10.9" ry="3.9" transform="rotate(201.7 788.4 414.4)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="798.3" cy="408.7" rx="10.9" ry="3.9" transform="rotate(277.7 798.3 408.7)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="773.5" cy="378.8" rx="10.5" ry="3.7" transform="rotate(212.9 773.5 378.8)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="783.8" cy="375.2" rx="10.5" ry="3.7" transform="rotate(288.9 783.8 375.2)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="765.8" cy="341.1" rx="10.1" ry="3.6" transform="rotate(224.0 765.8 341.1)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="776.2" cy="339.6" rx="10.1" ry="3.6" transform="rotate(300.0 776.2 339.6)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="765.6" cy="302.7" rx="9.7" ry="3.4" transform="rotate(235.1 765.6 302.7)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="775.7" cy="303.2" rx="9.7" ry="3.4" transform="rotate(311.1 775.7 303.2)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="773.0" cy="265.0" rx="9.2" ry="3.3" transform="rotate(246.3 773.0 265.0)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="782.3" cy="267.3" rx="9.2" ry="3.3" transform="rotate(322.3 782.3 267.3)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="787.6" cy="229.4" rx="8.8" ry="3.1" transform="rotate(257.4 787.6 229.4)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="795.9" cy="233.3" rx="8.8" ry="3.1" transform="rotate(333.4 795.9 233.3)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="808.8" cy="197.3" rx="8.4" ry="3.0" transform="rotate(268.6 808.8 197.3)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="815.8" cy="202.5" rx="8.4" ry="3.0" transform="rotate(344.6 815.8 202.5)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="835.9" cy="169.8" rx="8.0" ry="2.8" transform="rotate(279.7 835.9 169.8)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="841.5" cy="175.9" rx="8.0" ry="2.8" transform="rotate(355.7 841.5 175.9)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="867.9" cy="147.9" rx="7.6" ry="2.7" transform="rotate(290.9 867.9 147.9)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="872.0" cy="154.7" rx="7.6" ry="2.7" transform="rotate(366.9 872.0 154.7)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="903.5" cy="132.5" rx="7.2" ry="2.5" transform="rotate(302.0 903.5 132.5)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="906.0" cy="139.5" rx="7.2" ry="2.5" transform="rotate(378.0 906.0 139.5)" fill="#c8a45d" fill-opacity="0.9"/>
+<path d="M981.8 513.6 L1019.7 507.3 L1055.7 494.0 L1088.3 474.1 L1116.5 448.4 L1139.0 417.9 L1155.1 383.6 L1164.1 347.0 L1165.7 309.4 L1159.9 272.1 L1146.8 236.7 L1127.0 204.4 L1101.2 176.4 L1070.4 153.9 L1035.7 137.7" fill="none" stroke="#c8a45d" stroke-width="2.4" stroke-linecap="round"/>
+<ellipse cx="1026.1" cy="498.8" rx="12.6" ry="4.5" transform="rotate(-53.1 1026.1 498.8)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1029.5" cy="511.4" rx="12.6" ry="4.5" transform="rotate(22.9 1029.5 511.4)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1060.1" cy="484.7" rx="12.2" ry="4.3" transform="rotate(-64.3 1060.1 484.7)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1065.8" cy="496.1" rx="12.2" ry="4.3" transform="rotate(11.7 1065.8 496.1)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1090.8" cy="464.5" rx="11.7" ry="4.2" transform="rotate(-75.4 1090.8 464.5)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1098.3" cy="474.2" rx="11.7" ry="4.2" transform="rotate(0.6 1098.3 474.2)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1117.0" cy="438.8" rx="11.3" ry="4.0" transform="rotate(-86.6 1117.0 438.8)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1125.9" cy="446.6" rx="11.3" ry="4.0" transform="rotate(-10.6 1125.9 446.6)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1137.7" cy="408.7" rx="10.9" ry="3.9" transform="rotate(-97.7 1137.7 408.7)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1147.6" cy="414.4" rx="10.9" ry="3.9" transform="rotate(-21.7 1147.6 414.4)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1152.2" cy="375.2" rx="10.5" ry="3.7" transform="rotate(-108.9 1152.2 375.2)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1162.5" cy="378.8" rx="10.5" ry="3.7" transform="rotate(-32.9 1162.5 378.8)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1159.8" cy="339.6" rx="10.1" ry="3.6" transform="rotate(-120.0 1159.8 339.6)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1170.2" cy="341.1" rx="10.1" ry="3.6" transform="rotate(-44.0 1170.2 341.1)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1160.3" cy="303.2" rx="9.7" ry="3.4" transform="rotate(-131.1 1160.3 303.2)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1170.4" cy="302.7" rx="9.7" ry="3.4" transform="rotate(-55.1 1170.4 302.7)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1153.7" cy="267.3" rx="9.2" ry="3.3" transform="rotate(-142.3 1153.7 267.3)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1163.0" cy="265.0" rx="9.2" ry="3.3" transform="rotate(-66.3 1163.0 265.0)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1140.1" cy="233.3" rx="8.8" ry="3.1" transform="rotate(-153.4 1140.1 233.3)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1148.4" cy="229.4" rx="8.8" ry="3.1" transform="rotate(-77.4 1148.4 229.4)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1120.2" cy="202.5" rx="8.4" ry="3.0" transform="rotate(-164.6 1120.2 202.5)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1127.2" cy="197.3" rx="8.4" ry="3.0" transform="rotate(-88.6 1127.2 197.3)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1094.5" cy="175.9" rx="8.0" ry="2.8" transform="rotate(-175.7 1094.5 175.9)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1100.1" cy="169.8" rx="8.0" ry="2.8" transform="rotate(-99.7 1100.1 169.8)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1064.0" cy="154.7" rx="7.6" ry="2.7" transform="rotate(-186.9 1064.0 154.7)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1068.1" cy="147.9" rx="7.6" ry="2.7" transform="rotate(-110.9 1068.1 147.9)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1030.0" cy="139.5" rx="7.2" ry="2.5" transform="rotate(-198.0 1030.0 139.5)" fill="#c8a45d" fill-opacity="0.9"/>
+<ellipse cx="1032.5" cy="132.5" rx="7.2" ry="2.5" transform="rotate(-122.0 1032.5 132.5)" fill="#c8a45d" fill-opacity="0.9"/>
+<circle cx="968" cy="516.0" r="5" fill="#c8a45d"/>
+<text x="112" y="214" font-family="'Iowan Old Style','Palatino Linotype',Palatino,Georgia,'Times New Roman',serif" font-size="26" letter-spacing="6" fill="#c8a45d">ἔξω · νοῦς</text>
+<text x="108" y="316" font-family="'Iowan Old Style','Palatino Linotype',Palatino,Georgia,'Times New Roman',serif" font-size="92" letter-spacing="10" fill="#efe9dd">EXONOUS</text>
+<rect x="112" y="350" width="88" height="3" fill="#c8a45d"/>
+<text x="112" y="404" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="28" fill="#efe9dd">The mind outside your head,</text>
+<text x="112" y="442" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="28" fill="#efe9dd">for coding agents.</text>
+<text x="112" y="500" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="17" letter-spacing="3" fill="#9aa6bd">NOMOS · DELIVER · MEMORY · ATLAS · TECHNE</text>
+</svg>

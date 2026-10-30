@@ -1,0 +1,422 @@
+{
+  "$comment": "MAINTAINER ONLY — never shipped (package.json `files`). Provenance + pins for every upstream this package interprets. `watch` = paths we consume (diffs here are relevant); `discover` = dirs where new upstream items appear (reported as adoption candidates). Update pins only after porting: `npm run upstream:watch -- --accept <id>`.",
+  "brandTerms": [
+    "\\bimpeccable\\b",
+    "\\bemil\\b",
+    "kowalski",
+    "leonxlnx",
+    "taste-?skill",
+    "\\bstitch\\b",
+    "karpathy",
+    "\\bcaveman\\b",
+    "\\bgsd\\b",
+    "pbakaus",
+    "\\behmo\\b",
+    "platform-design-skills",
+    "everything-claude-code",
+    "\\becc\\b",
+    "affaan",
+    "\\bcolumbus\\b",
+    "agentic-workflow",
+    "orafaelfragoso"
+  ],
+  "sources": [
+    {
+      "id": "techne",
+      "repo": "https://github.com/affaan-m/ECC.git",
+      "ref": "ef648e01899ba3e8dc6371642deaaf64b4477775",
+      "license": "MIT",
+      "kind": "content",
+      "status": "rewritten",
+      "phase": 3,
+      "local": "assets/techne/",
+      "map": {
+        "skills/frontend-patterns": "techne/skills/web",
+        "skills/vite-patterns": "techne/skills/web",
+        "skills/bun-runtime": "techne/skills/web",
+        "skills/seo": "techne/skills/web",
+        "skills/react-patterns": "techne/skills/react",
+        "skills/react-performance": "techne/skills/react",
+        "skills/react-testing": "techne/skills/react",
+        "skills/nextjs-turbopack": "techne/skills/react",
+        "skills/vue-patterns": "techne/skills/vue",
+        "skills/nuxt4-patterns": "techne/skills/vue",
+        "skills/ui-to-vue": "techne/skills/vue",
+        "skills/angular-developer": "techne/skills/angular",
+        "skills/backend-patterns": "techne/skills/services",
+        "skills/api-design": "techne/skills/services",
+        "skills/error-handling": "techne/skills/services",
+        "skills/hexagonal-architecture": "techne/skills/services",
+        "skills/mcp-server-patterns": "techne/skills/services",
+        "skills/nestjs-patterns": "techne/skills/services",
+        "skills/python-patterns": "techne/skills/python",
+        "skills/python-testing": "techne/skills/python",
+        "skills/django-patterns": "techne/skills/python",
+        "skills/fastapi-patterns": "techne/skills/python",
+        "skills/java-coding-standards": "techne/skills/java",
+        "skills/springboot-patterns": "techne/skills/java",
+        "skills/kotlin-patterns": "techne/skills/kotlin",
+        "skills/kotlin-testing": "techne/skills/kotlin",
+        "skills/kotlin-coroutines-flows": "techne/skills/kotlin",
+        "skills/android-clean-architecture": "techne/skills/kotlin",
+        "skills/compose-multiplatform-patterns": "techne/skills/kotlin",
+        "skills/golang-patterns": "techne/skills/go",
+        "skills/golang-testing": "techne/skills/go",
+        "skills/rust-patterns": "techne/skills/rust",
+        "skills/rust-testing": "techne/skills/rust",
+        "skills/cpp-coding-standards": "techne/skills/cpp",
+        "skills/dotnet-patterns": "techne/skills/dotnet",
+        "skills/laravel-patterns": "techne/skills/php",
+        "skills/swiftui-patterns": "techne/skills/swift",
+        "skills/swift-concurrency-6-2": "techne/skills/swift",
+        "skills/dart-flutter-patterns": "techne/skills/flutter",
+        "skills/flutter-dart-code-review": "techne/skills/flutter",
+        "skills/react-native-patterns": "techne/skills/react-native",
+        "skills/postgres-patterns": "techne/skills/databases",
+        "skills/mysql-patterns": "techne/skills/databases",
+        "skills/clickhouse-io": "techne/skills/databases",
+        "skills/database-migrations": "techne/skills/databases",
+        "skills/prisma-patterns": "techne/skills/databases",
+        "skills/redis-patterns": "techne/skills/databases",
+        "skills/mle-workflow": "techne/skills/ml",
+        "skills/pytorch-patterns": "techne/skills/ml",
+        "skills/cost-aware-llm-pipeline": "techne/skills/ml",
+        "skills/eval-harness": "techne/skills/ml",
+        "skills/prompt-optimizer": "techne/skills/ml",
+        "skills/ai-regression-testing": "techne/skills/ml",
+        "skills/tdd-workflow": "techne/skills/quality",
+        "skills/verification-loop": "techne/skills/quality",
+        "skills/coding-standards": "techne/skills/quality",
+        "skills/benchmark": "techne/skills/quality",
+        "skills/e2e-testing": "techne/skills/quality",
+        "skills/browser-qa": "techne/skills/quality",
+        "skills/git-workflow": "techne/skills/delivery",
+        "skills/github-ops": "techne/skills/delivery",
+        "skills/deployment-patterns": "techne/skills/delivery",
+        "skills/docker-patterns": "techne/skills/delivery",
+        "skills/kubernetes-patterns": "techne/skills/delivery",
+        "skills/jira-integration": "techne/skills/delivery",
+        "skills/deep-research": "techne/skills/research",
+        "skills/search-first": "techne/skills/research",
+        "skills/iterative-retrieval": "techne/skills/research",
+        "skills/codebase-onboarding": "techne/skills/research",
+        "skills/product-lens": "techne/skills/research",
+        "skills/architecture-decision-records": "techne/skills/research",
+        "commands/build-fix.md": "techne/commands/build-fix.md",
+        "commands/test-coverage.md": "techne/commands/test-coverage.md",
+        "commands/refactor-clean.md": "techne/commands/refactor-clean.md",
+        "rules": "techne/rules",
+        "scripts/hooks/block-no-verify.js": "techne/scripts/hooks/no-verify-guard.js",
+        "scripts/hooks/config-protection.js": "techne/scripts/hooks/config-guard.js",
+        "scripts/hooks/post-edit-accumulator.js": "techne/scripts/hooks/edit-tracker.js",
+        "scripts/hooks/stop-format-typecheck.js": "techne/scripts/hooks/stop-checks.js",
+        "scripts/hooks/check-console-log.js": "techne/scripts/hooks/stop-checks.js"
+      },
+      "watch": [
+        "hooks/hooks.json",
+        "src/lib/resolve-formatter.js",
+        "src/lib/package-manager.js"
+      ],
+      "discover": [
+        "skills",
+        "commands",
+        "rules"
+      ],
+      "notes": "71 upstream skills consolidated into 21 tron stack skills; rules, commands and the five quality hooks rewritten as own content. Port relevant changes by interpretation, then accept the pin.",
+      "acceptedAt": "2026-10-06",
+      "originality": {
+        "upstream": [
+          "skills/**/*.md",
+          "rules/**/*.md",
+          "commands/*.md"
+        ],
+        "local": [
+          "assets/techne/skills",
+          "assets/techne/rules",
+          "assets/techne/commands"
+        ]
+      }
+    },
+    {
+      "id": "ui-motion",
+      "repo": "https://github.com/emilkowalski/skills.git",
+      "ref": "e8a175de22ae1e49370fc144c1f3bb9aeedf988d",
+      "license": "MIT",
+      "kind": "content",
+      "status": "rewritten",
+      "phase": 2,
+      "local": "assets/skills/ui-motion/ + assets/skills/native-ui/",
+      "map": {
+        "skills/animate": "ui-motion/reference/web.md",
+        "skills/animate-expo": "ui-motion/reference/expo.md",
+        "skills/animation-vocabulary": "ui-motion/reference/vocabulary.md",
+        "skills/apple-design": "native-ui/reference/apple.md",
+        "skills/ask-sonner": "ui-motion/reference/toasts.md",
+        "skills/emil-design-eng": "ui-motion/SKILL.md",
+        "skills/find-animation-opportunities": "ui-motion/reference/opportunities.md",
+        "skills/improve-animations": "ui-motion/reference/review.md",
+        "skills/mobile-native": "native-ui/reference/mobile-feel.md",
+        "skills/pick-ui-library": "ui-motion/reference/ui-libraries.md",
+        "skills/prototype": "ui-motion/reference/prototype.md",
+        "skills/review-animations": "ui-motion/reference/review.md",
+        "skills/write-swift": "native-ui/reference/swift.md"
+      },
+      "discover": [
+        "skills"
+      ],
+      "originality": {
+        "upstream": [
+          "skills/**/*.md"
+        ],
+        "local": [
+          "assets/skills/ui-motion",
+          "assets/skills/native-ui"
+        ]
+      }
+    },
+    {
+      "id": "ui-design-styles",
+      "repo": "https://github.com/Leonxlnx/taste-skill.git",
+      "ref": "ce26fc25c0e5e8cab638f883de62d9a86ee5e45b",
+      "license": "MIT",
+      "kind": "content",
+      "status": "rewritten",
+      "phase": 2,
+      "local": "assets/skills/ui-design/reference/styles/ + assets/skills/ui-mockup/",
+      "map": {
+        "skills/taste-skill": "ui-design/reference/styles/direction.md",
+        "skills/taste-skill-v1": "ui-design/reference/styles/direction.md",
+        "skills/brandkit": "ui-mockup/reference/brandkit.md",
+        "skills/output-skill": "ui-design/reference/styles/full-output.md",
+        "skills/gpt-tasteskill": "ui-design/reference/styles/direction.md",
+        "skills/soft-skill": "ui-design/reference/styles/premium.md",
+        "skills/image-to-code-skill": "ui-mockup/reference/image-to-code.md",
+        "skills/imagegen-frontend-mobile": "ui-mockup/reference/mobile-comps.md",
+        "skills/imagegen-frontend-web": "ui-mockup/reference/web-comps.md",
+        "skills/brutalist-skill": "ui-design/reference/styles/brutalist.md",
+        "skills/minimalist-skill": "ui-design/reference/styles/minimalist.md",
+        "skills/redesign-skill": "ui-design/reference/styles/redesign.md",
+        "skills/stitch-skill": "ui-design/reference/styles/design-md.md"
+      },
+      "discover": [
+        "skills"
+      ],
+      "originality": {
+        "upstream": [
+          "skills/**/*.md"
+        ],
+        "local": [
+          "assets/skills/ui-design/reference/styles",
+          "assets/skills/ui-mockup"
+        ]
+      }
+    },
+    {
+      "id": "ui-design",
+      "repo": "https://github.com/pbakaus/impeccable.git",
+      "ref": "cd12f8660e2dde57b9615c8a6b8ea674101f9cfc",
+      "version": "skill-v4.3.1",
+      "license": "Apache-2.0",
+      "kind": "content+runtime",
+      "status": "rewritten+wrapped",
+      "phase": 2,
+      "local": "assets/skills/ui-design/ + assets/editors/hooks/",
+      "watch": [
+        ".claude/skills/impeccable/**",
+        ".claude/agents/**",
+        ".cursor/hooks.json",
+        "NOTICE.md",
+        "ENGINE_VERSION"
+      ],
+      "discover": [
+        ".claude/skills",
+        ".claude/agents"
+      ],
+      "notes": "Skill text and reference/ are tron rewrites. The compiled engine (scripts/impeccable launcher, scripts/bin/, live-browser assets, data/) stays vendored and runs only through scripts/ui-design (no telemetry, no self-update, rebranded output). Port engine bumps by replacing those files and checking the reference/ filenames the binary names (new-work, init, live, visualize, ios, android).",
+      "originality": {
+        "upstream": [
+          ".claude/skills/impeccable/**/*.md",
+          ".claude/agents/*.md"
+        ],
+        "local": [
+          "assets/skills/ui-design"
+        ]
+      }
+    },
+    {
+      "id": "nomos-principles",
+      "repo": "https://github.com/forrestchang/andrej-karpathy-skills.git",
+      "ref": "2c606141936f1eeef17fa3043a72095b4765b9c2",
+      "license": "MIT",
+      "kind": "content",
+      "status": "rewritten",
+      "phase": 1,
+      "local": "assets/rules/nomos.md",
+      "watch": [
+        "skills/karpathy-guidelines/**"
+      ],
+      "discover": [
+        "skills"
+      ],
+      "originality": {
+        "upstream": [
+          "skills/karpathy-guidelines/**/*.md"
+        ],
+        "local": [
+          "assets/rules/nomos.md"
+        ]
+      }
+    },
+    {
+      "id": "nomos-terse",
+      "repo": "https://github.com/JuliusBrussee/caveman.git",
+      "ref": "99aafe151a1be72be783e662858e8a0955add59f",
+      "license": "Apache-2.0",
+      "kind": "content",
+      "status": "rewritten",
+      "phase": 1,
+      "local": "assets/rules/nomos.md",
+      "watch": [
+        "skills/caveman/**",
+        "src/rules/caveman-activate.md"
+      ],
+      "discover": [
+        "skills"
+      ],
+      "originality": {
+        "upstream": [
+          "skills/caveman/**/*.md",
+          "src/rules/caveman-activate.md"
+        ],
+        "local": [
+          "assets/rules/nomos.md"
+        ]
+      }
+    },
+    {
+      "id": "deliver-engine",
+      "repo": "https://github.com/open-gsd/gsd-core.git",
+      "ref": "87e87d34b2d8519e30d1af7d910fc98f2af4bc8d",
+      "version": "v1.16.0",
+      "license": "MIT",
+      "kind": "runtime",
+      "status": "replaced",
+      "phase": 4,
+      "local": "assets/skills/deliver/",
+      "watch": [
+        "commands/gsd/**",
+        "agents/**",
+        "gsd-core/**",
+        "docs/features/model-profiles.md"
+      ],
+      "discover": [
+        "commands/gsd",
+        "agents"
+      ]
+    },
+    {
+      "id": "deliver-ideas",
+      "repo": "https://github.com/orafaelfragoso/agentic-workflow.git",
+      "ref": "4a0801ba3000535b990e80ec40fba4990cc3f2bc",
+      "license": "MIT (declared in .claude-plugin/plugin.json; no LICENSE file)",
+      "kind": "content",
+      "status": "rewritten",
+      "phase": 4,
+      "local": "assets/skills/deliver/",
+      "watch": [
+        "plugins/columbus-workflow/skills/ship/**",
+        "plugins/columbus-workflow/agents/**",
+        "plugins/columbus-workflow/scripts/prompt.sh"
+      ],
+      "discover": [
+        "plugins/columbus-workflow/skills",
+        "plugins/columbus-workflow/agents"
+      ],
+      "originality": {
+        "upstream": [
+          "plugins/columbus-workflow/skills/ship/**/*.md",
+          "plugins/columbus-workflow/agents/*.md",
+          "plugins/columbus-workflow/skills/columbus/**/*.md"
+        ],
+        "local": [
+          "assets/skills/deliver",
+          "assets/skills/project-memory/SKILL.md",
+          "assets/agents"
+        ]
+      }
+    },
+    {
+      "id": "project-memory-ideas",
+      "repo": "https://github.com/orafaelfragoso/columbus.git",
+      "ref": "a4b549520dbac06aacba9bdd03b299d90ce4c6de",
+      "license": "MIT",
+      "kind": "content",
+      "status": "rewritten",
+      "phase": 4,
+      "local": "assets/skills/project-memory/",
+      "watch": [
+        "README.md",
+        "internal/memory/**",
+        "internal/search/rank.go"
+      ],
+      "discover": [
+        "internal"
+      ],
+      "originality": {
+        "upstream": [
+          "README.md"
+        ],
+        "local": [
+          "assets/skills/project-memory/SKILL.md"
+        ]
+      }
+    },
+    {
+      "id": "atlas",
+      "repo": "https://github.com/DeusData/codebase-memory-mcp.git",
+      "ref": "268a9d8886642eb7f9b2ce45f5ce27cdecf0f519",
+      "version": "0.8.1",
+      "license": "MIT",
+      "kind": "runtime",
+      "status": "wrapped",
+      "phase": 1,
+      "local": "src/lib/atlas.js (MCP key: atlas)",
+      "watch": [
+        "install.sh",
+        "install.ps1",
+        "README.md"
+      ],
+      "discover": []
+    },
+    {
+      "id": "biblos",
+      "repo": "https://github.com/upstash/context7.git",
+      "ref": "f2eef4f49da71a758c91cf6cb97640c8b262ef81",
+      "license": "MIT",
+      "kind": "runtime",
+      "status": "wrapped",
+      "phase": 1,
+      "local": "src/lib/biblos.js (MCP key: biblos)",
+      "watch": [
+        "README.md",
+        "packages/mcp/package.json"
+      ],
+      "discover": []
+    },
+    {
+      "id": "browser",
+      "repo": "https://github.com/ChromeDevTools/chrome-devtools-mcp.git",
+      "ref": "cf2eab96d96cad3d47ce769b9638815d1775500f",
+      "license": "Apache-2.0",
+      "kind": "runtime",
+      "status": "installed-external",
+      "phase": 3,
+      "local": "assets/techne/.mcp.json",
+      "watch": [
+        "README.md"
+      ],
+      "discover": [],
+      "acceptedAt": "2026-10-06"
+    }
+  ]
+}
