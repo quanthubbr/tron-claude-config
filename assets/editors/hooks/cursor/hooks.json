@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "__UI_DESIGN_HOOK__",
+        "timeout": 5
+      }
+    ]
+  }
+}

@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vault graph</title>
+<style>
+:root{--bg:#fbfaf8;--fg:#1d1d1f;--muted:#6b6b72;--line:rgba(40,40,50,.16);--note:#4361d8;--ghost:#a9a9b3;--tag:#23895c;--folder:#b86e1c;--panel:rgba(255,255,255,.94);--border:#e1dfda}
+@media (prefers-color-scheme:dark){:root{--bg:#141417;--fg:#ececf0;--muted:#9b9ba5;--line:rgba(230,230,240,.16);--note:#8ea4ff;--ghost:#5c5c66;--tag:#5ccb99;--folder:#e3a65e;--panel:rgba(28,28,33,.94);--border:#2e2e36}}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+canvas{display:block;width:100vw;height:100vh;cursor:grab;touch-action:none}
+#bar{position:fixed;top:12px;left:12px;right:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;pointer-events:none}
+#bar>*{pointer-events:auto}
+#q{flex:0 1 280px;min-width:0;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--fg);font:inherit}
+#stats{color:var(--muted);font-size:12px}
+#info{position:fixed;left:12px;bottom:12px;max-width:calc(100vw - 48px);padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--panel);font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;word-break:break-all;user-select:all}
+#info:empty{display:none}
+</style>
+</head>
+<body>
+<div id="bar"><input id="q" type="search" placeholder="Filter notes and tags" aria-label="Filter notes and tags"><span id="stats"></span></div>
+<canvas id="c"></canvas>
+<div id="info" role="status"></div>
+<script type="application/json" id="graph-data">__GRAPH_DATA__</script>
+<script>
+(() => {
+  const data = JSON.parse(document.getElementById('graph-data').textContent);
+  const canvas = document.getElementById('c');
+  const g = canvas.getContext('2d');
+  const info = document.getElementById('info');
+  const q = document.getElementById('q');
+  const index = new Map();
+  const nodes = data.nodes.map((n, i) => {
+    const a = i * 2.39996;
+    const r = 12 * Math.sqrt(i + 1);
+    const node = { ...n, x: Math.cos(a) * r, y: Math.sin(a) * r, vx: 0, vy: 0, deg: 0, hit: true };
+    index.set(n.id, node);
+    return node;
+  });
+  const edges = data.edges.map((e) => ({ ...e, s: index.get(e.source), t: index.get(e.target) })).filter((e) => e.s && e.t);
+  for (const e of edges) { e.s.deg += 1; e.t.deg += 1; }
+  document.getElementById('stats').textContent = `${nodes.filter((n) => n.type === 'note').length} notes · ${edges.length} links`;
+
+  let colors = {};
+  const readColors = () => {
+    const css = getComputedStyle(document.documentElement);
+    for (const k of ['bg', 'fg', 'muted', 'line', 'note', 'ghost', 'tag', 'folder']) colors[k] = css.getPropertyValue(`--${k}`).trim();
+  };
+  readColors();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readColors(); draw(); });
+
+  const view = { x: 0, y: 0, k: 1 };
+  let dpr = 1;
+  const resize = () => {
+    dpr = window.devicePixelRatio || 1;
+    canvas.width = innerWidth * dpr;
+    canvas.height = innerHeight * dpr;
+    draw();
+  };
+  const radius = (n) => (n.type === 'note' ? 3.5 : 2.5) + Math.min(6, Math.sqrt(n.deg) * 1.2);
+
+  let alpha = 1;
+  let dragged = null;
+  const tick = () => {
+    const n = nodes.length;
+    for (let i = 0; i < n; i += 1) {
+      const a = nodes[i];
+      for (let j = i + 1; j < n; j += 1) {
+        const b = nodes[j];
+        let dx = a.x - b.x;
+        let dy = a.y - b.y;
+        let d2 = dx * dx + dy * dy;
+        if (d2 > 90000) continue;
+        if (d2 < 0.01) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; d2 = 0.5; }
+        const f = (600 * alpha) / d2;
+        a.vx += dx * f; a.vy += dy * f; b.vx -= dx * f; b.vy -= dy * f;
+      }
+    }
+    for (const e of edges) {
+      const dx = e.t.x - e.s.x;
+      const dy = e.t.y - e.s.y;
+      const d = Math.sqrt(dx * dx + dy * dy) || 1;
+      const f = ((d - 50) / d) * 0.06 * alpha;
+      e.s.vx += dx * f; e.s.vy += dy * f; e.t.vx -= dx * f; e.t.vy -= dy * f;
+    }
+    for (const a of nodes) {
+      a.vx -= a.x * 0.004 * alpha; a.vy -= a.y * 0.004 * alpha;
+      if (a === dragged) { a.vx = 0; a.vy = 0; continue; }
+      a.vx *= 0.6; a.vy *= 0.6;
+      a.x += a.vx; a.y += a.vy;
+    }
+    alpha *= 0.985;
+  };
+
+  let hover = null;
+  let selected = null;
+  let filter = '';
+  const draw = () => {
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.fillStyle = colors.bg;
+    g.fillRect(0, 0, innerWidth, innerHeight);
+    g.translate(innerWidth / 2 + view.x, innerHeight / 2 + view.y);
+    g.scale(view.k, view.k);
+    const focus = hover || selected;
+    const near = new Set();
+    if (focus) for (const e of edges) if (e.s === focus || e.t === focus) { near.add(e.s); near.add(e.t); }
+    g.lineWidth = 1 / view.k;
+    for (const e of edges) {
+      const lit = focus && (e.s === focus || e.t === focus);
+      g.globalAlpha = (filter && !(e.s.hit && e.t.hit)) || (focus && !lit) ? 0.15 : 1;
+      g.strokeStyle = lit ? colors[e.s.type === 'note' ? 'note' : e.s.type] : colors.line;
+      g.beginPath(); g.moveTo(e.s.x, e.s.y); g.lineTo(e.t.x, e.t.y); g.stroke();
+    }
+    g.font = `${12 / view.k}px system-ui,-apple-system,"Segoe UI",sans-serif`;
+    g.textAlign = 'center';
+    for (const n of nodes) {
+      const dim = (filter && !n.hit) || (focus && !near.has(n) && n !== focus);
+      g.globalAlpha = dim ? 0.15 : 1;
+      g.fillStyle = colors[n.type] || colors.note;
+      g.beginPath(); g.arc(n.x, n.y, radius(n), 0, Math.PI * 2); g.fill();
+      if (n === focus || n === selected || (filter && n.hit) || (!dim && view.k > 1.6) || (focus && near.has(n))) {
+        g.fillStyle = colors.fg;
+        g.fillText(n.label, n.x, n.y - radius(n) - 4 / view.k);
+      }
+    }
+    g.globalAlpha = 1;
+  };
+
+  const loop = () => {
+    if (alpha > 0.004 || dragged) { tick(); draw(); }
+    requestAnimationFrame(loop);
+  };
+
+  const toWorld = (ev) => ({ x: (ev.clientX - innerWidth / 2 - view.x) / view.k, y: (ev.clientY - innerHeight / 2 - view.y) / view.k });
+  const pick = (ev) => {
+    const p = toWorld(ev);
+    let best = null;
+    let bestD = Infinity;
+    for (const n of nodes) {
+      const d = Math.hypot(n.x - p.x, n.y - p.y);
+      if (d < radius(n) + 6 / view.k && d < bestD) { best = n; bestD = d; }
+    }
+    return best;
+  };
+  const describe = (n) => (n.type === 'note' ? n.id : n.type === 'folder' ? `${n.id.slice(7)}/` : n.type === 'ghost' ? `${n.label} (no note yet)` : n.label);
+
+  let pan = null;
+  let moved = false;
+  canvas.addEventListener('pointerdown', (ev) => {
+    canvas.setPointerCapture(ev.pointerId);
+    moved = false;
+    dragged = pick(ev);
+    if (!dragged) pan = { x: ev.clientX - view.x, y: ev.clientY - view.y };
+    canvas.style.cursor = 'grabbing';
+  });
+  canvas.addEventListener('pointermove', (ev) => {
+    if (dragged) {
+      const p = toWorld(ev);
+      dragged.x = p.x; dragged.y = p.y; moved = true;
+      alpha = Math.max(alpha, 0.3);
+    } else if (pan) {
+      view.x = ev.clientX - pan.x; view.y = ev.clientY - pan.y; moved = true;
+      draw();
+    } else {
+      const h = pick(ev);
+      if (h !== hover) { hover = h; canvas.style.cursor = h ? 'pointer' : 'grab'; draw(); }
+    }
+  });
+  canvas.addEventListener('pointerup', (ev) => {
+    if (!moved) {
+      selected = pick(ev);
+      info.textContent = selected ? describe(selected) : '';
+    }
+    dragged = null; pan = null;
+    canvas.style.cursor = hover ? 'pointer' : 'grab';
+    draw();
+  });
+  canvas.addEventListener('wheel', (ev) => {
+    ev.preventDefault();
+    const before = toWorld(ev);
+    view.k = Math.min(8, Math.max(0.1, view.k * Math.exp(-ev.deltaY * 0.0015)));
+    view.x = ev.clientX - innerWidth / 2 - before.x * view.k;
+    view.y = ev.clientY - innerHeight / 2 - before.y * view.k;
+    draw();
+  }, { passive: false });
+  q.addEventListener('input', () => {
+    filter = q.value.trim().toLowerCase();
+    for (const n of nodes) n.hit = !filter || n.label.toLowerCase().includes(filter) || n.id.toLowerCase().includes(filter);
+    draw();
+  });
+
+  addEventListener('resize', resize);
+  resize();
+  loop();
+})();
+</script>
+</body>
+</html>
