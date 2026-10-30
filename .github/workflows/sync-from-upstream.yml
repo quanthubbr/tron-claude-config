@@ -26,7 +26,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git remote add upstream https://github.com/zaqueu-1/exonous.git
           git fetch --no-tags upstream main '+refs/tags/v*:refs/upstream-tags/v*'
-          base=$(git rev-parse HEAD)
+          base=$(git rev-parse origin/main) # the live tip: a rerun checks out the old sha
 
           mirror_tree() {
             export GIT_INDEX_FILE="$RUNNER_TEMP/sync-index"
