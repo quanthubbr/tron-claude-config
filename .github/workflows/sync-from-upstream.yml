@@ -5,7 +5,7 @@ name: Sync from upstream
 
 on:
   schedule:
-    - cron: '0 6 * * *' # daily 06:00 UTC
+    - cron: '17 * * * *' # hourly: new release tags reach the mirror within the hour
   workflow_dispatch:
 
 jobs:
