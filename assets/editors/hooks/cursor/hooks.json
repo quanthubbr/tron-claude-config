@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "[ ! -f '__UI_DESIGN_BIN__' ] || '__UI_DESIGN_BIN__' hook-before-edit",
+        "timeout": 5
+      }
+    ]
+  }
+}

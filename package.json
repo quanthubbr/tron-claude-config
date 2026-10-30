@@ -1,26 +1,27 @@
 {
-  "name": "@tron/claude-config",
-  "version": "1.15.3",
-  "description": "Claude Code enforcement harness for tron repos",
+  "name": "exonous",
+  "version": "2.0.0",
+  "description": "The mind outside your head for coding agents: enforced workflow, anchored memory and a disciplined agent roster for Claude Code and Cursor.",
   "private": true,
+  "repository": "github:zaqueu-1/exonous",
+  "bin": {
+    "exonous": "bin/exonous.js"
+  },
   "scripts": {
-    "postinstall": "node scripts/postinstall.js",
-    "ensure:tron-graph": "node scripts/lib/ensure-tron-graph.js",
-    "sync:quanthub": "bash scripts/sync-quanthub-fork.sh",
-    "upstream:watch": "node upstream/watch.js",
-    "upstream:originality": "node upstream/originality.js"
+    "postinstall": "node bin/exonous.js setup",
+    "test": "node --test test/*.test.js",
+    "pege:watch": "node maintainer/pege/watch.js",
+    "pege:originality": "node maintainer/pege/originality.js"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "files": [
-    "managed/",
+    "bin/",
+    "src/",
+    "assets/",
     "scripts/postinstall.js",
-    "scripts/sync-tron-rules.js",
-    "scripts/lib/*.js",
-    "!scripts/lib/*.test.js",
     "README.md",
-    "HARNESS-GUIDE.md",
-    "docs/assets/"
+    "docs/cover.svg"
   ]
 }

@@ -1,0 +1,31 @@
+{
+  "name": "exonous",
+  "owner": {
+    "name": "exonous"
+  },
+  "metadata": {
+    "description": "Exonous plugins for Claude Code"
+  },
+  "plugins": [
+    {
+      "name": "techne",
+      "source": "./",
+      "description": "techne — stack skills, commands, quality hooks and language rules, managed by exonous",
+      "version": "1.15.3",
+      "author": {
+        "name": "exonous"
+      },
+      "keywords": [
+        "claude-code",
+        "skills",
+        "hooks",
+        "rules",
+        "tdd",
+        "quality",
+        "workflow"
+      ],
+      "category": "workflow",
+      "strict": false
+    }
+  ]
+}

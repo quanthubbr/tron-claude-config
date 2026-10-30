@@ -1,0 +1,61 @@
+#!/bin/sh
+# ui-design — runs the bundled design engine with exonous defaults.
+#   - no telemetry, no self-update: engine pins move only through maintainer/pege/sources.json
+#   - agent-facing output is rebranded so directives point back at ui-design
+#   - every other verb (live server, image tooling, detector JSON) is exec'd untouched
+set -u
+
+dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+engine="$dir/impeccable"
+
+IMPECCABLE_SKILL_DIR="${IMPECCABLE_SKILL_DIR:-$(CDPATH= cd -- "$dir/.." && pwd)}"
+IMPECCABLE_SELF="$dir/ui-design"
+IMPECCABLE_NO_UPDATE_CHECK=1
+IMPECCABLE_NO_TELEMETRY=1
+DO_NOT_TRACK=1
+export IMPECCABLE_SKILL_DIR IMPECCABLE_SELF IMPECCABLE_NO_UPDATE_CHECK IMPECCABLE_NO_TELEMETRY DO_NOT_TRACK
+
+if [ ! -f "$engine" ]; then
+  echo "ui-design: engine launcher missing at $engine (reinstall exonous)" >&2
+  exit 127
+fi
+
+# Substitutions only: hook verbs print single-line JSON, so nothing here may delete a line or add quotes.
+rename() {
+  sed \
+    -e 's#\[impeccable@[0-9]*\]#[ui-design]#g' \
+    -e 's#\([ `"(]\)/impeccable\([ `"):.,]\)#\1/ui-design\2#g' \
+    -e 's#\([ `"(]\)/impeccable$#\1/ui-design#g' \
+    -e "s#Impeccable's#ui-design's#g" \
+    -e 's#Impeccable#ui-design#g'
+}
+
+case "${1:-}" in
+  update|check|install|link|skills)
+    echo "ui-design: engine updates are managed by exonous (maintainers: npm run pege:watch)." >&2
+    exit 2
+    ;;
+  help|--help|-h)
+    echo "ui-design — design commands (/ui-design <command> [target]); full routing in $IMPECCABLE_SKILL_DIR/SKILL.md"
+    echo
+    sed -n -e 's/^  "\([a-z-]*\)": {$/\1/p' -e 's/^    "description": "\(.*\)",$/\1/p' "$dir/command-metadata.json" |
+      paste - - | grep -v '^craft' | while IFS="$(printf '\t')" read -r cmd text; do printf '  /%-12s %s\n' "$cmd" "$text"; done
+    echo
+    echo "Engine verbs: context, detect, hooks, doctor, live, ... (see SKILL.md)"
+    exit 0
+    ;;
+  context|doctor|hooks|hook|hook-before-edit|detect|signals|surface-brief|pin)
+    tmp=$(mktemp "${TMPDIR:-/tmp}/ui-design.XXXXXX") || exit 1
+    trap 'rm -f "$tmp"' EXIT HUP INT TERM
+    sh "$engine" "$@" >"$tmp"
+    rc=$?
+    case "$1" in
+      hook|hook-before-edit) rename <"$tmp" ;;
+      *) sed -e '/npx impeccable/d' -e '/impeccable\.style/d' "$tmp" | rename ;;
+    esac
+    exit "$rc"
+    ;;
+  *)
+    exec sh "$engine" "$@"
+    ;;
+esac

@@ -1,0 +1,27 @@
+---
+description: Mandatory design stack (ui-design + ui-motion + native-ui + ui-mockup) as the DESIGN authority for UI work; ui-patterns subordinate for charts, forms, web navigation and stack guidelines
+alwaysApply: true
+---
+
+# Frontend Skills (mandatory)
+
+On ANY frontend/UI task — pages, components, styling, layout, redesign, polish, landing, dashboard, CSS/Tailwind, React/Next/Vue UI, native screens:
+
+**Source of truth for DESIGN** = the design stack (`~/.agents/skills/<name>/SKILL.md`, symlinked into `~/.claude/skills/` and `~/.cursor/skills/`):
+
+1. **`ui-design`** — always first. Direction, modes, critique/audit, refine commands, live iteration, and the hook-enforced detector (`scripts/ui-design`). Style modules in `reference/styles/` (direction for landing/portfolio/marketing, redesign for brownfield, premium/minimalist/brutalist when the brief asks). Dashboards and tools follow its Operate mode, not the style modules.
+2. **`ui-motion`** — any animation, transition, gesture, toast, or interaction-feel work (web and Expo).
+3. **`native-ui`** — iOS/Android/desktop-native feel, Apple-quality design, Swift/SwiftUI.
+4. **`ui-mockup`** — image-model comps, image-to-code, brand kits — only when the brief calls for imagery.
+
+Then:
+
+5. **`ui-patterns`** (subordinate) — consult **only after the stack sets direction**, and only for charts/data visualization, form UX patterns, web navigation patterns, and stack implementation guidelines (Vue, Nuxt, React, Next.js, React Native, shadcn/ui, Tailwind). Never sets visual direction.
+
+**On conflict between ui-patterns and the design stack, ALWAYS prefer the stack.**
+
+Announce: `Using ui-design for [purpose]` — name the companion skills actually loaded (`+ ui-motion`, `+ native-ui`, `+ ui-mockup`, `+ ui-patterns`).
+
+Before delivery, after ui-design's polish/audit pass, run the ui-patterns pre-delivery add-on (cursor-pointer on non-button clickables, chart legend + non-color encoding + table fallback, form a11y, focus on route change, z-index scale).
+
+Skip only for pure backend/infra with zero UI surface. Existing project design systems still win for tokens/components — skills guide quality and direction, not invent a second system.
