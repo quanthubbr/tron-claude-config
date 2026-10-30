@@ -1,0 +1,5 @@
+#!/bin/sh
+# ui-design — POSIX entry kept for existing hooks and docs; the launcher itself is ui-design.mjs.
+dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+command -v node >/dev/null 2>&1 || { echo "ui-design: node not found on PATH (needed by $dir/ui-design.mjs)" >&2; exit 127; }
+exec node "$dir/ui-design.mjs" "$@"

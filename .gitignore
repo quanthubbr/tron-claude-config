@@ -1,12 +1,15 @@
 node_modules/
 *.log
-.planning/
+.DS_Store
+
+# local agent/tool state
 .claude/
-.superpowers/
 .cursor/
 .omc/
-.DS_Store
-managed/.DS_Store
+.superpowers/
+.impeccable/
+.planning/
 
-# upstream tracker mirrors (maintainer only)
-upstream/.cache/
+# pege mirrors and reports (maintainer only)
+maintainer/pege/.cache/
+maintainer/pege/reports/

@@ -1,0 +1,4 @@
+{
+  "_note": "Optional override. Without this file the vault comes from `exonous vault`.",
+  "vault": "/absolute/path/to/your/vault"
+}
