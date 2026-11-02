@@ -103,6 +103,13 @@ function selftestRepo() {
   return dir;
 }
 
+/** Self-test temp cleanup: Windows can hold the dir briefly after the child exits; a leftover temp dir must not fail doctor. */
+function removeSelftestDir(dir) {
+  try {
+    fs.rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  } catch {}
+}
+
 /** MCP coverage row: atlas/biblos are copied only when Claude Code has them, so a gap is a warning, not a failure. */
 function mcpRow(label, names) {
   const have = MCP_KEYS.filter((k) => names.includes(k));
@@ -126,4 +133,4 @@ const softRow = (label, what = 'rules only') => ({
   fix: 'commit through a hard-gated tool, or run `exonous workflow commit` and review by hand',
 });
 
-module.exports = { onPath, readJson, claudeMcp, mergeMcp, removeMcp, softRow, mcpRow, installDesignLinks, selftestRepo, SELFTEST_DENY, MCP_KEYS };
+module.exports = { onPath, readJson, claudeMcp, mergeMcp, removeMcp, softRow, mcpRow, installDesignLinks, selftestRepo, removeSelftestDir, SELFTEST_DENY, MCP_KEYS };

@@ -9,7 +9,7 @@ const paths = require('../lib/paths');
 const { mergeList } = require('../lib/settings');
 const { toMdCommand, toOpencodeAgent } = require('../lib/convert/md-command');
 const { ASSETS, COMMANDS } = require('../lib/runtime');
-const { onPath, claudeMcp, mergeMcp, removeMcp, selftestRepo, SELFTEST_DENY, mcpRow } = require('./shared');
+const { onPath, claudeMcp, mergeMcp, removeMcp, selftestRepo, removeSelftestDir, SELFTEST_DENY, mcpRow } = require('./shared');
 
 const TOOL = 'opencode';
 const SCRIPT_ONLY = 'script self-test (does not prove the tool loads the hook)';
@@ -110,8 +110,8 @@ const hooks = await m.ExonousGate({ directory: ${JSON.stringify(repo)} });
 try { await hooks['tool.execute.before']({ tool: 'bash' }, { args: { command: 'git commit -m exonous-selftest' } }); console.log('allow'); }
 catch (e) { console.log('deny: ' + e.message.split('\\n')[0]); }`;
   const res = spawnSync(node, ['--input-type=module', '-e', script], { encoding: 'utf8', timeout: 30000 });
-  fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5 });
-  fs.rmSync(repo, { recursive: true, force: true, maxRetries: 5 });
+  removeSelftestDir(tmp);
+  removeSelftestDir(repo);
   const out = (res.stdout || '').trim();
   return out.startsWith('deny: ') && SELFTEST_DENY.test(out)
     ? { ok: true, detail: `${SCRIPT_ONLY}: gate plugin denies an unreviewed git commit` }

@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const paths = require('../lib/paths');
-const { selftestRepo, SELFTEST_DENY } = require('./shared');
+const { selftestRepo, removeSelftestDir, SELFTEST_DENY } = require('./shared');
 const claude = require('./claude');
 const cursor = require('./cursor');
 const gemini = require('./gemini');
@@ -79,7 +79,7 @@ function selftest(adapter) {
   const input = JSON.stringify(adapter.selftestPayload('git commit -m exonous-selftest', repo));
   const shell = process.platform === 'win32' ? ['cmd.exe', ['/d', '/s', '/c', `"${command}"`]] : ['sh', ['-c', command]];
   const res = spawnSync(shell[0], shell[1], { input, encoding: 'utf8', timeout: 30000, windowsVerbatimArguments: true, cwd: repo });
-  fs.rmSync(repo, { recursive: true, force: true });
+  removeSelftestDir(repo);
   const output = `${res.stdout || ''}${res.stderr || ''}`;
   const denied = (res.status === 2 || /"permission(Decision)?":"deny"/.test(res.stdout || '')) && SELFTEST_DENY.test(output);
   return denied
