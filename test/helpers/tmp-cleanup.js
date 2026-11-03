@@ -20,7 +20,7 @@ if (!fs.mkdtempSync.exonousTracked) {
   const cleanup = () => {
     for (const dir of created) {
       try {
-        fs.rmSync(dir, { recursive: true, force: true });
+        fs.rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
       } catch {
         // already gone or busy: nothing to keep
       }
