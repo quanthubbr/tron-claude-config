@@ -46,8 +46,14 @@ function useFixtureHome() {
   });
   afterEach(() => {
     // Fixture homes hold a full design-stack copy each; leaking them fills the disk across runs.
+    // A gate child (kairos) may still be writing into the home, so retry; the exit sweep in tmp-cleanup takes the rest.
     for (const dir of [process.env.EXONOUS_HOME, state.osHome, process.env.PATH.split(path.delimiter)[0]]) {
-      if (dir && dir.startsWith(os.tmpdir())) fs.rmSync(dir, { recursive: true, force: true });
+      if (!dir || !dir.startsWith(os.tmpdir())) continue;
+      try {
+        fs.rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
+      } catch {
+        // still busy after the retries: tracked by tmp-cleanup and removed when this process exits
+      }
     }
     for (const [key, value] of Object.entries(saved)) {
       if (value === undefined) delete process.env[key];
