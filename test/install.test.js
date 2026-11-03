@@ -294,7 +294,7 @@ test('a CLI install into a fixture home with every tool dir never touches os.hom
   assert.deepStrictEqual(Object.keys(readInstallInfo().tools), ['claude', 'cursor', 'gemini', 'codex', 'opencode']);
   const doctor = spawnSync(process.execPath, [bin, 'doctor'], { env, encoding: 'utf8' }).stdout;
   for (const id of ['claude', 'cursor', 'gemini', 'codex', 'opencode']) assert.match(doctor, new RegExp(`✓ ${id}: gate self-test`), doctor);
-  assert.match(doctor, /⚠ Codex CLI: gate approved in \/hooks \(pending/);
+  assert.match(doctor, /✗ Codex CLI: hooks approved in \/hooks \(base config\.toml\) \(.*none of the 8 exonous hooks approved \(all new\)\)/);
   assert.match(doctor, /⚠ Cursor: User Rules/);
   for (const label of ['Gemini CLI: gate hook', 'Codex CLI: gate hook registered', 'OpenCode: gate plugin']) assert.ok(doctor.includes(`✓ ${label}`), label);
   assert.deepStrictEqual(fs.readdirSync(osHome), []);
@@ -337,7 +337,7 @@ test('a fixture home with all ten tools: doctor shows every tool with the right 
   for (const label of ['Cline: gate', 'Qwen Code: gate', 'Kiro: gate']) assert.match(doctor, new RegExp(`⚠ ${label} \\(soft: not enforced`), label);
   for (const label of ['Windsurf: gate hook', 'Windsurf: nomos \\+ praxis min rules', 'Copilot: gate hook \\(Preview\\)', 'Cline: nomos \\+ praxis rules', 'Qwen Code: nomos \\+ praxis rules']) assert.match(doctor, new RegExp(`✓ ${label}`), label);
   assert.match(doctor, /⚠ Aider: unsupported/);
-  assert.match(doctor, /⚠ Codex CLI: gate approved in \/hooks/);
+  assert.match(doctor, /✗ Codex CLI: hooks approved in \/hooks \(base config\.toml\)/);
   assert.ok(!/✗ (cline|qwen|kiro|aider): gate self-test/.test(doctor), 'soft and unsupported tools get no self-test');
   assert.deepStrictEqual(fs.readdirSync(osHome), []);
 });

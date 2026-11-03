@@ -86,7 +86,8 @@ function gateCell(adapter, result) {
   if (adapter.gate === 'soft') return 'soft: not enforced';
   if (adapter.gate === 'none') return 'unsupported';
   if (!adapter.registeredCommand()) return 'hard (not registered)';
-  return `hard (registered, selftest ${result && result.ok ? 'ok' : 'FAILED'})`;
+  const note = adapter.gateNote ? adapter.gateNote() : null;
+  return `hard (registered, selftest ${result && result.ok ? 'ok' : 'FAILED'})${note ? ` — ${note}` : ''}`;
 }
 
 function matrix({ selected, detected, disabled, rowsById, selftests }) {

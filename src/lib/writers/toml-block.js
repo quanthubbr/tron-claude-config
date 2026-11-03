@@ -43,13 +43,25 @@ function definedOutside(text, name) {
   return new RegExp(`^\\s*${quoted(name)}\\s*[.=]`, 'm').test(body);
 }
 
+/** Tables in an old block body that are not mcp_servers.<owned>: Codex appends its own ([projects.*], [hooks.state.*]) before `# exonous:end`. */
+function splitBlock(body, owned) {
+  const mine = new RegExp(`^\\s*\\[\\s*mcp_servers\\s*\\.\\s*(?:${owned.map(quoted).join('|')})\\s*[\\].]`);
+  const chunks = String(body || '').split(/^(?=[ \t]*\[)/m).filter((c) => /^[ \t]*\[/.test(c));
+  return {
+    ours: markers.normalizeBody(chunks.filter((c) => mine.test(c)).join('')),
+    foreign: chunks.filter((c) => !mine.test(c)).map((c) => c.replace(/\s+$/, '')).join('\n\n'),
+  };
+}
+
+const foreignTables = (body, owned) => splitBlock(body, owned).foreign;
+
 /**
  * @param {Record<string, Record<string, unknown>>} servers
- * @param {{ dryRun?: boolean, log?: (msg: string) => void }} [options]
+ * @param {{ dryRun?: boolean, log?: (msg: string) => void, owned?: string[] }} [options] owned: server names whose tables the block holds (default: servers).
  * @returns {{ status: 'written'|'unchanged'|'malformed', written: string[], skipped: string[], hash?: string }}
  */
-function upsertMcpServers(file, servers, { dryRun = false, log = () => {} } = {}) {
-  for (const name of Object.keys(servers)) if (!NAME.test(name)) throw new Error(`invalid MCP server name: ${name}`);
+function upsertMcpServers(file, servers, { dryRun = false, log = () => {}, owned = Object.keys(servers) } = {}) {
+  for (const name of [...Object.keys(servers), ...owned]) if (!NAME.test(name)) throw new Error(`invalid MCP server name: ${name}`);
   const tables = Object.entries(servers).map(([name, fields]) => [name, renderTable(name, fields)]);
   let text = '';
   try {
@@ -62,6 +74,8 @@ function upsertMcpServers(file, servers, { dryRun = false, log = () => {} } = {}
     log(`WARN: ${file} has an unmatched exonous marker — fix it by hand; file left untouched`);
     return { status: 'malformed', written: [], skipped: Object.keys(servers) };
   }
+  const foreign = foreignTables(outside.body, owned);
+  if (foreign) log(`kept the tables another tool wrote inside the exonous block of ${file} (moved out of it)`);
   const written = [];
   const skipped = [];
   for (const [name] of tables) {
@@ -72,17 +86,46 @@ function upsertMcpServers(file, servers, { dryRun = false, log = () => {} } = {}
       written.push(name);
     }
   }
+  const body = tables.filter(([name]) => written.includes(name)).map(([, table]) => table).join('\n');
+  if (foreign) return rescue(file, { outside: outside.text, foreign, body, eol: text.includes('\r\n') ? '\r\n' : '\n', dryRun, log, written, skipped });
   if (!written.length) {
     const res = outside.status === 'removed' ? markers.removeFile(file, { style: 'hash', dryRun, log }) : { status: 'absent' };
     return { status: res.status === 'removed' ? 'written' : 'unchanged', written, skipped };
   }
-  const body = tables.filter(([name]) => written.includes(name)).map(([, table]) => table).join('\n');
   const res = markers.upsertFile(file, body, { style: 'hash', dryRun, log });
   return { status: res.status, written, skipped, hash: res.hash };
 }
 
-function removeMcpServers(file, options = {}) {
-  return markers.removeFile(file, { ...options, style: 'hash' });
+/** Rewrites the file with the foreign tables kept outside the block, and the block (if any) appended after them. */
+function rescue(file, { outside, foreign, body, eol, dryRun, log, written, skipped }) {
+  const sep = outside ? `${outside.endsWith('\n') ? '' : eol}${eol}` : '';
+  const kept = `${outside}${sep}${foreign.replace(/\r?\n/g, eol)}${eol}`;
+  const next = written.length ? markers.upsert(kept, body, 'hash').text : kept;
+  if (dryRun) log(`DRY: would write exonous section → ${file}`);
+  else markers.writeAtomic(file, next);
+  return { status: 'written', written, skipped, ...(written.length ? { hash: markers.hashSection(markers.normalizeBody(body)) } : {}) };
 }
 
-module.exports = { upsertMcpServers, removeMcpServers };
+/**
+ * Drops the block; tables another tool wrote inside it stay in the file.
+ * @param {{ dryRun?: boolean, log?: (msg: string) => void, keepEmpty?: boolean, owned?: string[] }} [options]
+ * @returns {{ status: 'removed'|'absent'|'malformed', body?: string }}
+ */
+function removeMcpServers(file, { owned = [], ...options } = {}) {
+  for (const name of owned) if (!NAME.test(name)) throw new Error(`invalid MCP server name: ${name}`);
+  let text = '';
+  try {
+    text = fs.readFileSync(file, 'utf8');
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err;
+  }
+  const outside = markers.remove(text, 'hash');
+  const foreign = outside.status === 'removed' && owned.length ? foreignTables(outside.body, owned) : '';
+  if (!foreign) return markers.removeFile(file, { ...options, style: 'hash' });
+  const { dryRun = false, log = () => {} } = options;
+  log(`kept the tables another tool wrote inside the exonous block of ${file} (moved out of it)`);
+  rescue(file, { outside: outside.text, foreign, body: '', eol: text.includes('\r\n') ? '\r\n' : '\n', dryRun, log, written: [], skipped: [] });
+  return { status: 'removed', body: outside.body };
+}
+
+module.exports = { upsertMcpServers, removeMcpServers, splitBlock };

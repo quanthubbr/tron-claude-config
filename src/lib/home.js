@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const paths = require('./paths');
 const markers = require('./writers/markers');
+const tomlBlock = require('./writers/toml-block');
 
 const EXECUTABLE_EXTS = new Set(['', '.sh', '.cmd']);
 
@@ -178,8 +179,8 @@ function createHome({ dryRun = false, log, previous, previousSections }) {
     return true;
   }
 
-  /** @param {{ style?: string, tool?: string, writer?: (file: string) => { status: string, hash?: string } }} [options] writer replaces the plain marker upsert (e.g. TOML tables). */
-  function section(destAbs, content, { style = 'html', tool, writer } = {}) {
+  /** @param {{ style?: string, tool?: string, owned?: string[], writer?: (file: string) => { status: string, hash?: string } }} [options] writer replaces the plain marker upsert (e.g. TOML tables); owned: the TOML tables the block holds. */
+  function section(destAbs, content, { style = 'html', tool, owned, writer } = {}) {
     const rel = homeRel(destAbs);
     const existed = fs.existsSync(destAbs);
     let res;
@@ -193,7 +194,7 @@ function createHome({ dryRun = false, log, previous, previousSections }) {
     const old = ledger.previousSections.find((e) => sectionKey(e) === `${rel}#${style}`);
     // A file exonous created may go when its section does; one the user had (even empty) always stays.
     const created = Boolean(old ? old.created : !existed);
-    const entry = { path: rel, marker: style, hash: res.hash, ...(tool ? { tool } : {}), ...(created ? { created } : {}) };
+    const entry = { path: rel, marker: style, hash: res.hash, ...(tool ? { tool } : {}), ...(owned ? { owned } : {}), ...(created ? { created } : {}) };
     if (res.status !== 'malformed') {
       if (res.hash) ledger.currentSections.push(entry);
       return;
@@ -217,15 +218,20 @@ function createHome({ dryRun = false, log, previous, previousSections }) {
     }
     const body = markers.readSection(text, entry.marker);
     if (body === null) return;
-    if (markers.hashSection(body) !== entry.hash) {
+    // Hash blocks are TOML tables; tables another tool appended inside are kept, not counted as edits. Older ledgers name no owned list.
+    const owned = entry.marker === 'hash' ? entry.owned || ['atlas', 'biblos'] : null;
+    const ours = owned ? tomlBlock.splitBlock(body, owned).ours : body;
+    if (markers.hashSection(ours) !== entry.hash) {
       const bak = `${abs}.exonous-section.bak`;
       if (dryRun) log(`DRY: would keep your edits to the exonous section of ~/${entry.path} as ~/${entry.path}.exonous-section.bak`);
       else {
-        fs.writeFileSync(bak, body, 'utf8');
+        fs.writeFileSync(bak, ours, 'utf8');
         log(`kept your edits to the exonous section of ~/${entry.path} as ~/${entry.path}.exonous-section.bak`);
       }
     }
-    if (markers.removeFile(abs, { style: entry.marker, dryRun, log, keepEmpty: !entry.created }).status === 'removed' && !dryRun) {
+    const opts = { style: entry.marker, dryRun, log, keepEmpty: !entry.created };
+    const res = owned ? tomlBlock.removeMcpServers(abs, { ...opts, owned }) : markers.removeFile(abs, opts);
+    if (res.status === 'removed' && !dryRun) {
       log(`retired exonous section from ~/${entry.path}`);
     }
   }

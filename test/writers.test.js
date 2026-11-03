@@ -129,6 +129,39 @@ test('MCP servers go into an appended block and the user TOML is never rewritten
   assert.strictEqual(upsertMcpServers(fx.file, SERVERS).status, 'unchanged');
 });
 
+test('tables Codex appended inside the block (project trust, hook approvals) are moved out, never dropped', () => {
+  const codexWrote = '[projects."/tmp/repo"]\ntrust_level = "trusted"\n\n[hooks.state."/h/.codex/hooks.json:pre_tool_use:0:0"]\ntrusted_hash = "sha256:abc"\n';
+  const oldBiblos = '[mcp_servers.biblos]\nurl = "https://old"\n';
+  const fx = fixture('config.toml', `${USER_TOML}\n# exonous:start\n[mcp_servers.atlas]\ncommand = "old"\n\n${oldBiblos}\n${codexWrote}# exonous:end\n`);
+  const logs = [];
+  const res = upsertMcpServers(fx.file, { atlas: SERVERS.atlas }, { owned: ['atlas', 'biblos'], log: (m) => logs.push(m) });
+  assert.deepStrictEqual(res.written, ['atlas']);
+  const out = fx.read();
+  assert.strictEqual(out, `${USER_TOML}\n${codexWrote}\n# exonous:start\n[mcp_servers.atlas]\ncommand = "/home/u/.local/bin/atlas"\nargs = ["--stdio"]\nenv = { ATLAS_MODE = "ro" }\n# exonous:end\n`);
+  assert.ok(!out.includes('https://old'), 'an owned table the block no longer carries is dropped');
+  assert.ok(logs.some((m) => /kept the tables another tool wrote inside the exonous block/.test(m)));
+  assert.strictEqual(upsertMcpServers(fx.file, { atlas: SERVERS.atlas }, { owned: ['atlas', 'biblos'] }).status, 'unchanged');
+  const dry = fixture('config.toml', `# exonous:start\n${codexWrote}# exonous:end\n`);
+  const before = dry.read();
+  upsertMcpServers(dry.file, SERVERS, { dryRun: true, log: () => {} });
+  assert.strictEqual(dry.read(), before);
+});
+
+test('removeMcpServers with owned names keeps foreign tables from the block; without them it drops the block whole', () => {
+  const codexWrote = '[projects."/tmp/repo"]\ntrust_level = "trusted"\n';
+  const content = `${USER_TOML}\n# exonous:start\n[mcp_servers.atlas]\ncommand = "x"\n\n${codexWrote}# exonous:end\n`;
+  const fx = fixture('config.toml', content);
+  const dry = removeMcpServers(fx.file, { owned: ['atlas'], dryRun: true, log: () => {} });
+  assert.strictEqual(dry.status, 'removed');
+  assert.strictEqual(fx.read(), content, 'dry run writes nothing');
+  assert.strictEqual(removeMcpServers(fx.file, { owned: ['atlas'] }).status, 'removed');
+  assert.strictEqual(fx.read(), `${USER_TOML}\n${codexWrote}`);
+  assert.strictEqual(removeMcpServers(fx.file, { owned: ['atlas'] }).status, 'absent');
+  const whole = fixture('config.toml', content);
+  removeMcpServers(whole.file);
+  assert.strictEqual(whole.read(), USER_TOML);
+});
+
 test('a same-name table outside the block is skipped with a warning', () => {
   const user = `${USER_TOML}\n[mcp_servers.atlas]\ncommand = "mine"\n\n[mcp_servers."biblos".env]\nKEY = "v"\n`;
   const fx = fixture('config.toml', user);

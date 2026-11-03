@@ -11,6 +11,7 @@ const { uninstall } = require('../src/uninstall');
 const { selftest, ADAPTERS } = require('../src/adapters');
 const { renderRules } = require('../src/lib/render-rules');
 const fx = require('./helpers/adapter-fixture');
+const trust = require('../src/adapters/codex-trust');
 
 const osHome = fx.useFixtureHome();
 const codex = ADAPTERS.find((a) => a.id === 'codex');
@@ -86,17 +87,60 @@ test('uninstall restores AGENTS.md, hooks.json and config.toml', async () => {
   assert.deepStrictEqual(fx.readJson('.codex', 'hooks.json'), USER_HOOKS);
 });
 
-test('selftest denies; doctor asks the user to approve the hook in /hooks', () => {
+test('uninstall keeps the tables Codex wrote inside the exonous block of config.toml', async () => {
   seed();
   run();
+  const codexWrote = '[projects."/tmp/repo"]\ntrust_level = "trusted"\n\n[hooks.state."/h/.codex/hooks.json:stop:0:0"]\ntrusted_hash = "sha256:abc"\n';
+  const file = fx.home('.codex', 'config.toml');
+  fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace('# exonous:end', `\n${codexWrote}# exonous:end`));
+  const logs = [];
+  await uninstall({ yes: true, log: (m) => logs.push(m) });
+  assert.strictEqual(fx.read('.codex', 'config.toml'), `${USER_TOML}\n${codexWrote}`);
+  assert.ok(!fx.exists('.codex', 'config.toml.exonous-section.bak'), 'Codex tables are not counted as user edits of the block');
+  assert.ok(logs.some((m) => /kept the tables another tool wrote inside the exonous block/.test(m)), logs.join('\n'));
+});
+
+test('selftest denies; doctor and install name every profile where /hooks approval is missing', () => {
+  seed();
+  fx.write('model = "fast"\n', '.codex', 'fast.config.toml');
+  const q = fx.quiet();
+  run(q);
+  assert.ok(q.logs.some((m) => /^⚠ codex: hooks NOT approved — .*in: base config\.toml \(`codex`\), profile fast \(`codex -p fast`\)\. .*exonous never approves them for you$/.test(m)), q.logs.join('\n'));
   const res = selftest(codex);
   assert.ok(res.ok, res.detail);
   assert.match(res.detail, /^script self-test \(does not prove the tool loads the hook\)/);
   const rows = codex.doctor({});
-  const approval = rows.find((r) => /approved in \/hooks/.test(r.name));
-  assert.strictEqual(approval.ok, false);
-  assert.strictEqual(approval.level, 'warn');
-  assert.match(approval.status, /^pending — approve the exonous hook in Codex `\/hooks`/);
-  assert.ok(rows.filter((r) => r !== approval).every((r) => r.ok), JSON.stringify(rows));
+  const approval = rows.filter((r) => /approved in \/hooks/.test(r.name));
+  assert.deepStrictEqual(approval.map((r) => [r.name, r.ok]), [
+    ['Codex CLI: hooks approved in /hooks (base config.toml)', false],
+    ['Codex CLI: hooks approved in /hooks (profile fast)', false],
+  ]);
+  assert.match(approval[0].status, /^commit\/push\/PR gate OFF — none of the 8 exonous hooks approved \(all new\)$/);
+  assert.strictEqual(codex.gateNote(), 'unapproved in /hooks: base, fast');
+  assert.ok(rows.filter((r) => !approval.includes(r)).every((r) => r.ok), JSON.stringify(rows));
+  for (const f of ['config.toml', 'fast.config.toml']) assert.ok(!/hooks\.state|trusted_hash/.test(fx.read('.codex', f)), `${f}: exonous never approves hooks`);
   assert.deepStrictEqual(fs.readdirSync(osHome.osHome), []);
+});
+
+test('approval in the base config.toml covers profiles; reinstall reports it and doctor turns ✓', () => {
+  seed();
+  fx.write('model = "fast"\n', '.codex', 'fast.config.toml');
+  run();
+  const hooks = trust.exonousHooks(fx.readJson('.codex', 'hooks.json'), fx.home('.codex', 'hooks.json'));
+  fs.appendFileSync(fx.home('.codex', 'config.toml'), hooks.map((h) => `\n[hooks.state.${JSON.stringify(h.key)}]\ntrusted_hash = "${h.hash}"\n`).join(''));
+  const q = fx.quiet();
+  run(q);
+  assert.ok(q.logs.includes('codex: exonous hooks approved in every Codex profile (base config.toml, profile fast)'), q.logs.join('\n'));
+  const rows = codex.doctor({});
+  assert.ok(rows.every((r) => r.ok), JSON.stringify(rows));
+  assert.strictEqual(codex.gateNote(), null);
+});
+
+test('AGENTS.md tells the agent to warn when the per-prompt exonous reminder is missing', () => {
+  seed();
+  run();
+  const agents = fx.read('.codex', 'AGENTS.md');
+  assert.match(agents, /## exonous hooks \(Codex\)\nEach prompt should carry the hook line "exonous rules in force \(nomos \+ praxis\)"\. If it is missing .*run `\/hooks`, approve them, and check with `exonous doctor`\.\n/);
+  const ethos = fs.readFileSync(require.resolve('../assets/machine/hooks/ethos.cjs'), 'utf8');
+  assert.ok(ethos.includes("'exonous rules in force (nomos + praxis):"), 'the line AGENTS.md names is the one ethos prints');
 });

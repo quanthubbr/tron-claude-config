@@ -93,7 +93,7 @@ CI runs the test suite on Ubuntu, macOS, Windows and WSL.
 - **Hard:** the tool's blocking hook is registered. **Reduced:** Windsurf writes only into config files that already exist and caps rules at 6000 chars; Copilot hooks are Preview.
 - **Rules only, not gated:** Cline, Qwen Code, Kiro (Kiro is detect-only). They can commit without a token; install and doctor say so.
 - **Unsupported:** Aider (doctor prints how to add `read:` by hand), Roo.
-- **Codex:** approve the exonous hook in `/hooks`, or the gate stays pending.
+- **Codex:** Codex runs a hook only after you approve it in `/hooks`, and again after its command changes (a new node path, for example). Approve once in plain `codex`; that covers every profile (`~/.codex/<name>.config.toml`) without approvals of its own. `exonous doctor` checks each profile against `hooks.json`; exonous never approves hooks for you.
 - **Cursor:** User Rules live in its settings; paste `~/.claude/exonous/rules/nomos.md` and `praxis.md` there (after each release).
 - MCP copied to other tools carries only command and arguments or an `https` URL, never headers or env, and nothing that looks like a credential.
 
