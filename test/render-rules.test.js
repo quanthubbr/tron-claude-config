@@ -30,7 +30,7 @@ test('min keeps the gates and core discipline inside 3 KB', () => {
   assert.ok(out.startsWith('# Nomos'));
   assert.match(out, /Pillars/);
   for (const h of ['## Communication', '## Engineering', '## Verify', '## Git']) assert.ok(out.includes(h), h);
-  for (const h of ['## Agents', '## UI work', '## Context economy']) assert.ok(!out.includes(h), h);
+  for (const h of ['## Agents', '## Design', '## Context economy']) assert.ok(!out.includes(h), h);
 });
 
 test('unknown variants and a source missing a required section throw', () => {
