@@ -21,8 +21,9 @@ const HOME_SKILLS = {
   doc: ['SKILL.md', 'doc.mjs'],
   'issue-board': ['SKILL.md', 'board.mjs', 'render.py', 'config.example.json'],
 };
-const DESIGN_SKILLS = ['ui-design', 'ui-motion', 'native-ui', 'ui-mockup'];
-// HOME_SKILLS live in ~/.agents/skills (read by Gemini and OpenCode); Claude gets a link per skill.
+// Design trees are replaced whole; ui-patterns ships with them so every tool that reads ~/.agents/skills gets it.
+const DESIGN_SKILLS = ['ui-design', 'ui-motion', 'native-ui', 'ui-mockup', 'ui-patterns'];
+// Every skill lives in ~/.agents/skills (read by Codex, Gemini, OpenCode, Copilot, Windsurf, Cursor); Claude and Cursor get links.
 const sharedSkillDir = (name) => path.join(paths.home(), '.agents', 'skills', name);
 
 /** A SKILL.md under that name that is not ours (different `name:`): never overwritten or moved. */
@@ -32,6 +33,13 @@ function foreignSkill(dir, name) {
   } catch {
     return false;
   }
+}
+
+/** Adds `name:` to a SKILL.md whose frontmatter lacks it (Cursor, OpenCode and Copilot require it; foreignSkill reads it). */
+function withName(content, name) {
+  if (!content.startsWith('---\n')) return `---\nname: ${name}\n---\n\n${content}`;
+  const end = content.indexOf('\n---', 4);
+  return /^name:/m.test(content.slice(0, end)) ? content : `---\nname: ${name}\n${content.slice(4)}`;
 }
 
 function packageVersion() {
@@ -235,7 +243,7 @@ function writeInstallInfo({ tools, dryRun = false }) {
 }
 
 module.exports = {
-  PACKAGE_ROOT, ASSETS, SOURCE, OWNED_MARKER, COMMANDS, HOME_SKILLS, DESIGN_SKILLS, sharedSkillDir, foreignSkill,
+  PACKAGE_ROOT, ASSETS, SOURCE, OWNED_MARKER, COMMANDS, HOME_SKILLS, DESIGN_SKILLS, sharedSkillDir, foreignSkill, withName,
   packageVersion, uiDesignBin, shellQuote, hookCommand, findOnPath, listFiles, stageDir, installRuntime, readInstallInfo, writeInstallInfo,
   isolatedHome, devCheckout, guardTarget, setupDecision, assertOwner, INSTALL_ERROR, recordInstallError, clearInstallError, readInstallError,
 };

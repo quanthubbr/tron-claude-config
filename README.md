@@ -80,12 +80,12 @@ CI runs the test suite on Ubuntu, macOS, Windows and WSL.
 | Tool | Gate | Rules | Commands | MCP | Update |
 |---|---|---|---|---|---|
 | Claude Code | hard | `~/.claude/rules` | commands, skills, agents | yes | `SessionStart` |
-| Cursor | hard | `nomos.mdc` | skills | yes | `sessionStart` |
-| Gemini CLI | hard | `GEMINI.md` | `.toml` commands | from Claude Code | `SessionStart` |
-| Codex CLI | hard | `AGENTS.md` | `exonous workflow` | `config.toml` | `SessionStart` |
-| OpenCode | hard | `instructions` | commands, agents | from Claude Code | `session.created` |
-| Windsurf | reduced | `global_rules.md` | `exonous workflow` | existing file | `pre_user_prompt` |
-| Copilot | reduced | via `~/.claude` | `exonous workflow` | no | `sessionStart` |
+| Cursor | hard | `nomos.mdc` | skills (`/`) | yes | `sessionStart` |
+| Gemini CLI | hard | `GEMINI.md` | skills + `.toml` commands | from Claude Code | `SessionStart` |
+| Codex CLI | hard | `AGENTS.md` | skills (`$name`, `/skills`) | `config.toml` | `SessionStart` |
+| OpenCode | hard | `instructions` | skills + commands, agents | from Claude Code | `session.created` |
+| Windsurf | reduced | `global_rules.md` | skills (`/name`) | existing file | `pre_user_prompt` |
+| Copilot | reduced | via `~/.claude` | skills (`/name`, `/skills list`) | no | `sessionStart` |
 | Cline | none | Rules dir | no | no | no |
 | Qwen Code | none | `QWEN.md` | no | no | no |
 | Kiro | none | no | no | no | no |
@@ -113,7 +113,7 @@ This is a speed bump for agents, not a sandbox. Not covered: scripts or build to
 
 ## What's inside
 
-Shared skills live in `~/.agents/skills`; the hook runtime in `~/.claude/exonous`.
+Every skill lives once in `~/.agents/skills` (Claude Code and Cursor get links; Gemini CLI and OpenCode also get a `/` command per skill; `src/lib/skill-map.js` is the map). The hook runtime lives in `~/.claude/exonous`.
 
 | Name | What it does | Use |
 |---|---|---|

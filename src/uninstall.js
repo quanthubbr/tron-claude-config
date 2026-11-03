@@ -8,7 +8,7 @@ const readline = require('readline');
 const { createHome, readLedgerFile, ledgerPath, contained } = require('./lib/home');
 const { stripOwned } = require('./lib/settings');
 const { removePlugins, PLUGIN_ID, MARKETPLACE } = require('./lib/techne');
-const { DESIGN_SKILLS, HOME_SKILLS, PACKAGE_ROOT, sharedSkillDir, isolatedHome, guardTarget, readInstallInfo, assertOwner } = require('./lib/runtime');
+const { COMMANDS, DESIGN_SKILLS, HOME_SKILLS, PACKAGE_ROOT, sharedSkillDir, isolatedHome, guardTarget, readInstallInfo, assertOwner } = require('./lib/runtime');
 const { ADAPTERS } = require('./adapters');
 
 // Runtime pieces exonous ships into ~/.claude/exonous; everything else there belongs to the user.
@@ -48,12 +48,14 @@ function removeMachine(home, { dryRun, log }) {
     if (fs.existsSync(dir)) for (const f of fs.readdirSync(dir)) if (/^exo-.+\.md$/.test(f)) home.remove(path.join(dir, f));
     home.remove(path.join(paths.home(), base, 'skills', 'ui-patterns'));
   }
-  for (const name of Object.keys(HOME_SKILLS)) {
-    const link = path.join(paths.claudeDir(), 'skills', name);
-    try {
-      if (fs.lstatSync(link).isSymbolicLink() && fs.realpathSync(link) === fs.realpathSync(sharedSkillDir(name))) home.remove(link);
-    } catch {
-      // gone or dangling: nothing of ours to remove
+  for (const name of [...Object.keys(HOME_SKILLS), ...COMMANDS]) {
+    for (const base of ['.claude', '.cursor']) {
+      const link = path.join(paths.home(), base, 'skills', name);
+      try {
+        if (fs.lstatSync(link).isSymbolicLink() && fs.realpathSync(link) === fs.realpathSync(sharedSkillDir(name))) home.remove(link);
+      } catch {
+        // gone or dangling: nothing of ours to remove
+      }
     }
   }
   for (const name of DESIGN_SKILLS) {

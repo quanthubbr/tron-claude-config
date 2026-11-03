@@ -118,13 +118,47 @@ function mcpRow(label, names) {
     : { name: `${label}: MCP (atlas, biblos)`, ok: false, level: 'warn', status: `${have.join(', ') || 'none'} registered; copied only from Claude Code's registrations`, fix: 'register atlas/biblos for Claude Code, then exonous install' };
 }
 
-/** Design skills live once in ~/.agents/skills; each tool gets links plus its own ui-patterns copy. */
-function installDesignLinks(home, toolDir, { dryRun }) {
-  const { ASSETS, DESIGN_SKILLS } = require('../lib/runtime');
-  for (const name of DESIGN_SKILLS) home.link(path.join(paths.home(), '.agents', 'skills', name), path.join(toolDir, 'skills', name));
-  const patterns = path.join(toolDir, 'skills', 'ui-patterns');
-  if (!dryRun) fs.rmSync(patterns, { recursive: true, force: true });
-  home.copyTree(path.join(ASSETS, 'skills', 'ui-patterns'), patterns);
+/** True when every file in a real skill dir is one exonous wrote: shipped bytes, or the hash the last install recorded. */
+function ownSkillDir(home, dir, name) {
+  const { ASSETS, withName } = require('../lib/runtime');
+  const { sha256, homeRel } = require('../lib/home');
+  const files = (rel = '') => fs.readdirSync(path.join(dir, rel), { withFileTypes: true }).flatMap((e) => {
+    const child = rel ? `${rel}/${e.name}` : e.name;
+    if (e.isDirectory()) return files(child);
+    return e.name === '.DS_Store' || e.name === '__pycache__' ? [] : [child];
+  });
+  const ours = (rel) => {
+    const bytes = fs.readFileSync(path.join(dir, rel));
+    const shipped = path.join(ASSETS, 'skills', name, rel);
+    if (fs.existsSync(shipped) && sha256(fs.readFileSync(shipped)) === sha256(bytes)) return true;
+    if (rel === 'SKILL.md' && fs.existsSync(shipped) && withName(fs.readFileSync(shipped, 'utf8'), name) === bytes.toString('utf8')) return true;
+    return home.ledger.previous[`${homeRel(dir)}/${rel}`]?.hash === sha256(bytes);
+  };
+  try {
+    return files().every(ours);
+  } catch {
+    return false;
+  }
+}
+
+/** Links each skill from ~/.agents/skills into the tool's skills dir; a real dir with files exonous did not write stays and is reported. */
+function linkSkills(home, toolDir, names, { log = () => {} } = {}) {
+  for (const name of names) {
+    const dest = path.join(toolDir, 'skills', name);
+    let stat = null;
+    try {
+      stat = fs.lstatSync(dest);
+    } catch {
+      // nothing there yet
+    }
+    const { foreignSkill } = require('../lib/runtime');
+    if (foreignSkill(path.join(paths.home(), '.agents', 'skills', name), name)) continue;
+    if (stat && !stat.isSymbolicLink() && !(stat.isDirectory() && ownSkillDir(home, dest, name))) {
+      log(`WARN: ${dest.replace(paths.home(), '~').replace(/\\/g, '/')} holds files exonous did not write — left as is (not linked); move them, then rerun`);
+      continue;
+    }
+    home.link(path.join(paths.home(), '.agents', 'skills', name), dest);
+  }
 }
 
 /** Doctor row every soft-tier tool shows: rules may load, nothing blocks a commit. */
@@ -133,4 +167,4 @@ const softRow = (label, what = 'rules only') => ({
   fix: 'commit through a hard-gated tool, or run `exonous workflow commit` and review by hand',
 });
 
-module.exports = { onPath, readJson, claudeMcp, mergeMcp, removeMcp, softRow, mcpRow, installDesignLinks, selftestRepo, removeSelftestDir, SELFTEST_DENY, MCP_KEYS };
+module.exports = { onPath, readJson, claudeMcp, mergeMcp, removeMcp, softRow, mcpRow, linkSkills, selftestRepo, removeSelftestDir, SELFTEST_DENY, MCP_KEYS };

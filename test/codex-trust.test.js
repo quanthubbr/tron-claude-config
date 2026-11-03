@@ -101,7 +101,7 @@ test('per profile: base approval is inherited, a stripped profile is new, a stal
   file('config.toml', `model = "x"\n${approve(all())}`);
   file('plain.config.toml', 'model = "y"\n');
   file('stale.config.toml', approve([[all()[0][0], 'sha256:old']]));
-  file('off.config.toml', `[hooks.state."${all()[1][0]}"]\nenabled = false\n`);
+  file('off.config.toml', `[hooks.state."${all()[1][0].replace(/\\/g, '\\\\')}"]\nenabled = false\n`);
   file('.hidden.config.toml', '');
   assert.deepStrictEqual(verdicts(), {
     base: 'pyle:approved ethos:approved',

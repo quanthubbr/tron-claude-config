@@ -46,4 +46,10 @@ function toOpencodeAgent(agent) {
   return `${frontmatter({ description: fields.description || '', mode: 'subagent' })}${inert(body)}`;
 }
 
-module.exports = { splitFrontmatter, toMdCommand, toOpencodeAgent };
+/** OpenCode `commands/<name>.md` that loads a skill: its SKILL.md reads sibling files, so the body is not inlined. */
+function toMdLauncher(skill, name) {
+  const { fields } = splitFrontmatter(skill);
+  return `${frontmatter({ description: fields.description || name })}Load the \`${name}\` skill with the skill tool and follow its SKILL.md.\n\n$ARGUMENTS\n`;
+}
+
+module.exports = { splitFrontmatter, toMdCommand, toMdLauncher, toOpencodeAgent };

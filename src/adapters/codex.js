@@ -8,6 +8,7 @@ const { mergeOwned, stripOwned } = require('../lib/settings');
 const { upsertMcpServers } = require('../lib/writers/toml-block');
 const { renderAlwaysOn } = require('../lib/render-rules');
 const { OWNED_MARKER, hookCommand } = require('../lib/runtime');
+const { skillRows } = require('../lib/skill-map');
 const { onPath, readJson, claudeMcp, mcpRow, MCP_KEYS } = require('./shared');
 const trust = require('./codex-trust');
 
@@ -105,6 +106,7 @@ function doctor() {
     row('nomos rule (AGENTS.md)', agents.includes('exonous:start')),
     row('praxis rule (AGENTS.md)', agents.includes('# Praxis')),
     row('rule reminder (ethos)', hooks.includes('ethos.cjs') && hooks.includes('--adapter codex')),
+    ...skillRows(TOOL),
     mcpRow('Codex CLI', ['atlas', 'biblos'].filter((k) => new RegExp(`^\\[mcp_servers\\.${k}\\]`, 'm').test(readText(path.join(dir(), 'config.toml'))))),
   ];
 }

@@ -4,22 +4,16 @@
 const fs = require('fs');
 const path = require('path');
 const paths = require('../lib/paths');
-const { onPath, readJson, mcpRow, installDesignLinks } = require('./shared');
+const { onPath, readJson, mcpRow, linkSkills } = require('./shared');
+const { SKILLS, skillRows } = require('../lib/skill-map');
 const { mergeOwned, stripOwned } = require('../lib/settings');
-const { ASSETS, OWNED_MARKER, COMMANDS, DESIGN_SKILLS, hookCommand, shellQuote, uiDesignBin } = require('../lib/runtime');
+const { ASSETS, OWNED_MARKER, hookCommand, shellQuote, uiDesignBin } = require('../lib/runtime');
 
 const TOOL = 'cursor';
 const hooksFile = () => path.join(paths.cursorDir(), 'hooks.json');
 
 function detect() {
   return fs.existsSync(paths.cursorDir()) || onPath('cursor');
-}
-
-// Cursor skills need a `name:`; the shared SKILL.md files only carry it when the folder name differs.
-function withName(content, name) {
-  if (!content.startsWith('---\n')) return `---\nname: ${name}\n---\n\n${content}`;
-  const end = content.indexOf('\n---', 4);
-  return /^name:/m.test(content.slice(0, end)) ? content : `---\nname: ${name}\n${content.slice(4)}`;
 }
 
 const RULES = {
@@ -50,11 +44,7 @@ function install({ home, dryRun, log, execPath }) {
   const opts = { tool: TOOL };
   for (const name of Object.keys(RULES)) home.write(path.join(paths.cursorDir(), 'rules', `${name}.mdc`), alwaysApplyRule(name), opts);
   home.sync(path.join(ASSETS, 'editors', 'cursor', 'frontend-skills.mdc'), path.join(paths.cursorDir(), 'rules', 'frontend-skills.mdc'), opts);
-  for (const name of COMMANDS) {
-    const content = fs.readFileSync(path.join(ASSETS, 'skills', name, 'SKILL.md'), 'utf8');
-    home.write(path.join(paths.cursorDir(), 'skills', name, 'SKILL.md'), withName(content, name), opts);
-  }
-  installDesignLinks(home, paths.cursorDir(), { dryRun });
+  linkSkills(home, paths.cursorDir(), SKILLS, { log });
   const memory = (event) => hookCommand(execPath, 'anamnesis.cjs', `--event ${event} --adapter cursor`);
   const gate = {
     beforeShellExecution: [{ command: hookCommand(execPath, 'pyle.cjs', 'auto --adapter cursor') }],
@@ -102,7 +92,7 @@ function doctor() {
     row('nomos.mdc rule', fs.existsSync(path.join(paths.cursorDir(), 'rules', 'nomos.mdc'))),
     row('praxis.mdc rule', fs.existsSync(path.join(paths.cursorDir(), 'rules', 'praxis.mdc'))),
     row('rule reminder (ethos)', hooks.includes('ethos.cjs') && hooks.includes('--adapter cursor')),
-    row('skills', COMMANDS.every((c) => fs.existsSync(path.join(paths.cursorDir(), 'skills', c, 'SKILL.md')))),
+    ...skillRows(TOOL),
     mcpRow('Cursor', Object.keys(readJson(path.join(paths.cursorDir(), 'mcp.json'))?.mcpServers || {})),
     { name: 'Cursor: User Rules', ok: false, level: 'warn', status: 'cannot verify — Cursor keeps User Rules in its own settings', fix: USER_RULES },
   ];

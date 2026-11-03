@@ -4,7 +4,8 @@
 const fs = require('fs');
 const path = require('path');
 const paths = require('../lib/paths');
-const { onPath, readJson, mcpRow, installDesignLinks } = require('./shared');
+const { onPath, readJson, mcpRow, linkSkills } = require('./shared');
+const { skillRows } = require('../lib/skill-map');
 const { mergeOwned, stripOwned, mergeAllow } = require('../lib/settings');
 const { sha256 } = require('../lib/home');
 const { installTechne, PLUGIN_ID } = require('../lib/techne');
@@ -148,7 +149,7 @@ function install(ctx) {
   installSkills(home, { dryRun, log });
   const stack = path.join(ASSETS, 'techne', 'rules');
   for (const rel of listFiles(stack)) home.sync(path.join(stack, rel), path.join(paths.claudeDir(), 'rules', 'exonous', rel), opts);
-  installDesignLinks(home, paths.claudeDir(), { dryRun });
+  linkSkills(home, paths.claudeDir(), DESIGN_SKILLS, { log });
   if (ctx.external) installTechne({ dryRun, log });
   else log('techne plugin skipped: EXONOUS_HOME is not the real home, so the claude CLI is not called');
   installAgents({ dryRun, log, hasCursor: Boolean(ctx.detected.cursor), execPath: ctx.execPath });
@@ -192,8 +193,7 @@ function doctor() {
     row('nomos rule', fs.existsSync(path.join(paths.claudeDir(), 'rules', 'nomos.md'))),
     row('praxis rule', fs.existsSync(path.join(paths.claudeDir(), 'rules', 'praxis.md'))),
     row('rule reminder (ethos)', hooks.includes('ethos.cjs') && hooks.includes('--adapter claude')),
-    row('commands', COMMANDS.every((c) => fs.existsSync(path.join(paths.claudeDir(), 'commands', `${c}.md`)))),
-    row('skills', Object.keys(HOME_SKILLS).every((s) => fs.existsSync(path.join(paths.claudeDir(), 'skills', s, 'SKILL.md')))),
+    ...skillRows(TOOL),
     row('agents exo-* + taxis', agents === 12 && hooks.includes('taxis.js'), 'exonous install', `${agents}/12 agents`),
     mcpRow('Claude Code', [path.join(paths.claudeDir(), '.mcp.json'), path.join(paths.home(), '.claude.json')].flatMap((f) => Object.keys(readJson(f)?.mcpServers || {}))),
     row('techne plugin', fs.existsSync(path.join(paths.claudeDir(), 'techne')) && settings.enabledPlugins?.[PLUGIN_ID] !== false),

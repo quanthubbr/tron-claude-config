@@ -22,4 +22,11 @@ function toTomlCommand(skill) {
   return `description = ${basic(fields.description || '')}\nprompt = ${multiline(prompt)}\n`;
 }
 
-module.exports = { toTomlCommand };
+/** Gemini `commands/<name>.toml` that activates a skill: its SKILL.md reads sibling files, so the body is not inlined. */
+function toTomlLauncher(skill, name) {
+  const { fields } = splitFrontmatter(skill);
+  const prompt = `Activate the \`${name}\` skill (activate_skill) and follow its SKILL.md.\n\n{{args}}\n`;
+  return `description = ${basic(fields.description || name)}\nprompt = ${multiline(prompt)}\n`;
+}
+
+module.exports = { toTomlCommand, toTomlLauncher };

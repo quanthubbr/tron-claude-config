@@ -7,7 +7,8 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const paths = require('../lib/paths');
 const { mergeList } = require('../lib/settings');
-const { toMdCommand, toOpencodeAgent } = require('../lib/convert/md-command');
+const { toMdCommand, toMdLauncher, toOpencodeAgent } = require('../lib/convert/md-command');
+const { SKILLS, skillRows } = require('../lib/skill-map');
 const { ASSETS, COMMANDS } = require('../lib/runtime');
 const { onPath, claudeMcp, mergeMcp, removeMcp, selftestRepo, removeSelftestDir, SELFTEST_DENY, mcpRow } = require('./shared');
 
@@ -57,9 +58,10 @@ function install({ home, dryRun, log, execPath, rewriteJsonc = false }) {
   } else {
     mergeMcp(configFile(), { tool: TOOL, key: 'mcp', entries: mcpEntries(log), ...jsonc });
   }
-  for (const name of COMMANDS) {
+  // OpenCode loads skills through its skill tool; a command per skill puts each in the `/` menu too.
+  for (const name of SKILLS) {
     const skill = fs.readFileSync(path.join(ASSETS, 'skills', name, 'SKILL.md'), 'utf8');
-    home.write(path.join(dir(), 'commands', `${name}.md`), toMdCommand(skill), opts);
+    home.write(path.join(dir(), 'commands', `${name}.md`), COMMANDS.includes(name) ? toMdCommand(skill) : toMdLauncher(skill, name), opts);
   }
   for (const file of fs.readdirSync(path.join(ASSETS, 'agents')).filter((f) => /^exo-.+\.md$/.test(f))) {
     home.write(path.join(dir(), 'agents', file), toOpencodeAgent(fs.readFileSync(path.join(ASSETS, 'agents', file), 'utf8')), opts);
@@ -132,7 +134,7 @@ function doctor() {
     row('nomos + praxis rules (instructions)', Array.isArray(config.instructions) && ruleFiles().every((f) => config.instructions.includes(f)), jsoncOnly() ? 'opencode.jsonc: add them by hand' : ''),
     // No ethos reminder: the OpenCode plugin API has no verified way to return context to the model.
     row('memory capture (anamnesis)', pluginText().includes('anamnesis.cjs')),
-    row('commands', COMMANDS.every((c) => fs.existsSync(path.join(dir(), 'commands', `${c}.md`)))),
+    ...skillRows(TOOL),
     row('agents exo-*', agents === 12, `${agents}/12 agents`),
     mcpRow('OpenCode', Object.keys(config.mcp || {})),
   ];

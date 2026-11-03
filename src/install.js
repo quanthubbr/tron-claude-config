@@ -8,7 +8,7 @@ const { createHome } = require('./lib/home');
 const { ensureAtlas } = require('./lib/atlas');
 const { ensureBiblos } = require('./lib/biblos');
 const { select, ADAPTERS } = require('./adapters');
-const { ASSETS, DESIGN_SKILLS, HOME_SKILLS, sharedSkillDir, foreignSkill, packageVersion, installRuntime, writeInstallInfo, isolatedHome, guardTarget, assertOwner, recordInstallError, clearInstallError } = require('./lib/runtime');
+const { ASSETS, COMMANDS, DESIGN_SKILLS, HOME_SKILLS, sharedSkillDir, foreignSkill, withName, packageVersion, installRuntime, writeInstallInfo, isolatedHome, guardTarget, assertOwner, recordInstallError, clearInstallError } = require('./lib/runtime');
 const legacy = require('./legacy/bridge');
 const { retireOrphanRules } = require('./lib/orphan-rules');
 const { installVault } = require('./vault-cli');
@@ -30,7 +30,11 @@ function step(log, name, run) {
 // Design skills ship an engine tree, so they are replaced whole instead of tracked file by file.
 function installDesignStack(home, { dryRun, log }) {
   for (const name of DESIGN_SKILLS) {
-    const dest = path.join(paths.home(), '.agents', 'skills', name);
+    const dest = sharedSkillDir(name);
+    if (foreignSkill(dest, name)) {
+      log(`WARN: ~/.agents/skills/${name}/ holds a different skill — left untouched`);
+      continue;
+    }
     if (!dryRun) fs.rmSync(dest, { recursive: true, force: true });
     home.copyTree(path.join(ASSETS, 'skills', name), dest);
   }
@@ -49,12 +53,15 @@ function gateProblems(adapter, { dryRun, warnings, problems }) {
 }
 
 function installSharedSkills(home, log) {
-  for (const [name, files] of Object.entries(HOME_SKILLS)) {
+  const skills = [...Object.entries(HOME_SKILLS), ...COMMANDS.map((name) => [name, []])];
+  for (const [name, files] of skills) {
     const dir = sharedSkillDir(name);
     if (foreignSkill(dir, name)) {
       log(`WARN: ~/.agents/skills/${name}/ holds a different skill — left untouched`);
       continue;
     }
+    // Commands ship as one SKILL.md without `name:`; the tools that read ~/.agents/skills need it.
+    if (!files.length) home.write(path.join(dir, 'SKILL.md'), withName(fs.readFileSync(path.join(ASSETS, 'skills', name, 'SKILL.md'), 'utf8'), name));
     for (const file of files) home.sync(path.join(ASSETS, 'skills', name, file), path.join(dir, file));
   }
 }

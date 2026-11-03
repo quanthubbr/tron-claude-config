@@ -7,6 +7,7 @@ const paths = require('../lib/paths');
 const { hookCommand } = require('../lib/runtime');
 const { writeAtomic } = require('../lib/writers/markers');
 const { readJson } = require('./shared');
+const { skillRows } = require('../lib/skill-map');
 
 const TOOL = 'copilot';
 
@@ -80,6 +81,7 @@ function doctor() {
     { name: 'Copilot: memory hooks (anamnesis)', ok: hooks.includes('anamnesis.cjs'), status: '', fix: 'exonous install' },
     { name: 'Copilot: rules (nomos + praxis)', ok: ['nomos.md', 'praxis.md'].every((r) => fs.existsSync(path.join(paths.claudeDir(), 'rules', r))), status: 'read from ~/.claude (CLAUDE.md, rules/), nothing written for Copilot', fix: 'install the Claude Code adapter (exonous install --tools claude,copilot)' },
     { name: 'Copilot: rule reminder (ethos)', ok: hooks.includes('ethos.cjs'), status: '', fix: 'exonous install' },
+    ...skillRows(TOOL),
   ];
 }
 

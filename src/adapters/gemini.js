@@ -5,7 +5,8 @@ const fs = require('fs');
 const path = require('path');
 const paths = require('../lib/paths');
 const { mergeOwned, stripOwned } = require('../lib/settings');
-const { toTomlCommand } = require('../lib/convert/toml-command');
+const { toTomlCommand, toTomlLauncher } = require('../lib/convert/toml-command');
+const { SKILLS, skillRows } = require('../lib/skill-map');
 const { ASSETS, OWNED_MARKER, COMMANDS, hookCommand } = require('../lib/runtime');
 const { onPath, readJson, claudeMcp, mergeMcp, removeMcp, mcpRow } = require('./shared');
 
@@ -50,9 +51,10 @@ function install({ home, dryRun, log, execPath, rewriteJsonc = false }) {
   };
   const hooks = mergeOwned(settingsFile(), { format: 'gemini', entries, ownedMarker: OWNED_MARKER, dryRun, log, jsonc: rewriteJsonc });
   if (hooks.status !== 'invalid') mergeMcp(settingsFile(), { tool: TOOL, key: 'mcpServers', entries: mcpEntries(log), dryRun, log, jsonc: rewriteJsonc });
-  for (const name of COMMANDS) {
+  // Gemini lists skills only under /skills; a command per skill puts each in the `/` menu too.
+  for (const name of SKILLS) {
     const skill = fs.readFileSync(path.join(ASSETS, 'skills', name, 'SKILL.md'), 'utf8');
-    home.write(path.join(dir(), 'commands', `${name}.toml`), toTomlCommand(skill), opts);
+    home.write(path.join(dir(), 'commands', `${name}.toml`), COMMANDS.includes(name) ? toTomlCommand(skill) : toTomlLauncher(skill, name), opts);
   }
 }
 
@@ -85,7 +87,7 @@ function doctor() {
     row('nomos rule (GEMINI.md)', md.includes('exonous:start') && fs.existsSync(rulesFile())),
     row('praxis rule (GEMINI.md)', md.includes('exonous:start') && fs.existsSync(rulesFile('praxis.md'))),
     row('rule reminder (ethos)', hooks.includes('ethos.cjs') && hooks.includes('--adapter gemini')),
-    row('commands', COMMANDS.every((c) => fs.existsSync(path.join(dir(), 'commands', `${c}.toml`)))),
+    ...skillRows(TOOL),
     mcpRow('Gemini CLI', Object.keys(readJson(settingsFile())?.mcpServers || {})),
   ];
 }
