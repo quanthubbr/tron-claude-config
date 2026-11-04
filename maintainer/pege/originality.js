@@ -11,7 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 const { UPSTREAM_ROOT, loadSources, SOURCES_PATH } = require('./lib/sources');
-const { git, mirror } = require('./lib/git');
+const { CACHE_ROOT, git } = require('./lib/git');
 
 const PACKAGE_ROOT = path.resolve(UPSTREAM_ROOT, '..', '..');
 const SHINGLE = 8;
@@ -78,20 +78,39 @@ function localFiles(relPaths, exclude) {
   return relPaths.flatMap((rel) => walk(path.join(PACKAGE_ROOT, rel)));
 }
 
+// One shallow fetch of the pinned ref: reading a blobless mirror costs a network round trip per file (minutes on a large upstream).
+function snapshot(source) {
+  const dir = path.join(CACHE_ROOT, `${source.id}.snapshot.git`);
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.mkdirSync(dir, { recursive: true });
+  git(dir, 'init', '--bare', '--quiet');
+  // GitHub sometimes resets the connection and git then hangs for minutes: abort a stalled transfer after 30s and retry.
+  const stall = ['-c', 'http.lowSpeedLimit=1000', '-c', 'http.lowSpeedTime=30'];
+  for (let attempt = 1; ; attempt++) {
+    try {
+      git(dir, ...stall, 'fetch', '--quiet', '--depth', '1', '--no-tags', source.repo, source.ref);
+      return dir;
+    } catch (err) {
+      if (attempt === 3) throw err;
+    }
+  }
+}
+
 function upstreamCorpus(source, globs) {
-  const { dir } = mirror(source);
+  const dir = snapshot(source);
   const patterns = globs.map(globToRegExp);
-  const files = git(dir, 'ls-tree', '-r', '--name-only', source.ref)
+  const files = git(dir, 'ls-tree', '-r', '--name-only', 'FETCH_HEAD')
     .split('\n')
     .filter((f) => patterns.some((re) => re.test(f)));
   if (!files.length) throw new Error(`no upstream files match ${globs.join(', ')} at ${source.ref}`);
   const corpus = new Set();
   const texts = [];
   for (const file of files) {
-    const text = git(dir, 'show', `${source.ref}:${file}`);
+    const text = git(dir, 'show', `FETCH_HEAD:${file}`);
     texts.push(text);
     for (const s of shingles(prose(text))) corpus.add(s);
   }
+  fs.rmSync(dir, { recursive: true, force: true });
   return { files: files.length, corpus, texts };
 }
 
