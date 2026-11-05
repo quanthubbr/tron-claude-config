@@ -136,8 +136,12 @@ test('the vault row shows the resolved path and where it came from', () => {
     fs.rmSync(elsewhere, { recursive: true, force: true });
   }
   fx.write({ vault: path.join(os.tmpdir(), 'no-such-vault-xyz') }, '.claude', 'skills', 'project-memory', 'config.json');
+  const stale = cli(['doctor']).out;
+  assert.match(stale, /✓ vault .*exonous-vault via exonous-config\)/);
+  assert.doesNotMatch(stale, /no-such-vault-xyz via skill-config/);
+  fx.write({ vault: path.join(os.tmpdir(), 'no-such-vault-xyz') }, '.claude', 'exonous', 'config.json');
   const { out } = cli(['doctor']);
-  assert.match(out, /✗ vault .*no-such-vault-xyz via skill-config — missing\)/);
+  assert.match(out, /✗ vault .*no-such-vault-xyz via exonous-config — missing\)/);
   assert.match(out, /fix: exonous vault detect, then exonous vault set <path>/);
   fx.write('{oops', '.claude', 'exonous', 'config.json');
   fs.rmSync(fx.home('.claude', 'skills', 'project-memory', 'config.json'));

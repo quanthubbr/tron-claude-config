@@ -117,13 +117,19 @@ test('the plugin blocks git commit through pyle, lets other commands and tools t
   run();
   const marker = path.join(fx.home(), 'kairos-ran');
   const fakeKairos = path.join(fx.home(), 'fake-kairos.cjs');
-  fs.writeFileSync(fakeKairos, `require('fs').writeFileSync(${JSON.stringify(marker)}, process.argv.slice(2).join(' '));`);
+  fs.writeFileSync(fakeKairos, `const fs = require('fs');
+const marker = ${JSON.stringify(marker)};
+fs.writeFileSync(marker, '');
+setTimeout(() => fs.writeFileSync(marker, process.argv.slice(2).join(' ')), 250);`);
   const source = opencode.renderPlugin({ node: process.execPath, kairos: fakeKairos });
   const out = drive(source, [['bash', 'git commit -m x'], ['bash', 'ls -la'], ['read', 'git commit -m x'], ['shell', 'git push --force']]);
   assert.match(out[0], /^deny:.*exonous/);
   assert.deepStrictEqual(out.slice(1, 3), ['allow', 'allow']);
   assert.match(out[3], /^deny:/);
-  for (let i = 0; i < 100 && !fs.existsSync(marker); i++) await new Promise((r) => setTimeout(r, 50));
+  for (let i = 0; i < 100; i++) {
+    if (fs.existsSync(marker) && fs.readFileSync(marker, 'utf8') === '--adapter opencode') break;
+    await new Promise((r) => setTimeout(r, 50));
+  }
   assert.strictEqual(fs.readFileSync(marker, 'utf8'), '--adapter opencode');
 });
 

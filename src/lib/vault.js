@@ -232,11 +232,12 @@ function readConfig(ctx) {
 }
 
 /** Sets (or with null removes) the `vault` key, keeping every other key. */
-function writeConfig(vault, ctx) {
+function writeConfig(vault, ctx, migrationSources) {
   const c = context(ctx);
   const config = { ...readConfig(c) };
   if (vault === null || vault === undefined) delete config.vault;
   else config.vault = path.resolve(String(vault));
+  if (migrationSources) config.vaultMigrationSources = migrationSources;
   writeAtomic(configFile(c), `${JSON.stringify(config, null, 2)}\n`);
   return config;
 }
@@ -249,4 +250,61 @@ function resolve(ctx) {
   return typeof vault === 'string' && vault ? vault : null;
 }
 
-module.exports = { registryPaths, toLocalPath, detect, fallbackPath, ensureFallback, choose, readConfig, writeConfig, resolve };
+function localPath(value, ctx) {
+  const c = context(ctx);
+  if (typeof value !== 'string' || !value) return null;
+  const local = toLocalPath(value, c);
+  return path.resolve(/^~(?=$|[\\/])/.test(local) ? path.join(c.homedir, local.slice(1)) : local);
+}
+
+function legacyRoots(ctx) {
+  const c = context(ctx);
+  const candidates = [path.join(c.homedir, 'Documents', 'exonous-vault'), path.join(c.homedir, 'exonous-vault')];
+  const unified = readConfig(c);
+  candidates.push(unified.vault, unified.sessionsVault);
+  if (Array.isArray(unified.vaultMigrationSources)) candidates.push(...unified.vaultMigrationSources);
+  const files = [];
+  for (const tool of ['.agents', '.claude', '.codex']) for (const skill of ['project-memory', 'session-handoff']) files.push(path.join(c.homedir, tool, 'skills', skill, 'config.json'));
+  for (const file of new Set(files.filter(Boolean))) {
+    const text = readText(file, c);
+    if (text === null) continue;
+    let config;
+    try { config = JSON.parse(text); } catch { throw new Error(`invalid vault config: ${file}`); }
+    candidates.push(config?.vault, config?.sessionsVault);
+  }
+  return [...new Set(candidates.map((value) => localPath(value, c)).filter(Boolean))];
+}
+
+function consolidationTarget(ctx) {
+  const c = context(ctx);
+  const result = (value, source) => ({ path: localPath(value, c), source });
+  if (c.env.PROJECT_MEMORY_VAULT) return result(c.env.PROJECT_MEMORY_VAULT, 'env');
+  const configured = readConfig(c).vault;
+  if (configured !== undefined && configured !== null && typeof configured !== 'string') throw new Error('config vault must be a string');
+  const fallback = (value) => typeof value === 'string' && path.basename(value).toLowerCase() === 'exonous-vault';
+  if (configured && (!fallback(configured) || !isDir(localPath(configured, c), c))) return result(configured, 'exonous-config');
+  for (const tool of ['.claude', '.agents', '.codex']) {
+    const file = path.join(c.homedir, tool, 'skills', 'project-memory', 'config.json');
+    const text = readText(file, c);
+    if (text === null) continue;
+    let value;
+    try { value = JSON.parse(text).vault; } catch { throw new Error(`invalid vault config: ${file}`); }
+    if (typeof value === 'string' && value && !fallback(value)) return result(value, 'skill-config');
+  }
+  const detected = detect(c).find((entry) => !fallback(entry.path) && isDir(entry.path, c));
+  if (detected) return result(detected.path, 'obsidian');
+  if (configured) return result(configured, 'exonous-config');
+  for (const value of [fallbackPath(c), path.join(c.homedir, 'exonous-vault')]) if (isDir(value, c)) return result(value, 'fallback');
+  return { path: null, source: null };
+}
+
+function central(ctx) {
+  const c = context(ctx);
+  if (c.env.PROJECT_MEMORY_VAULT) return { path: localPath(c.env.PROJECT_MEMORY_VAULT, c), source: 'env' };
+  const configured = readConfig(c).vault;
+  if (configured !== undefined && configured !== null && typeof configured !== 'string') throw new Error('config vault must be a string');
+  if (configured) return { path: localPath(configured, c), source: 'exonous-config' };
+  return consolidationTarget(c);
+}
+
+module.exports = { registryPaths, toLocalPath, detect, fallbackPath, ensureFallback, choose, readConfig, writeConfig, resolve, localPath, legacyRoots, central, consolidationTarget };

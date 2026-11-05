@@ -2,7 +2,7 @@
 'use strict';
 
 // ethos — restates the always-on rule set on each prompt: --adapter <tool>. Always exits 0.
-const REMINDER = 'exonous rules in force (nomos + praxis): terse replies; smallest change that works; locate before reading; test first, fix the cause, prove it; commit or push only when asked.';
+const REMINDER = 'exonous rules in force (nomos + praxis): terse; smallest change; reuse first; close scope; locate before reading; test first, fix cause, prove; commit/push only when asked.';
 // Prompt-submit output per tool; windsurf and opencode have no channel back to the model, so they are not wired.
 const FORMATS = {
   claude: (text) => JSON.stringify({ hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: text } }),

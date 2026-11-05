@@ -24,6 +24,10 @@ function setup({ handoff, unified } = {}) {
     handoffVault: path.join(base, 'handoff-vault'),
   };
   for (const dir of Object.values(dirs)) fs.mkdirSync(dir, { recursive: true });
+  const bin = path.join(base, 'bin');
+  fs.mkdirSync(bin);
+  fs.writeFileSync(path.join(bin, 'exonous'), `#!/bin/sh\nexec '${process.execPath.replace(/'/g, "'\\''")}' '${path.join(__dirname, '../bin/exonous.js').replace(/'/g, "'\\''")}' "$@"\n`, { mode: 0o755 });
+  fs.writeFileSync(path.join(bin, 'exonous.cmd'), `@"${process.execPath}" "${path.join(__dirname, '../bin/exonous.js')}" %*\r\n`);
   fs.copyFileSync(CLI, path.join(dirs.doc, 'doc.mjs'));
   execFileSync('git', ['init', '-q'], { cwd: dirs.repo });
   for (const vault of [dirs.unifiedVault, dirs.handoffVault]) {
@@ -35,7 +39,7 @@ function setup({ handoff, unified } = {}) {
   if (unified) fs.writeFileSync(path.join(dirs.exonous, 'config.json'), unified(dirs));
   const out = spawnSync('node', [path.join(dirs.doc, 'doc.mjs'), 'locate', '--repo', dirs.repo], {
     encoding: 'utf8',
-    env: { ...process.env, EXONOUS_HOME: path.join(base, 'exo-home'), HOME: path.join(base, 'home') },
+    env: { ...process.env, EXONOUS_HOME: path.join(base, 'exo-home'), HOME: path.join(base, 'home'), PATH: `${bin}${path.delimiter}${process.env.PATH}`, EXONOUS_NO_UPDATE: '1', GIT_CONFIG_GLOBAL: '/dev/null' },
   });
   assert.ok(out.stdout, out.stderr);
   return { dirs, session: JSON.parse(out.stdout).session };
@@ -50,18 +54,24 @@ test('unified exonous vault finds the latest session note', () => {
   assert.strictEqual(session.reason, null);
 });
 
-test('session-handoff sessionsVault overrides the unified vault', () => {
+test('legacy sibling sessionsVault alone awaits consolidation instead of competing with central root', () => {
+  const { session } = setup({ handoff: (d) => JSON.stringify({ sessionsVault: d.handoffVault }) });
+  assert.strictEqual(session.note, null);
+  assert.match(session.reason, /exonous vault detect/);
+});
+
+test('central root wins despite stale session-handoff sessionsVault', () => {
   const { dirs, session } = setup({
     handoff: (d) => JSON.stringify({ sessionsVault: d.handoffVault }),
     unified: (d) => JSON.stringify({ vault: d.unifiedVault }),
   });
-  assert.strictEqual(session.note, latest(dirs.handoffVault));
+  assert.strictEqual(session.note, latest(dirs.unifiedVault));
 });
 
 test('invalid unified config is reported, not ignored', () => {
   const { session } = setup({ unified: () => '{ not json' });
   assert.strictEqual(session.note, null);
-  assert.match(session.reason, /config\.json inválido/);
+  assert.match(session.reason, /config\.json invalid/);
 });
 
 test('no config at all points to exonous vault detect', () => {

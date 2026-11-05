@@ -1,15 +1,11 @@
 #!/usr/bin/env node
-// project-memory: durable project memory (adr / plan / doc) in the Obsidian vault, anchored to code
-// with links and line-range evidence, searched locally. No dependencies: Node >= 18 and git.
+// Durable project memory anchored to code, searched locally; Node >= 18 and git.
 
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
-import { fileURLToPath } from 'node:url'
-
-const HERE = dirname(fileURLToPath(import.meta.url))
 const KINDS = ['adr', 'plan', 'doc']
 const READ_KINDS = [...KINDS, 'session']
 const SKIP_DIRS = new Set(['.obsidian', '.trash', 'node_modules', '.git'])
@@ -30,7 +26,7 @@ const USAGE = `project-memory <command> [flags]
   update <id> [--title T] [--body B | --body-file F] [--status S] [--add-tag t] [--add-link L] [--add-evidence E] [--remove-evidence path]
   remove <id> [--force]          plans freely; adr/doc need --force
   validate                       evidence drift + unresolved links
-Common: --project <name> (default: repo name) · vault from PROJECT_MEMORY_VAULT, else config.json { "vault": "<abs path>" } next to this script, else the exonous config (exonous vault)`
+Common: --project <name> (default: repo name) · vault from PROJECT_MEMORY_VAULT, then unified exonous config; old skill config is a migration source (exonous vault consolidate)`
 
 function fail(message, code = 1) {
   process.stderr.write(`${message}\n`)
@@ -101,10 +97,8 @@ function configVault(configPath) {
 
 function vaultRoot() {
   if (process.env.PROJECT_MEMORY_VAULT) return resolve(process.env.PROJECT_MEMORY_VAULT)
-  // Per-skill override first, then the unified exonous config (same base as the hooks: EXONOUS_HOME or home).
-  const skillConfig = join(HERE, 'config.json')
   const exonousConfig = join(process.env.EXONOUS_HOME || homedir(), '.claude', 'exonous', 'config.json')
-  const vault = configVault(skillConfig) || configVault(exonousConfig)
+  const vault = configVault(exonousConfig)
   if (vault) return resolve(vault)
   fail(`No vault configured. Run \`exonous vault detect\` (then \`exonous vault set <path>\`), or set PROJECT_MEMORY_VAULT.`, EXIT_NO_VAULT)
 }

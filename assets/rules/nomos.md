@@ -13,8 +13,8 @@ Always-on set: this file and `praxis.md` (craft discipline per change — make i
 
 ## Engineering
 - Clarify before building: name shaky assumptions, show competing readings, push back on a simpler path.
-- Smallest thing that works: no speculative options, no abstraction before a second real caller.
-- Change only what the task needs; match local style; clean up only what your change orphaned. Unrelated dead code → mention it.
+- No speculative wrappers, options or conversions; no abstraction before a second real caller.
+- Change only what the task needs; finish affected callers, tests, fixtures, config and exports. Match local style; clean only what you orphaned. Mention unrelated dead code.
 - Done = proven: turn the task into a runnable check (bug → failing test that passes; refactor → tests green before and after).
 - Comments: default none. Only a business rule earns one, one terse line. Any comment over 2 lines in a file you edit → cut to one line.
 

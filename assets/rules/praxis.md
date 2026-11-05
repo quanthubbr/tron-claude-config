@@ -5,6 +5,8 @@ Enforced by `exonous`. Craft discipline for every code change, in this order: ma
 ## Make it work
 
 - One decision belongs in a single place. Edit the smallest surface that settles the stated problem.
+- Before code: necessity → existing repo code → standard library/platform → installed dependency → minimum clear code.
+- Equal size: edge correctness. Preserve validation, errors, required behavior, security and accessibility. A known shortcut states its limit and reason.
 - Fix the data shape before the logic. Work that unblocks every later step goes first.
 - Tests lead: a failing test, failing for the predicted reason, then the least code that turns it green. No honest test is possible → say so, never write a hollow one.
 - A new requirement is not bolted onto the old shape. Ask what the design would have been had it always been there, then ship that in slices.

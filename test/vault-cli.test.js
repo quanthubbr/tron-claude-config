@@ -60,18 +60,23 @@ test('install picks the open Obsidian vault from the target home registry and re
   assert.deepStrictEqual(logs, [`vault: ${open} (obsidian)`]);
 });
 
-test('install without Obsidian creates the fallback vault once and keeps it after', () => {
+test('install without Obsidian creates fallback, then consolidates into a later user vault', () => {
   fs.mkdirSync(fx.home('Documents'));
   const fallback = fx.home('Documents', 'exonous-vault');
   assert.deepStrictEqual(installVault({ ctx: NATIVE }), { path: fallback, kind: 'fallback' });
   assert.ok(fs.existsSync(path.join(fallback, 'README.md')));
   assert.ok(!fs.existsSync(path.join(fallback, '.obsidian')), 'no Obsidian: plain folder');
   fs.writeFileSync(path.join(fallback, 'README.md'), 'mine\n');
+  fs.mkdirSync(path.join(fallback, 'demo', 'memory', 'doc'), { recursive: true });
+  const original = path.join(fallback, 'demo', 'memory', 'doc', 'doc-0001.md');
+  fs.writeFileSync(original, 'owned note');
   registry([{ path: fx.home('later'), ts: 1, open: true }]);
   const logs = [];
-  assert.deepStrictEqual(installVault({ log: (m) => logs.push(m), ctx: NATIVE }), { path: fallback, kind: 'existing' });
-  assert.deepStrictEqual(logs, [`vault: ${fallback} (existing)`]);
+  assert.deepStrictEqual(installVault({ log: (m) => logs.push(m), ctx: NATIVE }), { path: fx.home('later'), kind: 'obsidian' });
+  assert.deepStrictEqual(logs, [`vault: ${fx.home('later')} (obsidian)`]);
   assert.strictEqual(fs.readFileSync(path.join(fallback, 'README.md'), 'utf8'), 'mine\n');
+  assert.ok(!fs.existsSync(original));
+  assert.strictEqual(fs.readFileSync(fx.home('later', 'demo', 'memory', 'doc', 'doc-0001.md'), 'utf8'), 'owned note');
 });
 
 test('a configured vault whose folder is missing (unmounted drive) is kept with a warning, nothing created', () => {
@@ -89,12 +94,12 @@ test('a configured vault whose folder is missing (unmounted drive) is kept with 
   assert.match(cli(['doctor']).out, /✗ vault .*unmounted.* via exonous-config — missing\)/);
 });
 
-test('a skill-config vault is kept as is', () => {
+test('a legacy skill user vault is adopted into central config', () => {
   const legacy = fx.home('legacy-vault');
   fs.mkdirSync(legacy);
   fx.write({ vault: legacy }, '.claude', 'skills', 'project-memory', 'config.json');
   assert.deepStrictEqual(installVault({ ctx: NATIVE }), { path: legacy, kind: 'existing' });
-  assert.ok(!fs.existsSync(config()), 'nothing written');
+  assert.strictEqual(JSON.parse(fs.readFileSync(config(), 'utf8')).vault, legacy);
 });
 
 test('dry run reports the choice and writes nothing', () => {
@@ -212,4 +217,23 @@ test('an unknown vault subcommand prints usage', () => {
   const res = cli(['vault', 'nope']);
   assert.strictEqual(res.code, 2);
   assert.match(res.err, /usage: exonous vault/);
+});
+
+test('consolidate CLI previews without writes, applies owned moves and set blocks conflicting switches', () => {
+  const source = fx.home('exonous-vault'); const target = fx.home('central');
+  fs.mkdirSync(path.join(source, 'demo', 'memory', 'doc'), { recursive: true }); fs.mkdirSync(target);
+  const file = path.join(source, 'demo', 'memory', 'doc', 'a.md'); fs.writeFileSync(file, 'first');
+  const preview = cli(['vault', 'consolidate', target, '--dry-run']);
+  assert.strictEqual(preview.code, 0, preview.err);
+  assert.strictEqual(JSON.parse(preview.out).entries.length, 1);
+  assert.ok(!fs.existsSync(config()));
+  assert.strictEqual(cli(['vault', 'consolidate', target]).code, 2);
+  const applied = cli(['vault', 'consolidate', target, '--apply']);
+  assert.strictEqual(applied.code, 0, applied.err);
+  assert.strictEqual(JSON.parse(applied.out).status, 'complete');
+  assert.ok(!fs.existsSync(file));
+  const next = fx.home('next'); fs.mkdirSync(path.join(next, 'demo', 'memory', 'doc'), { recursive: true });
+  fs.writeFileSync(path.join(next, 'demo', 'memory', 'doc', 'a.md'), 'different');
+  assert.strictEqual(cli(['vault', 'set', next]).code, 1);
+  assert.strictEqual(JSON.parse(fs.readFileSync(config(), 'utf8')).vault, target);
 });

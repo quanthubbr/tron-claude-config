@@ -122,6 +122,20 @@ test('no configured vault: pages go to the plain fallback folder under the home'
   assert.ok(fs.readdirSync(fallback).some((f) => f.endsWith('-hhhh8888.md')));
 });
 
+test('current hook writes central config despite stale skill config and respects process override', () => {
+  const fx = fixture();
+  const stale = path.join(fx.root, 'stale'); fs.mkdirSync(stale);
+  const skill = path.join(fx.home, '.agents', 'skills', 'project-memory'); fs.mkdirSync(skill, { recursive: true });
+  fs.writeFileSync(path.join(skill, 'config.json'), JSON.stringify({ vault: stale }));
+  work(fx, 'central-fixture');
+  assert.ok(pageOf(fx, 'central-fixture'));
+  assert.deepStrictEqual(fs.readdirSync(stale), []);
+  const override = path.join(fx.root, 'override'); fs.mkdirSync(override);
+  const processVault = { ...fx, run: (event, payload, adapter, extra) => fx.run(event, payload, adapter, { ...extra, PROJECT_MEMORY_VAULT: override }), sessions: () => path.join(override, 'shop', 'sessions') };
+  work(processVault, 'override-fixture');
+  assert.ok(pageOf(processVault, 'override-fixture'));
+});
+
 test('captured prompts and commands are sanitized before they reach the spool or the vault', () => {
   const fx = fixture();
   fx.run('prompt', { session_id: 'iiii9999', prompt: 'deploy with STRIPE_SECRET_KEY=sk_live_fake-key-for-tests_0000' });

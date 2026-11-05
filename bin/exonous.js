@@ -21,7 +21,8 @@ Usage: exonous <command> [flags]
   template               print the PR template that applies here
   draft-path             print where to write this repo's PR body draft
   validate-pr <file>     check a PR body against the template
-  vault [show|detect|set <path> [--create]|graph]   where agents keep notes; graph writes .exonous/graph.html + graph.json
+  vault [show|detect|set <path> [--create]|graph|consolidate [target] <--dry-run|--apply>]   one central root for agent notes
+  handoff save --body-file <file> | latest --json   save or resume compact session graphs in existing vaults
 
   setup is an alias of install; from a repo's node_modules (npx exonous setup) it runs repo mode. From a source checkout, install/uninstall need EXONOUS_HOME or --real-home.`;
 
@@ -165,6 +166,7 @@ const commands = {
   'draft-path': runDraftPath,
   'validate-pr': runValidatePr,
   vault: () => require('../src/vault-cli').vaultCommand(process.argv.slice(3)),
+  handoff: () => require('../src/handoff-cli').handoffCommand(process.argv.slice(3)),
 };
 
 const command = process.argv[2];

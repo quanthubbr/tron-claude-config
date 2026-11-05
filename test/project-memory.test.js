@@ -134,12 +134,12 @@ test('unified exonous config under EXONOUS_HOME supplies the vault', () => {
   assert.ok(hasMemory(dirs.unifiedVault));
 });
 
-test('per-skill config.json overrides the unified vault', () => {
+test('unified central vault wins over stale per-skill config', () => {
   const { dirs, run } = isolated({ skill: vaultJson('skillVault'), unified: vaultJson('unifiedVault') });
   const out = addProbe(run);
   assert.strictEqual(out.status, 0, out.stderr);
-  assert.ok(hasMemory(dirs.skillVault));
-  assert.ok(!hasMemory(dirs.unifiedVault));
+  assert.ok(!hasMemory(dirs.skillVault));
+  assert.ok(hasMemory(dirs.unifiedVault));
 });
 
 test('PROJECT_MEMORY_VAULT wins over both configs', () => {

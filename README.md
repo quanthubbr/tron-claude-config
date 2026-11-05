@@ -25,18 +25,24 @@ Install also picks the vault agents write notes to, so there is nothing to confi
 
 - It reads Obsidian's vault registry (macOS, Linux incl. Flatpak and Snap, Windows, and the Windows side from WSL). One vault is used; with several, a terminal asks (default: the open or most recent one), otherwise the most recent wins.
 - Without Obsidian it creates `~/Documents/exonous-vault` (`~/exonous-vault` if there is no `Documents`): a plain markdown folder with standard links. Opening it in Obsidian later is enough to switch to `[[wikilinks]]`. Uninstall never deletes it.
-- A vault you already configured is kept.
+- An existing user/custom vault takes precedence over an old `exonous-vault` fallback. Install consolidates identifiable Exonous notes into the selected central root; unrelated personal files stay put and conflicts block the switch.
 
 ```bash
 exonous vault detect                  # Obsidian registries searched and vaults found
 exonous vault set ~/notes --create    # use another folder
 exonous vault show                    # the vault in use and which setting chose it
 exonous vault graph                   # write .exonous/graph.html + graph.json inside the vault
+exonous vault consolidate ~/notes --dry-run # inspect owned-file moves and conflicts
+exonous vault consolidate ~/notes --apply   # verify copies, switch config, remove verified originals
 ```
 
 `.exonous/graph.html` is a self-contained offline force-directed view of notes, `[[wikilinks]]`, tags and file links (no CDN).
 
-Precedence: `PROJECT_MEMORY_VAULT` > the project-memory skill's `config.json` > `~/.claude/exonous/config.json` (`vault` key, written by install and `exonous vault set`).
+All current readers use `PROJECT_MEMORY_VAULT` before the unified `~/.claude/exonous/config.json` `vault` key. Old skill-local paths are consolidation inputs. Upgrade installed readers before consolidation; mixed old/new readers are unsupported. Handoff saves and reads never migrate or create vaults. Consolidation rejects symlinks, source aliases and differing destination files; a private journal resumes interrupted cleanup. Storage rollback must restore missing originals from verified central copies before repointing configuration.
+
+The persisted root stays active until all copies verify and configuration switches. Canonical parent aliases such as macOS `/var` are resolved once; explicit symlink roots and symlinks inside a root are rejected. Shared legacy vaults contribute only identified handoffs and memory/session subtrees; attachments outside those subtrees and other unknown files remain listed as skipped, so cross-boundary links may need repair.
+
+A known sessions source inside the selected root (such as `<vault>/sessoes`) may flatten into the central root after every destination is checked against all source roots. Targets inside sources, nested distinct sources and destinations that overlap sources are rejected.
 
 ### Automatic session memory (anamnesis)
 
@@ -52,6 +58,8 @@ Sessions idle for 6 h are closed into pages automatically. Search them with `pro
 The storage format follows the vault. If the vault has `.obsidian/`, links are `[[wikilinks]]`. Otherwise it is a plain folder with standard `[text](file.md)` links. To turn it off, set `EXONOUS_MEMORY=0` or put `"memory": false` in `~/.claude/exonous/config.json`.
 
 ## The always-on rules
+
+Nomos and Praxis include Ponytail's reuse-first and complete-scope discipline as always-on rules, without another skill or mode. Source and MIT attribution: [third-party notices](assets/THIRD-PARTY-NOTICES.md).
 
 Two files bind every agent in every supported tool. Neither is invoked; both are already in force, and they ship wherever a tool reads rules from (`~/.claude/rules`, `AGENTS.md`, `GEMINI.md`, `nomos.mdc`/`praxis.mdc`, `global_rules.md`, OpenCode `instructions`, the Cline Rules dir, `QWEN.md`).
 
@@ -148,7 +156,7 @@ Agents (`exo-*`, each fixed to a model tier): `pm`, `cto`, `researcher`, `design
 |---|---|
 | `exonous install` | wire every detected tool. Flags: `--tools a,b` `--all` `--skip-tool a,b` `--permissions` `--rewrite-jsonc` `--dry-run` `--quiet` |
 | `exonous update [--check\|--major]` | update now, report only, or cross a major |
-| `exonous vault [show\|detect\|set <path> [--create]\|graph]` | pick the vault agents keep notes in; `graph` writes `.exonous/graph.html` + `graph.json` inside the vault |
+| `exonous vault [show\|detect\|set <path> [--create]\|graph\|consolidate [target] <--dry-run\|--apply>]` | choose one central root; consolidate verified owned files, preserving personal content; graph writes `.exonous/graph.html` + `graph.json` |
 | `exonous doctor` | per-tool matrix (rules, gate, commands, MCP, update) and every check with its fix |
 | `exonous gate --selftest <tool>` | pipe a fake `git commit` to the registered hook and expect a refusal |
 | `exonous uninstall [--yes\|--dry-run\|--remove-package]` | remove what install wrote; keeps `config.json` and MCP registrations |

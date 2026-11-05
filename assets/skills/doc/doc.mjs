@@ -1,15 +1,9 @@
 #!/usr/bin/env node
-// doc: localiza o vault Obsidian de documentação de um repositório, a última nota
-// de sessão desse repo e as notas cujas referências `arquivo:linha` quebraram ou
-// apontam para arquivos alterados. Sem dependências: Node >= 18 e git.
+// Localiza documentação, handoffs e referências de código para o repositório.
 
 import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { homedir } from 'node:os'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
-import { fileURLToPath } from 'node:url'
-
-const HERE = dirname(fileURLToPath(import.meta.url))
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', 'bin', 'obj', 'vendor', 'coverage', 'target', 'venv', '__pycache__', 'Pods'])
 const MAX_DEPTH = 6
 const MAX_FILE_BYTES = 5 * 1024 * 1024
@@ -133,33 +127,20 @@ function entryNote(vault, notes) {
   return ranked[0] ? posix(relative(vault, ranked[0])) : null
 }
 
-// Lê `key` de um config.json: { value } (null se ausente) ou { error } se o JSON for inválido.
-function readConfig(configPath, key) {
-  if (!existsSync(configPath)) return { value: null }
+function latestSessionNote(repoRoot) {
   try {
-    return { value: JSON.parse(readFileSync(configPath, 'utf8'))[key] || null }
-  } catch {
-    return { error: `${configPath} inválido` }
+    const env = { ...process.env, EXONOUS_HANDOFF_CWD: repoRoot }
+    const command = process.platform === 'win32' ? 'cmd.exe' : 'exonous'
+    const args = process.platform === 'win32' ? ['/d', '/s', '/c', 'exonous handoff latest --json'] : ['handoff', 'latest', '--json']
+    const cwd = process.platform === 'win32' ? dirname(process.execPath) : repoRoot
+    const result = JSON.parse(execFileSync(command, args, { cwd, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }))
+    if (result.status === 'found') return { sessionsVault: result.vault, note: posix(result.path), reason: null }
+    return { sessionsVault: result.vault || null, note: null, reason: result.status === 'unsupported-version' ? `handoff versão ${result.version} não suportada` : 'nenhuma nota: rode `exonous vault detect`' }
+  } catch (err) {
+    let reason = 'exonous handoff indisponível: confira a instalação do exonous'
+    try { reason = JSON.parse(String(err.stdout)).reason || reason } catch {}
+    return { sessionsVault: null, note: null, reason }
   }
-}
-
-// Ordem: `sessionsVault` do session-handoff > `vault` do config unificado do exonous (mesma base dos hooks).
-function sessionsVaultPath() {
-  const own = readConfig(join(HERE, '..', 'session-handoff', 'config.json'), 'sessionsVault')
-  if (own.error || own.value) return own
-  const unified = readConfig(join(process.env.EXONOUS_HOME || homedir(), '.claude', 'exonous', 'config.json'), 'vault')
-  if (unified.error || unified.value) return unified
-  return { error: 'nenhum vault de sessões: rode `exonous vault detect`' }
-}
-
-function latestSessionNote(repoName) {
-  const { value: sessionsVault, error } = sessionsVaultPath()
-  if (error) return { sessionsVault: null, note: null, reason: error }
-  const folder = sessionsVault && join(sessionsVault, repoName)
-  if (!folder || !existsSync(folder)) return { sessionsVault, note: null, reason: `sem pasta ${repoName} no vault de sessões` }
-  // As notas começam por AAAA-MM-DD HHmm, então a ordem do nome é a ordem do tempo.
-  const notes = readdirSync(folder).filter((f) => /^\d{4}-\d{2}-\d{2}/.test(f) && f.endsWith('.md')).sort().reverse()
-  return { sessionsVault, note: notes[0] ? posix(join(folder, notes[0])) : null, reason: notes[0] ? null : 'pasta sem notas datadas' }
 }
 
 function cmdLocate(flags) {
@@ -172,7 +153,7 @@ function cmdLocate(flags) {
   const vaults = describe(repo.root)
   // Worktree criado antes do vault existir: o vault está no checkout principal, não falta no projeto.
   const vaultsInMainCheckout = !vaults.length && repo.mainCheckout !== repo.root ? describe(repo.mainCheckout) : []
-  const session = latestSessionNote(repo.name)
+  const session = latestSessionNote(repo.root)
   console.log(JSON.stringify({ repo, vaults, vaultsInMainCheckout, session }, null, 2))
   if (!vaults.length) process.exitCode = EXIT_NO_VAULT
 }

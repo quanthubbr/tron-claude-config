@@ -1,3 +1,3 @@
 {
-  "sessionsVault": "/absolute/path/to/your/sessions-vault"
+  "sessionsVault": "/absolute/path/to/existing/legacy-sessions-vault"
 }

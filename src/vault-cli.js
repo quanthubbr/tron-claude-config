@@ -8,7 +8,7 @@ const vault = require('./lib/vault');
 const { writeGraph } = require('./lib/vault-graph');
 const { isolatedHome } = require('./lib/runtime');
 
-const USAGE = 'usage: exonous vault [show | detect | set <path> [--create] | graph]';
+const USAGE = 'usage: exonous vault [show | detect | set <path> [--create] | graph | consolidate [target] <--dry-run|--apply>]';
 
 /** Vault context rooted at the target home; an EXONOUS_HOME test home never sees the real Obsidian registry. */
 function vaultContext(ctx = {}) {
@@ -27,55 +27,27 @@ function isDir(p) {
   }
 }
 
-function skillVault(file) {
-  let text;
-  try {
-    text = fs.readFileSync(file, 'utf8');
-  } catch {
-    return null;
-  }
-  try {
-    const value = JSON.parse(text).vault;
-    return typeof value === 'string' && value ? value : null;
-  } catch (err) {
-    throw new Error(`${file} is not valid JSON (${err.message}) — fix or delete it`);
-  }
-}
-
-const skillConfigs = (home) => [
-  path.join(home, '.claude', 'skills', 'project-memory', 'config.json'),
-  path.join(home, '.agents', 'skills', 'project-memory', 'config.json'),
-];
-
-/** The vault project-memory will use and why: env, then the skill's config.json, then ~/.claude/exonous/config.json. */
 function current(ctx) {
-  const c = vaultContext(ctx);
-  const env = c.env || process.env;
-  if (env.PROJECT_MEMORY_VAULT) return { path: path.resolve(env.PROJECT_MEMORY_VAULT), source: 'env' };
-  for (const file of skillConfigs(c.homedir)) {
-    const found = skillVault(file);
-    if (found) return { path: path.resolve(found), source: 'skill-config' };
-  }
-  const { vault: configured } = vault.readConfig(c);
-  return typeof configured === 'string' && configured ? { path: configured, source: 'exonous-config' } : { path: null, source: null };
+  return vault.central(vaultContext(ctx));
 }
 
-/** The vault in skill or exonous config, ignoring the env override; install never replaces it. */
-const configuredVault = (c) => current({ ...c, env: { ...(c.env || process.env), PROJECT_MEMORY_VAULT: '' } }).path;
+const configuredVault = (c) => {
+  const found = vault.consolidationTarget({ ...c, env: { ...(c.env || process.env), PROJECT_MEMORY_VAULT: '' } });
+  return ['exonous-config', 'skill-config'].includes(found.source) ? found.path : null;
+};
 
 /** On a TTY with several Obsidian vaults and none configured, asks which one install should use. */
 async function promptVault({ ctx, isTTY, ask } = {}) {
   try {
     const c = vaultContext(ctx);
     if (configuredVault(c)) return null;
-    const picked = await vault.choose(vault.detect(c), { isTTY, ask });
+    const picked = await vault.choose(vault.detect(c).filter((entry) => path.basename(entry.path).toLowerCase() !== 'exonous-vault'), { isTTY, ask });
     return picked ? picked.path : null;
   } catch {
     return null;
   }
 }
 
-/** Install step: keep a configured vault (even unmounted), else the chosen/most recent Obsidian vault, else create the fallback. */
 function installVault({ dryRun = false, log = () => {}, choice = null, ctx } = {}) {
   const c = vaultContext(ctx);
   const kept = configuredVault(c);
@@ -83,19 +55,20 @@ function installVault({ dryRun = false, log = () => {}, choice = null, ctx } = {
     log(`WARN: vault: ${kept} not found — keeping config; fix with \`exonous vault detect\` / \`exonous vault set <path>\``);
     return { path: kept, kind: 'missing' };
   }
-  if (kept) {
-    log(`vault: ${kept} (existing)`);
-    return { path: kept, kind: 'existing' };
-  }
-  const detected = choice ? null : vault.detect(c)[0];
-  const target = choice || (detected && detected.path) || vault.fallbackPath(c);
-  const kind = choice || detected ? 'obsidian' : 'fallback';
+  const selected = vault.consolidationTarget({ ...c, env: { ...(c.env || process.env), PROJECT_MEMORY_VAULT: '' } });
+  const detected = choice || kept || selected.source !== 'obsidian' ? null : selected;
+  const target = choice || kept || (detected && detected.path) || vault.fallbackPath(c);
+  const kind = choice || detected ? 'obsidian' : kept ? 'existing' : 'fallback';
   if (dryRun) {
     log(`vault: ${target} (${kind}) — dry run, nothing written`);
     return { path: target, kind };
   }
   if (kind === 'fallback') vault.ensureFallback(target, c);
-  vault.writeConfig(target, c);
+  const result = require('./lib/vault-consolidation').consolidate({ target, ctx: c });
+  if (result.status !== 'complete') {
+    log(`WARN: vault consolidation ${result.status}: ${JSON.stringify(result)}`);
+    return { path: target, kind: 'blocked' };
+  }
   log(`vault: ${target} (${kind})`);
   return { path: target, kind };
 }
@@ -152,7 +125,11 @@ function set(args, c, out) {
     }
     fs.mkdirSync(target, { recursive: true });
   }
-  vault.writeConfig(target, c);
+  const result = require('./lib/vault-consolidation').consolidate({ target, ctx: c });
+  if (result.status !== 'complete') {
+    out.err(JSON.stringify(result));
+    return 1;
+  }
   out.log(`vault set: ${target}`);
   const effective = current(c);
   if (effective.source !== 'exonous-config') out.log(`note: ${effective.source} still wins (${effective.path})`);
@@ -182,6 +159,13 @@ function vaultCommand(args = [], { ctx, out = consoleOut } = {}) {
   if (sub === 'detect') return detect(c, out);
   if (sub === 'set') return set(rest, c, out);
   if (sub === 'graph') return graph(c, out);
+  if (sub === 'consolidate') {
+    const positional = rest.filter((item) => !item.startsWith('--'));
+    if (positional.length > 1 || rest.some((item) => item.startsWith('--') && !['--dry-run', '--apply'].includes(item)) || rest.includes('--dry-run') === rest.includes('--apply')) { out.err(USAGE); return 2; }
+    const result = require('./lib/vault-consolidation').consolidate({ target: positional[0], dryRun: rest.includes('--dry-run'), ctx: c });
+    out.log(JSON.stringify(result));
+    return ['planned', 'complete'].includes(result.status) ? 0 : 1;
+  }
   out.err(USAGE);
   return 2;
 }
