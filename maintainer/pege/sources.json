@@ -1,5 +1,5 @@
 {
-  "$comment": "MAINTAINER ONLY — never shipped (package.json `files`). Provenance + pins for every upstream this package interprets. `watch` = paths we consume (diffs here are relevant); `discover` = dirs where new upstream items appear (reported as adoption candidates). Update pins only after porting: `npm run upstream:watch -- --accept <id>`.",
+  "$comment": "MAINTAINER ONLY \u2014 never shipped (package.json `files`). Provenance + pins for every upstream this package interprets. `watch` = paths we consume (diffs here are relevant); `discover` = dirs where new upstream items appear (reported as adoption candidates). Update pins only after porting: `npm run upstream:watch -- --accept <id>`.",
   "brandTerms": [
     "\\bimpeccable\\b",
     "\\bemil\\b",
@@ -23,7 +23,6 @@
   "sources": [
     {
       "id": "techne",
-      "repo": "https://github.com/affaan-m/ECC.git",
       "ref": "ef648e01899ba3e8dc6371642deaaf64b4477775",
       "license": "MIT",
       "kind": "content",
@@ -135,11 +134,11 @@
           "assets/techne/rules",
           "assets/techne/commands"
         ]
-      }
+      },
+      "repoEnv": "EXONOUS_SOURCE_01_URL"
     },
     {
       "id": "ui-motion",
-      "repo": "https://github.com/emilkowalski/skills.git",
       "ref": "e8a175de22ae1e49370fc144c1f3bb9aeedf988d",
       "license": "MIT",
       "kind": "content",
@@ -172,11 +171,11 @@
           "assets/skills/ui-motion",
           "assets/skills/native-ui"
         ]
-      }
+      },
+      "repoEnv": "EXONOUS_SOURCE_02_URL"
     },
     {
       "id": "ui-design-styles",
-      "repo": "https://github.com/Leonxlnx/taste-skill.git",
       "ref": "ce26fc25c0e5e8cab638f883de62d9a86ee5e45b",
       "license": "MIT",
       "kind": "content",
@@ -209,11 +208,11 @@
           "assets/skills/ui-design/reference/styles",
           "assets/skills/ui-mockup"
         ]
-      }
+      },
+      "repoEnv": "EXONOUS_SOURCE_03_URL"
     },
     {
       "id": "ui-design",
-      "repo": "https://github.com/pbakaus/impeccable.git",
       "ref": "cd12f8660e2dde57b9615c8a6b8ea674101f9cfc",
       "version": "skill-v4.3.1",
       "license": "Apache-2.0",
@@ -241,11 +240,11 @@
         "local": [
           "assets/skills/ui-design"
         ]
-      }
+      },
+      "repoEnv": "EXONOUS_SOURCE_04_URL"
     },
     {
       "id": "nomos-principles",
-      "repo": "https://github.com/forrestchang/andrej-karpathy-skills.git",
       "ref": "2c606141936f1eeef17fa3043a72095b4765b9c2",
       "license": "MIT",
       "kind": "content",
@@ -265,11 +264,11 @@
         "local": [
           "assets/rules/nomos.md"
         ]
-      }
+      },
+      "repoEnv": "EXONOUS_SOURCE_05_URL"
     },
     {
       "id": "nomos-terse",
-      "repo": "https://github.com/JuliusBrussee/caveman.git",
       "ref": "99aafe151a1be72be783e662858e8a0955add59f",
       "license": "Apache-2.0",
       "kind": "content",
@@ -291,13 +290,13 @@
         "local": [
           "assets/rules/nomos.md"
         ]
-      }
+      },
+      "repoEnv": "EXONOUS_SOURCE_06_URL"
     },
     {
       "id": "praxis",
-      "repo": "https://github.com/unclebob/ub-mode.git",
       "ref": "57a8bdd28e45ed41900ace0bafa2ff76dd9ed70f",
-      "license": "none declared — no LICENSE file upstream; principles interpreted, prose written here",
+      "license": "none declared \u2014 no LICENSE file upstream; principles interpreted, prose written here",
       "kind": "content",
       "status": "rewritten",
       "phase": 1,
@@ -315,11 +314,11 @@
         "local": [
           "assets/rules/praxis.md"
         ]
-      }
+      },
+      "repoEnv": "EXONOUS_SOURCE_07_URL"
     },
     {
       "id": "deliver-engine",
-      "repo": "https://github.com/open-gsd/gsd-core.git",
       "ref": "87e87d34b2d8519e30d1af7d910fc98f2af4bc8d",
       "version": "v1.16.0",
       "license": "MIT",
@@ -336,11 +335,11 @@
       "discover": [
         "commands/gsd",
         "agents"
-      ]
+      ],
+      "repoEnv": "EXONOUS_SOURCE_08_URL"
     },
     {
       "id": "deliver-ideas",
-      "repo": "https://github.com/orafaelfragoso/agentic-workflow.git",
       "ref": "4a0801ba3000535b990e80ec40fba4990cc3f2bc",
       "license": "MIT (declared in .claude-plugin/plugin.json; no LICENSE file)",
       "kind": "content",
@@ -367,11 +366,11 @@
           "assets/skills/project-memory/SKILL.md",
           "assets/agents"
         ]
-      }
+      },
+      "repoEnv": "EXONOUS_SOURCE_09_URL"
     },
     {
       "id": "project-memory-ideas",
-      "repo": "https://github.com/orafaelfragoso/columbus.git",
       "ref": "a4b549520dbac06aacba9bdd03b299d90ce4c6de",
       "license": "MIT",
       "kind": "content",
@@ -393,11 +392,11 @@
         "local": [
           "assets/skills/project-memory/SKILL.md"
         ]
-      }
+      },
+      "repoEnv": "EXONOUS_SOURCE_10_URL"
     },
     {
       "id": "atlas",
-      "repo": "https://github.com/DeusData/codebase-memory-mcp.git",
       "ref": "268a9d8886642eb7f9b2ce45f5ce27cdecf0f519",
       "version": "0.8.1",
       "license": "MIT",
@@ -410,11 +409,11 @@
         "install.ps1",
         "README.md"
       ],
-      "discover": []
+      "discover": [],
+      "repoEnv": "EXONOUS_SOURCE_11_URL"
     },
     {
       "id": "biblos",
-      "repo": "https://github.com/upstash/context7.git",
       "ref": "f2eef4f49da71a758c91cf6cb97640c8b262ef81",
       "license": "MIT",
       "kind": "runtime",
@@ -425,11 +424,11 @@
         "README.md",
         "packages/mcp/package.json"
       ],
-      "discover": []
+      "discover": [],
+      "repoEnv": "EXONOUS_SOURCE_12_URL"
     },
     {
       "id": "browser",
-      "repo": "https://github.com/ChromeDevTools/chrome-devtools-mcp.git",
       "ref": "cf2eab96d96cad3d47ce769b9638815d1775500f",
       "license": "Apache-2.0",
       "kind": "runtime",
@@ -440,7 +439,34 @@
         "README.md"
       ],
       "discover": [],
-      "acceptedAt": "2026-10-06"
+      "acceptedAt": "2026-10-06",
+      "repoEnv": "EXONOUS_SOURCE_13_URL"
+    },
+    {
+      "id": "metis",
+      "repoEnv": "EXONOUS_SOURCE_14_URL",
+      "ref": "96608e078b2d5ea607c5c3b8b5a54d1c1fba6846",
+      "license": "MIT",
+      "kind": "content",
+      "status": "review-pending",
+      "phase": 1,
+      "local": "assets/agents/",
+      "discover": [],
+      "notes": "Review private source material before any original local interpretation; this registration does not mark a port complete.",
+      "watchEnv": "EXONOUS_SOURCE_14_SCOPE_JSON"
+    },
+    {
+      "id": "sophia",
+      "repoEnv": "EXONOUS_SOURCE_15_URL",
+      "watchEnv": "EXONOUS_SOURCE_15_SCOPE_JSON",
+      "ref": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
+      "license": "MIT",
+      "kind": "content",
+      "status": "review-pending",
+      "phase": 1,
+      "local": "assets/skills/deliver/ + assets/agents/",
+      "discover": [],
+      "notes": "Baseline observation only; no port accepted. Select simplified local interpretations after necessity and feasibility review."
     }
   ]
 }

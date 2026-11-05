@@ -1,16 +1,11 @@
 #!/usr/bin/env node
-// maintainer/pege/originality.js — MAINTAINER ONLY: prove rewritten artifacts are exonous's own text
-// Usage: npm run pege:originality [-- <id>...] [-- --max <n>] [-- --show <n>]
-// For every source with an `originality` block: compares prose (code stripped) of the local paths
-// against the upstream files at the pinned ref using 8-word shingles, and scans the local paths
-// for upstream brand terms (`brandTerms` in sources.json). With `protocol`, also fails when an engine
-// verb or flag the upstream uses is missing from the rewrite. Exit 1 on any violation.
+// Maintainer gate: compare rewritten local prose against privately resolved source text.
 
 'use strict';
 
 const fs = require('fs');
 const path = require('path');
-const { UPSTREAM_ROOT, loadSources, SOURCES_PATH } = require('./lib/sources');
+const { UPSTREAM_ROOT, loadSources, SOURCES_PATH, resolveRepository } = require('./lib/sources');
 const { CACHE_ROOT, git } = require('./lib/git');
 
 const PACKAGE_ROOT = path.resolve(UPSTREAM_ROOT, '..', '..');
@@ -80,15 +75,15 @@ function localFiles(relPaths, exclude) {
 
 // One shallow fetch of the pinned ref: reading a blobless mirror costs a network round trip per file (minutes on a large upstream).
 function snapshot(source) {
+  const repository = resolveRepository(source);
   const dir = path.join(CACHE_ROOT, `${source.id}.snapshot.git`);
   fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(dir, { recursive: true });
   git(dir, 'init', '--bare', '--quiet');
-  // GitHub sometimes resets the connection and git then hangs for minutes: abort a stalled transfer after 30s and retry.
   const stall = ['-c', 'http.lowSpeedLimit=1000', '-c', 'http.lowSpeedTime=30'];
   for (let attempt = 1; ; attempt++) {
     try {
-      git(dir, ...stall, 'fetch', '--quiet', '--depth', '1', '--no-tags', source.repo, source.ref);
+      git(dir, ...stall, 'fetch', '--quiet', '--depth', '1', '--no-tags', repository, source.ref);
       return dir;
     } catch (err) {
       if (attempt === 3) throw err;
@@ -102,7 +97,7 @@ function upstreamCorpus(source, globs) {
   const files = git(dir, 'ls-tree', '-r', '--name-only', 'FETCH_HEAD')
     .split('\n')
     .filter((f) => patterns.some((re) => re.test(f)));
-  if (!files.length) throw new Error(`no upstream files match ${globs.join(', ')} at ${source.ref}`);
+  if (!files.length) throw new Error('no source files match the configured scope');
   const corpus = new Set();
   const texts = [];
   for (const file of files) {
@@ -162,16 +157,16 @@ function checkSource(source, matchers, args) {
   if (spec.protocol) {
     const localText = files.map((rel) => fs.readFileSync(path.join(PACKAGE_ROOT, rel), 'utf8')).join('\n');
     const missing = missingProtocol(spec.protocol, texts, localText);
-    if (missing.length) violations.push(`protocol dropped by the rewrite: ${missing.join(', ')}`);
+    if (missing.length) violations.push(`${missing.length} required protocol tokens missing from the rewrite`);
   }
   for (const rel of files) {
     const text = fs.readFileSync(path.join(PACKAGE_ROOT, rel), 'utf8');
     const shared = [...shingles(prose(text))].filter((s) => corpus.has(s));
-    if (shared.length > args.max) violations.push(`${rel}: ${shared.length} shared ${SHINGLE}-word runs, e.g. "${shared.slice(0, args.show).join('" | "')}"`);
+    if (shared.length > args.max) violations.push(`${rel}: ${shared.length} shared ${SHINGLE}-word runs`);
     const scrubbed = stripEngineLiterals(text);
-    for (const { term, re } of matchers) {
+    for (const { re } of matchers) {
       const line = scrubbed.split('\n').findIndex((l) => re.test(l));
-      if (line !== -1) violations.push(`${rel}:${line + 1}: upstream term /${term}/`);
+      if (line !== -1) violations.push(`${rel}:${line + 1}: source vocabulary detected`);
     }
   }
   return { files: files.length, upstreamCount, violations };

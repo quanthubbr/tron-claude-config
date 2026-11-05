@@ -66,7 +66,9 @@ test('OpenCode agents are subagents with no pinned model', () => {
   assert.strictEqual(fields.mode, 'subagent');
   assert.ok(fields.description.startsWith('Backend engineering'));
   assert.ok(!('model' in fields) && !('name' in fields));
-  assert.ok(body.includes('You implement server-side behavior'));
+  assert.ok(body.includes('node work: Owns: APIs'));
+  assert.ok(body.includes('edge request>work | guard policy+scope+reuse+boundary'));
+  assert.ok(body.includes('edge work>report | guard behavior+domain'));
 });
 
 test('every shipped command converts for both tools', () => {

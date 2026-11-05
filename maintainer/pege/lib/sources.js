@@ -19,6 +19,15 @@ function loadSources() {
   return JSON.parse(fs.readFileSync(SOURCES_PATH, 'utf8')).sources.map(assertSafe);
 }
 
+function resolveRepository(source, env = process.env) {
+  const value = env[source.repoEnv];
+  if (!/^EXONOUS_SOURCE_\d{2}_URL$/.test(source.repoEnv || '') || typeof value !== 'string' ||
+      !/^https:\/\/github\.com\/[A-Za-z0-9_-]+\/[A-Za-z0-9_.-]+(?:\.git)?$/.test(value)) {
+    throw new Error(`${source.id}: missing or invalid ${source.repoEnv}`);
+  }
+  return value;
+}
+
 function getSource(id) {
   const source = loadSources().find((s) => s.id === id);
   if (!source) throw new Error(`unknown source "${id}" in ${SOURCES_PATH}`);
@@ -34,4 +43,4 @@ function setSourceRef(id, newRef, extra = {}) {
   fs.writeFileSync(SOURCES_PATH, `${JSON.stringify(doc, null, 2)}\n`, 'utf8');
 }
 
-module.exports = { UPSTREAM_ROOT, SOURCES_PATH, loadSources, getSource, setSourceRef };
+module.exports = { UPSTREAM_ROOT, SOURCES_PATH, loadSources, getSource, setSourceRef, resolveRepository };
