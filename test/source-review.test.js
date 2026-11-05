@@ -168,10 +168,13 @@ test('defer and reject preserve decisions without creating implementation plans'
 
 test('binary files and unusual source names remain aggregated without being published', (t) => {
   const { dir, source, git } = fixture(t);
-  fs.writeFileSync(path.join(dir, 'private-engine', 'PRIVATE-BRAND\nfile.bin'), Buffer.from([0, 1, 2]));
-  git('add', '.');
-  git('commit', '--quiet', '-m', 'private binary');
-  const report = inspectSource(source, { open: () => ({ dir, latest: git('rev-parse', 'HEAD') }) });
+  const inputGit = (input, ...args) => execFileSync('git', args, { cwd: dir, input, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+  const binary = inputGit(Buffer.from([0, 1, 2]), 'hash-object', '-w', '--stdin');
+  const text = git('rev-parse', 'HEAD:private-engine/PRIVATE-BRAND.md');
+  const subtree = inputGit(`100644 blob ${text}\tPRIVATE-BRAND.md\0` + `100644 blob ${binary}\tPRIVATE-BRAND\nfile.bin\0`, 'mktree', '-z');
+  const tree = inputGit(`040000 tree ${subtree}\tprivate-engine\0`, 'mktree', '-z');
+  const latest = git('commit-tree', tree, '-p', git('rev-parse', 'HEAD'), '-m', 'private binary');
+  const report = inspectSource(source, { open: () => ({ dir, latest }) });
   assert.equal(report.groups[0].delta.files, 2);
   assert.equal(report.groups[0].delta.binaryFiles, 1);
   assert.doesNotMatch(JSON.stringify(report), /PRIVATE-BRAND|file\.bin|private-engine/);
@@ -208,14 +211,15 @@ test('VPN uses private temp files, probes before success and stops only its own 
     if (args[1] === 'openvpn') {
       const profile = args[args.indexOf('--config') + 1];
       own = path.dirname(profile);
-      assert.equal(fs.statSync(profile).mode & 0o777, 0o600);
-      assert.equal(fs.statSync(own).mode & 0o777, 0o700);
       fs.writeFileSync(path.join(own, 'pid'), '12345');
       fs.writeFileSync(path.join(own, 'vpn.log'), 'Initialization Sequence Completed\n');
     }
   };
   let probes = 0;
   await startVpn({ env: { RUNNER_TEMP: dir, EXONOUS_REVIEW_VPN_PROFILE: 'client\ndev tun\nremote gateway.invalid 443\n', EXONOUS_REVIEW_BASE_URL: 'https://gateway.invalid/v1' }, run, probe: async () => { probes++; return true; }, delay: async () => {} });
+  assert.equal(fs.statSync(path.join(own, 'client.ovpn')).mode & 0o777, process.platform === 'win32' ? 0o666 : 0o600);
+  assert.equal(fs.statSync(own).mode & 0o777, process.platform === 'win32' ? 0o666 : 0o700);
+  assert.equal(fs.readFileSync(path.join(own, 'client.ovpn'), 'utf8'), 'client\ndev tun\nremote gateway.invalid 443\n');
   assert.equal(probes, 1);
   assert.ok(commands[0].includes('--script-security'));
   await stopVpn({ env: { RUNNER_TEMP: dir }, run, processArgs: () => ['openvpn', '--config', path.join(own, 'client.ovpn'), '--writepid', path.join(own, 'pid')], delay: async () => {} });

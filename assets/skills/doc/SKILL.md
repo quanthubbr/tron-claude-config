@@ -7,20 +7,20 @@ description: Acha o vault Obsidian de documentação do repositório atual e, co
 
 Mantém o vault Obsidian **do projeto** (dentro do repo, versionado com o código) em dia com o que a sessão mudou.
 
-Esta skill não conhece nenhum projeto. O vault é qualquer pasta do repo que contenha `.obsidian/`. A parte mecânica fica em `doc.mjs`, ao lado deste arquivo, e só depende de Node 18+ e git. Nos comandos abaixo, `<skill>` é o diretório desta skill (o Claude Code mostra como "Base directory"). Use o caminho absoluto: `~` não expande no PowerShell.
+Esta skill não conhece nenhum projeto. O vault é qualquer pasta do repo que contenha `.obsidian/`. A parte mecânica usa o comando nativo `exonous doc` e git, sem depender de Node.
 
 Não confunda os dois vaults:
 
 | | Vault do projeto | Vault de sessões |
 |---|---|---|
-| Onde | dentro do repo (ex.: `docs/<Projeto>/`) | fora de qualquer repo, definido por `exonous vault` (ou `sessionsVault` da skill `session-handoff`) |
+| Onde | dentro do repo (ex.: `docs/<Projeto>/`) | fora de qualquer repo, definido por `exonous vault`; configs legadas entram via `exonous vault consolidate` |
 | O quê | regras, arquitetura, invariantes, armadilhas | o que aconteceu numa sessão |
 | Esta skill | **lê e edita** | **só lê** a última nota, como fonte |
 
 ## 1. Localizar
 
 ```bash
-node "<skill>/doc.mjs" locate
+exonous doc locate
 ```
 
 A saída é um JSON com `repo`, `vaults` (caminho, número de notas e a nota de entrada, como `_CONTEXTO` ou `README`) e `session` (última nota de sessão do repo). Trate pelo código de saída:
@@ -53,14 +53,14 @@ Ignore status de tarefa, autorizações e passos de operação: isso é da sess�
 1. Leia a nota de entrada do vault (`vaults[].entry`) para entender a organização e as convenções: frontmatter, callouts, numeração, como cita código. Com `entry: null`, leia a lista de pastas da raiz do vault e as notas alteradas mais recentemente (`git log -5 --name-only -- "<vault>"`).
 2. Cruze as referências `arquivo:linha` das notas com o que mudou:
    ```bash
-   node "<skill>/doc.mjs" refs "<vault>" --since <git-ref ou AAAA-MM-DD do início da sessão>
+   exonous doc refs "<vault>" --since <git-ref ou AAAA-MM-DD do início da sessão>
    ```
    - `notasQueCitamArquivosAlterados`: notas que provavelmente descrevem código que mudou. O cruzamento inclui mudanças ainda não commitadas e arquivos novos. **Abra cada `arquivo:linha` citado e confira se a linha ainda diz o que a nota afirma**: estar fora de `quebradas` só prova que a linha existe, não que está certa.
    - `quebradas`: referência a arquivo inexistente ou a uma linha além do fim do arquivo. Antes de propor correção, veja se o arquivo mora em **outro repo** que o vault também documenta; nesse caso não está quebrada.
    - `ambiguas`: nome citado sem caminho que casa com mais de um arquivo (`candidatos`). Só mexa se a nota tocar o assunto da sessão.
    - `ignoradasPorParecerHost`: `host:porta` e `ip:porta`, que não são arquivo. Não proponha corrigir.
-3. Memórias do projeto (`adr`/`plan`/`doc` do `project-memory`), se a skill existir: `node ~/.claude/skills/project-memory/project-memory.mjs validate` aponta evidência que mudou de lugar (`moved`) ou de conteúdo (`drift`) e links que não resolvem. Inclua esses itens nas propostas.
-4. Procure no vault com `node ~/.claude/skills/project-memory/project-memory.mjs search "<termos>"` (ou Grep, sem a skill) os termos do resumo: nomes de função, rota, tabela, flag, decisão. Assim aparecem as notas que falam do assunto sem citar arquivo.
+3. Memórias do projeto (`adr`/`plan`/`doc` do `project-memory`), se a skill existir: `exonous project-memory validate` aponta evidência que mudou de lugar (`moved`) ou de conteúdo (`drift`) e links que não resolvem. Inclua esses itens nas propostas.
+4. Procure no vault com `exonous project-memory search "<termos>"` (ou Grep, sem a skill) os termos do resumo: nomes de função, rota, tabela, flag, decisão. Assim aparecem as notas que falam do assunto sem citar arquivo.
 
 ## 4. Propor, confirmar, aplicar
 

@@ -5,9 +5,7 @@ description: Mostra no terminal, em tabelas, as issues abertas que o dev tem par
 
 # Issue Board
 
-Tudo roda por `node board.mjs`, ao lado deste arquivo. Não tem dependências: basta Node 18+ e `gh`.
-
-Para ver, prefira `render.py`, também ao lado: desenha as mesmas tabelas com o pacote Python `rich` (badges de prioridade, cor por status, número da issue clicável). Aceita as mesmas flags do `render`. Sem `rich` instalado, ele avisa e cai no render do `board.mjs`. Para instalar: `pip install rich`.
+Use `exonous issue-board`: CLI nativa em Rust, com `gh` autenticado para buscar o board. O renderizador e a classificação funcionam offline sobre o cache.
 
 A skill não conhece nenhum projeto. O board (owner e número), os nomes dos campos e a lista de tipos moram em `config.json`, que é por pessoa e nunca vai versionado. Sem `types` no config, valem os tipos neutros embutidos: bug, feature, interface, dados, performance, segurança, infra, outros.
 
@@ -40,13 +38,12 @@ O `fetch` checa a auth antes de tudo e depois o board. Trate pelo código de sa�
 ## 2. Fluxo
 
 ```bash
-S=~/.claude/skills/issue-board
-node $S/board.mjs fetch        # lê o board; padrão = issues atribuídas a quem está logado
-node $S/board.mjs pending      # JSON com os tipos válidos e as issues ainda sem classificação
+exonous issue-board fetch
+exonous issue-board pending
 # classifique (seção 3), grave num arquivo temporário FORA do repo (ex.: $TMPDIR) e aplique:
-node $S/board.mjs classify <arquivo.json>
-python $S/render.py           # tabelas agrupadas por tipo (python3 ou py -3 se python faltar)
-node $S/board.mjs render       # mesmo conteúdo, sem rich; --json devolve a visão para outro renderizador
+exonous issue-board classify <arquivo.json>
+exonous issue-board render
+exonous issue-board render --json
 ```
 
 Flags de escopo e filtro (valem para `pending` e `render`):
@@ -58,9 +55,9 @@ Flags de escopo e filtro (valem para `pending` e `render`):
 | `--por tipo\|prioridade\|dificuldade\|campo\|status\|repo` | agrupamento (padrão `tipo`); `campo` usa `fields.group` |
 | `--prioridade P0,P1` · `--dificuldade facil` · `--tipo bug` · `--campo valor` · `--repo nome` · `--status ready` | filtros: vários valores separados por vírgula; casam por trecho, sem diferenciar maiúscula nem acento (`--status ready` também pega "Not ready"); `--tipo` aceita id ou nome |
 
-O cache fica em `data/<owner>-<número>/`, então boards diferentes não se misturam.
+O cache fica em `data/<owner>-<número>/` dentro da skill compartilhada em `~/.agents/skills/issue-board`; instalações antigas em `~/.claude/skills/issue-board` continuam legíveis. `--skill-dir <pasta>` seleciona outra cópia explicitamente.
 
-A saída do Bash nem sempre aparece para o usuário. **Para colar na resposta, rode `node $S/board.mjs render --width 100` e cole a tabela dentro de um bloco ```text```, exatamente como saiu.** Sem `--width`, o Bash não é TTY e a tabela sai com 140 colunas; no chat a linha quebra e as colunas desalinham. Não tire bordas, colunas (Projeto inclusive), cabeçalho nem legenda, e não reescreva as linhas. Outra opção é sugerir `! python ~/.claude/skills/issue-board/render.py`, que mostra direto, com cores e links.
+A saída do Bash nem sempre aparece para o usuário. Para colar na resposta, rode `exonous issue-board render --width 100` e cole a tabela em um bloco `text`, exatamente como saiu. Preserve bordas, colunas, cabeçalho e legenda.
 
 ## 3. Como classificar
 

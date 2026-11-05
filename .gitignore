@@ -1,6 +1,10 @@
 node_modules/
+/target/
 *.log
 .DS_Store
+__pycache__/
+/assets/skills/*/config.json
+/assets/skills/issue-board/data/
 
 # local agent/tool state
 .claude/

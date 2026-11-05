@@ -40,7 +40,7 @@ Steps:
    `)"`
    - Mint a fresh token before **each** commit in a multi-commit run (each commit consumes its token).
 10. **Push:** `git push -u origin <current-branch>` needs no token. Never force-push and never push directly to `main`/`master`: the gate blocks both. Only when the user explicitly asked for one of them, run `exonous token push` right before that push (it allows one push of the current HEAD).
-11. **Memory drift (warn, never block):** if `~/.claude/skills/project-memory/project-memory.mjs` exists, run `node ~/.claude/skills/project-memory/project-memory.mjs validate`; list drifted memories in the report so they get fixed.
+11. **Memory drift (warn, never block):** run `exonous project-memory validate` when a vault is configured; list drifted memories in the report so they get fixed.
 12. Report: branch used, the commits created (hashes + subjects), leak-scan result, review summary, and push status.
 
 Notes:
