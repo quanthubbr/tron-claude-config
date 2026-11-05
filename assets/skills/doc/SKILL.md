@@ -1,6 +1,6 @@
 ---
 name: doc
-description: Acha o vault Obsidian de documentação do repositório atual e, com base no resumo da última sessão (ou na conversa atual), aponta o que precisa mudar na documentação e aplica o que o usuário aprovar. Sem vault, alerta e sugere criar um. Genérica para qualquer projeto. Use quando o usuário pedir "/doc", "atualiza a doc", "o que mudar na documentação", "revisa o vault do projeto".
+description: Acha o vault Obsidian de documentação do repositório atual e, com base no resumo da última sessão (ou na conversa atual), aponta o que precisa mudar na documentação e aplica o que o usuário aprovar, e fecha com commit e PR só da doc. Sem vault, alerta e sugere criar um. Genérica para qualquer projeto. Use quando o usuário pedir "/doc", "atualiza a doc", "o que mudar na documentação", "revisa o vault do projeto".
 ---
 
 # Doc
@@ -74,6 +74,8 @@ Mostre a proposta numa tabela, a mais importante primeiro:
 
 Pergunte o que aplicar com AskUserQuestion: **"Aplicar todas"**, **"Escolher por número"** ou **"Nenhuma"**. Na escolha por número, peça os números. Sem AskUserQuestion, faça a mesma pergunta em texto e espere a resposta: não aplique nada sem ela.
 
+Antes de editar, prepare a branch (seção 6, passo 1).
+
 Ao aplicar:
 - Siga as convenções do vault: idioma, frontmatter, callouts, `[[wikilinks]]` entre notas do **próprio** vault e a numeração existente (continue a sequência, não renumere).
 - Se o vault usa um campo de data de atualização no frontmatter, atualize-o nas notas tocadas.
@@ -81,7 +83,7 @@ Ao aplicar:
 - Nota nova só quando nenhuma existente cobre o assunto; ligue-a na nota de entrada.
 - Nunca copie segredo, token, credencial ou dado de cliente para o vault. Cite o nome da env var ou do secret.
 - Nunca grave nota de sessão no vault do projeto.
-- **Não faça commit.** No fim, liste os arquivos alterados e sugira o fluxo de commit do projeto (ex.: `/sphragis`, se existir).
+- Depois de aplicar, siga a seção 6: commit e PR fazem parte do `/doc`.
 
 Se a proposta usou "Candidatos a promoção" de uma nota de sessão, acrescente ao item nessa nota ` — promovido em AAAA-MM-DD para <caminho>`. É a única escrita permitida no vault de sessões.
 
@@ -110,7 +112,7 @@ Pergunte com AskUserQuestion se quer criar agora. Se não quiser, pare. Se quise
    ```
 3. `_CONTEXTO.md`: o que o projeto é, stack, tabela "área do código → o que ler antes de mexer" e as convenções do vault. Leia antes o README, o CLAUDE.md/AGENTS.md e a estrutura de pastas. Não invente: o que não der para confirmar fica marcado como não verificado.
 4. `_INVARIANTES.md` (regras que não podem quebrar, `I-01`…) e `_EDGE-CASES.md` (comportamentos contra-intuitivos, `EC-01`…): comece com o que a sessão atual confirmou, cada item com `arquivo:linha`. Se não houver nada confirmado, deixe só o cabeçalho e a explicação do formato.
-5. Mostre a árvore criada e sugira o fluxo de commit do projeto. Não faça commit.
+5. Mostre a árvore criada e siga a seção 6.
 
 Frontmatter mínimo de cada nota:
 
@@ -121,3 +123,18 @@ tags: [<área>]
 atualizado: AAAA-MM-DD
 ---
 ```
+
+## 6. Commit e PR
+
+A aprovação da seção 4 ("Aplicar todas" ou os números escolhidos) já autoriza commit e PR **só da doc**. Não pergunte de novo.
+
+1. **Branch, antes de editar.** Base: `develop` se `git ls-remote --exit-code --heads origin develop` responder; senão a branch padrão (`gh repo view --json defaultBranchRef -q .defaultBranchRef.name`). Crie `docs/<assunto-curto>` a partir de `origin/<base>` (`git fetch origin <base>` e `git checkout -b docs/<assunto> origin/<base>`) quando qualquer um destes valer:
+   - a branch atual é `main`, `master` ou a própria base;
+   - a PR da branch atual já foi mergeada ou fechada (`gh pr list --head <branch> --state all --json state`);
+   - a branch atual é de outro assunto e tem mudanças que não são desta doc.
+   Se a troca de branch falhar por mudança local, pare e diga qual arquivo bloqueou. Não use `stash` nem `reset` sem pedir.
+2. **Stage só o que você editou no vault** (e a nota de entrada, se ligou nota nova): `git add <caminhos>`. Nunca `git add -A`. O que não é desta doc fica de fora.
+3. **Commit:** rode `/commit-changes` (ou o fluxo de commit do projeto, conforme CLAUDE.md/AGENTS.md). Um commit `docs(...)`, no idioma de commit do projeto.
+4. **PR:** rode `/make-pr` com a base do passo 1 explícita. Se a sessão tratou de uma issue, referencie no corpo ("Relacionada a #N", nunca `Closes`) e, se o projeto pede (board no CLAUDE.md), comente o link da PR na issue.
+5. **Sem skill de commit ou PR no ambiente:** pare depois do passo 2, liste os arquivos e diga o que falta.
+6. No fim, mostre a URL da PR, a branch e os arquivos do commit.
