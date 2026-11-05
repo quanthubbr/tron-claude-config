@@ -18,10 +18,10 @@ Picking a kind: a choice with its rationale → `adr`; something still to be bui
 ## Command
 
 ```bash
-M="node ~/.claude/skills/project-memory/project-memory.mjs"
+M="exonous project-memory"
 ```
 
-Run inside the project repo (project = repo name; `--project <name>` elsewhere). Vault root, first match wins: `PROJECT_MEMORY_VAULT` → `config.json` next to this file (`{ "vault": "<abs path>" }`, optional per-skill override) → the exonous vault (`~/.claude/exonous/config.json`, set by `exonous install` / `exonous vault set <path>`). Memories live in `<vault>/<project>/memory/<kind>/`. No vault (exit 3) → run `exonous vault detect`, confirm the path with the user, then `exonous vault set <path>`.
+Run inside the project repo (project = repo name; `--project <name>` elsewhere). The native command needs no Node runtime. Vault root, first match wins: `PROJECT_MEMORY_VAULT` → the central exonous config (`~/.claude/exonous/config.json`, set by `exonous install` / `exonous vault set <path>`). With `EXONOUS_HOME`, the config lives under that home. Legacy skill configs are migration inputs for `exonous vault consolidate`; they do not override the central vault. Memories live in `<vault>/<project>/memory/<kind>/`. No vault (exit 3) → run `exonous vault detect`, confirm the path with the user, then `exonous vault set <path>`.
 
 ## Read — locate first
 

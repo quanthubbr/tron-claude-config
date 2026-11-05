@@ -8,7 +8,7 @@ description: Delivery workflow — classify → discuss → plan → execute →
 One loop for every delivery, sized to the work. The session is the **coordinator**: it scopes packets, picks branches, judges gates and owns memory writes. It implements inline only when the work is Trivial.
 
 ```bash
-M="node ~/.claude/skills/project-memory/project-memory.mjs"
+M="exonous project-memory"
 ```
 
 | Call | Does |
