@@ -450,6 +450,9 @@ fn run(args: &[String]) -> Result<(), (i32, String)> {
     let name = args.first().map(String::as_str).unwrap_or("help");
     if ["help", "--help", "-h"].contains(&name) {
         print!("{USAGE}");
+        println!(
+            "  pr create --body-file <file> [--base <branch>] [--head <branch>] [--title <title>] [--draft]"
+        );
         return Ok(());
     }
     let home = runtime::home().map_err(failure)?;
@@ -461,7 +464,7 @@ fn run(args: &[String]) -> Result<(), (i32, String)> {
     if name == "status" && args.get(1).map(String::as_str) == Some("--json") && args.len() == 2 {
         println!(
             "{}",
-            json!({"runtime":"rust","native":["install","setup","uninstall","update","doctor","gate","migrate","workflow","template","validate-pr","draft-path","token","agents","vault","handoff","project-memory","doc","issue-board","ui-design"],"hooks":exonous::NATIVE_CAPABILITIES,"compatibility":["legacy npm CLI","legacy skill helpers"],"externalRuntimes":["host plugin bridges","design/browser engines","maintenance source-review tooling"]})
+            json!({"runtime":"rust","native":["install","setup","uninstall","update","doctor","gate","migrate","workflow","template","validate-pr","draft-path","pr","token","agents","vault","handoff","project-memory","doc","issue-board","ui-design"],"hooks":exonous::NATIVE_CAPABILITIES,"compatibility":["legacy npm CLI","legacy skill helpers"],"externalRuntimes":["host plugin bridges","design/browser engines","maintenance source-review tooling"]})
         );
         return Ok(());
     }
@@ -470,6 +473,16 @@ fn run(args: &[String]) -> Result<(), (i32, String)> {
     match name {
         "project-memory" => {
             emit_decision(exonous::project_memory::execute(&home, &cwd, &args[1..]))?
+        }
+        "pr" => {
+            let code = exonous::pr::execute(&home, &cwd, &args[1..]).map_err(|error| {
+                if error.starts_with("usage:") {
+                    usage(&error)
+                } else {
+                    failure(error)
+                }
+            })?;
+            std::process::exit(code);
         }
         "doc" => emit_decision(exonous::doc::execute(&home, &cwd, &args[1..]))?,
         "ui-design" => emit_decision(exonous::design_engine::execute(&home, &args[1..]))?,

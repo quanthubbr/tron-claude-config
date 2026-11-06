@@ -42,7 +42,7 @@ fn native_save_and_javascript_envelopes_share_the_same_disk_format() {
     let root = home.path().join("vault");
     fs::create_dir(&root).unwrap();
     configured(home.path(), &root);
-    let body = json!({"v":1,"k":"pr","g":[["work","proof","tests passed"],["work","next","review"],["work","evidence",format!("ghp_{}", "a".repeat(30))]]});
+    let body = json!({"v":1,"k":"pr","g":[["pr","url","https://github.com/acme/repo/pull/12"],["work","proof","tests passed"],["work","next","review"],["work","evidence",format!("ghp_{}", "a".repeat(30))]]});
     let saved = handoff::save(
         home.path(),
         home.path(),
@@ -61,6 +61,135 @@ fn native_save_and_javascript_envelopes_share_the_same_disk_format() {
     let latest = handoff::latest(home.path(), home.path()).unwrap();
     assert!(latest["path"].as_str().unwrap().ends_with("js-envelope.md"));
     assert_eq!(latest["timestamp"], "2026-11-06T12:00:00.000Z");
+}
+
+#[test]
+fn pr_handoff_identity_is_canonical_idempotent_and_rejects_incomplete_existing_notes() {
+    use sha2::{Digest, Sha256};
+    let home = tempfile::tempdir().unwrap();
+    let root = home.path().join("vault");
+    fs::create_dir(&root).unwrap();
+    configured(home.path(), &root);
+    let url = "https://github.com/acme/repo/pull/12";
+    let mut body = json!({"v":1,"k":"pr","g":[["pr","url",url],["pr","proof","first"],["pr","next","review"]]});
+    let saved = handoff::save(
+        home.path(),
+        home.path(),
+        &body,
+        Some("2026-11-05T12:00:00Z"),
+    )
+    .unwrap();
+    let path = Path::new(saved["path"].as_str().unwrap());
+    assert_eq!(
+        path.file_name().unwrap().to_str().unwrap(),
+        format!("pr-{:x}.md", Sha256::digest(url.as_bytes()))
+    );
+    let first = fs::read(path).unwrap();
+    body["g"][1][2] = json!("second");
+    let repeated = handoff::save(
+        home.path(),
+        home.path(),
+        &body,
+        Some("2026-11-06T12:00:00Z"),
+    )
+    .unwrap();
+    assert_eq!(repeated["status"], "already-saved");
+    assert_eq!(fs::read(path).unwrap(), first);
+    assert_eq!(fs::read_dir(path.parent().unwrap()).unwrap().count(), 1);
+    for field in ["ts", "r", "b", "h"] {
+        let mut invalid: Value = serde_json::from_slice(&first).unwrap();
+        invalid.as_object_mut().unwrap().remove(field);
+        fs::write(path, invalid.to_string()).unwrap();
+        assert!(
+            handoff::save(home.path(), home.path(), &body, None).is_err(),
+            "{field}"
+        );
+        assert_eq!(fs::read_dir(path.parent().unwrap()).unwrap().count(), 1);
+    }
+    for invalid in [
+        "https://github.com/acme/repo/pull/0",
+        "https://github.com/acme/../pull/12",
+        "https://github.com/acme/repo/pull/12?x=1",
+        "https://github.com/acme/repo/pull/12\n",
+    ] {
+        body["g"][0][2] = json!(invalid);
+        assert!(handoff::validate_graph(&body).is_err(), "{invalid}");
+    }
+    body["g"][0][2] = json!(url);
+    body["g"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!(["pr", "url", url]));
+    assert!(handoff::validate_graph(&body).is_err());
+}
+
+#[test]
+fn node_and_native_pr_savers_publish_one_complete_first_record_concurrently() {
+    use std::process::{Command, Stdio};
+    let home = tempfile::tempdir().unwrap();
+    let root = home.path().join("vault");
+    fs::create_dir(&root).unwrap();
+    configured(home.path(), &root);
+    let body = home.path().join("body.json");
+    write(&body,json!({"v":1,"k":"pr","g":[["pr","url","https://github.com/acme/repo/pull/27"],["pr","proof","checks passed"],["pr","next","review"]]}).to_string());
+    let node_cli = Path::new(env!("CARGO_MANIFEST_DIR")).join("bin/exonous.js");
+    let native = env!("CARGO_BIN_EXE_exonous");
+    let mut children = Vec::new();
+    for index in 0..8 {
+        let mut command = if index % 2 == 0 {
+            Command::new(native)
+        } else {
+            let mut command = Command::new("node");
+            command.arg(&node_cli);
+            command
+        };
+        children.push(
+            command
+                .args(["handoff", "save", "--body-file"])
+                .arg(&body)
+                .current_dir(home.path())
+                .env("EXONOUS_HOME", home.path())
+                .env("HOME", home.path())
+                .env("EXONOUS_NO_UPDATE", "1")
+                .env_remove("PROJECT_MEMORY_VAULT")
+                .env_remove("EXONOUS_HANDOFF_CWD")
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()
+                .unwrap(),
+        );
+    }
+    let mut saved = 0;
+    for child in children {
+        let output = child.wait_with_output().unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let result: Value = serde_json::from_slice(&output.stdout).unwrap();
+        if result["status"] == "saved" {
+            saved += 1;
+        } else {
+            assert_eq!(result["status"], "already-saved");
+        }
+    }
+    assert_eq!(saved, 1);
+    let entries = fs::read_dir(root.join("avulsas"))
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .collect::<Vec<_>>();
+    assert_eq!(entries.len(), 1);
+    let persisted = fs::read(&entries[0]).unwrap();
+    let again = handoff::save(
+        home.path(),
+        home.path(),
+        &serde_json::from_slice::<Value>(&fs::read(body).unwrap()).unwrap(),
+        None,
+    )
+    .unwrap();
+    assert_eq!(again["status"], "already-saved");
+    assert_eq!(fs::read(&entries[0]).unwrap(), persisted);
 }
 
 #[test]

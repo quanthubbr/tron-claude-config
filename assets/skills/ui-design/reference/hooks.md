@@ -61,7 +61,7 @@ Manual `<skill-dir>/scripts/ui-design detect` honors project ignores unless `--n
 <skill-dir>/scripts/ui-design hooks <action> [args...]
 ```
 
-Relay stdout verbatim. After `off`: note hook stays off until `on`. After `on`: note next UI edit triggers hook.
+Relay stdout verbatim. After `off`: note hook stays off until `on`. After `on`: report configuration enabled; verify host loading and any required approval before claiming the next edit will run the hook. An enabled setting, manifest, or CLI consent record alone does not prove the host loaded or approved it; report unavailable host evidence explicitly. Keep the existing event timing.
 
 ## Triage
 

@@ -52,7 +52,7 @@ Breakpoints (typical): mobile 320–767; tablet 768–1023; desktop 1024+—or c
 
 Techniques: Grid/Flex reflow; container queries; `clamp()`; media queries; show/hide per context.
 
-Touch: larger targets; spacing; replace hover-only paths; touch feedback; thumb zones.
+Touch: larger targets; spacing; replace hover-only paths; touch feedback; thumb zones. Handle `pointercancel`, lost capture, blur, and extra pointers; arbitrate dragging against scrolling and restore a usable state after interruption.
 
 Content: avoid heavy `display:none` downloads; progressive enhancement; lazy load; responsive images (`srcset`, `picture`).
 
@@ -64,7 +64,7 @@ Test real devices—DevTools emulation is incomplete.
 
 ## Verify
 
-Real devices; orientations; major browsers; OS variants; touch/mouse/keyboard; 320px and 4K edges; throttled network.
+Real devices; orientations; major browsers; OS variants; touch/mouse/keyboard; 320px and 4K edges; throttled network. Test interrupted drags and scroll recovery. Screenshots establish layout, not gesture behavior; record the actual device, OS, and browser engine for gesture tests.
 
 Then `/ui-design polish`.
 

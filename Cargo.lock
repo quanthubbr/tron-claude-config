@@ -148,7 +148,7 @@ dependencies = [
 
 [[package]]
 name = "exonous"
-version = "2.10.6"
+version = "2.10.9"
 dependencies = [
  "chrono",
  "flate2",

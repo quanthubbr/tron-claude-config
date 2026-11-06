@@ -21,6 +21,7 @@ Usage: exonous <command> [flags]
   template               print the PR template that applies here
   draft-path             print where to write this repo's PR body draft
   validate-pr <file>     check a PR body against the template
+  pr create             requires the native exonous CLI; upgrade to use automatic PR handoffs
   vault [show|detect|set <path> [--create]|graph|consolidate [target] <--dry-run|--apply>]   one central root for agent notes
   handoff save --body-file <file> | latest --json   save or resume compact session graphs in existing vaults
 
@@ -165,6 +166,10 @@ const commands = {
   template: runTemplate,
   'draft-path': runDraftPath,
   'validate-pr': runValidatePr,
+  pr: () => {
+    console.error('exonous pr create requires the native CLI. Upgrade exonous using its native installer, then retry the same command; no PR was created.');
+    return 2;
+  },
   vault: () => require('../src/vault-cli').vaultCommand(process.argv.slice(3)),
   handoff: () => require('../src/handoff-cli').handoffCommand(process.argv.slice(3)),
 };

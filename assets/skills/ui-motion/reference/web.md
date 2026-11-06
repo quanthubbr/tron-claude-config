@@ -27,7 +27,7 @@ Same frequency and purpose tables as `SKILL.md`. Keyboard-initiated → stop wit
 | Class/attribute toggles | CSS transition |
 | Mount entry, no JS | `@starting-style` |
 | Predetermined motion under load | CSS `@keyframes` / animation |
-| JS control, CSS perf | WAAPI `element.animate()` |
+| JS control over animation timing | WAAPI `element.animate()` |
 | Springs, layout, exit, gestures | Motion (`motion.dev`) |
 
 ### 4. Properties
@@ -36,7 +36,7 @@ Same frequency and purpose tables as `SKILL.md`. Keyboard-initiated → stop wit
 - No `scale(0)` entrances.
 - Trigger-anchored surfaces: `transform-origin: var(--transform-origin)`.
 - `translateY(100%)` = one element height — prefer over px.
-- Motion: full `transform` string, not `x`/`y` shorthands under load.
+- Before changing Motion `x`/`y`/`scale` to a full `transform` string, identify the installed version, feature, and browser; profile under representative load. Separate library-managed layout transitions from per-frame layout updates. Neither notation guarantees a compositor or GPU path.
 
 ### 5. Easing, duration, springs
 
@@ -53,7 +53,9 @@ Bounce 0.1–0.3; reserve visible bounce for dismiss/playful cases.
 
 ### 6. Interruption & exit
 
-Transitions (or springs) for rapid fire; symmetric enter/exit paths for dismiss surfaces; slow deliberate press, fast release (hold-to-confirm pattern).
+Diagnose the failing interaction before tuning timing or changing tools. Use transitions (or springs) for rapid fire; symmetric enter/exit paths for dismiss surfaces; slow deliberate press, fast release (hold-to-confirm pattern).
+
+When cancelling or removing motion, preserve intended visible content, focus, and final application state. Complete state changes directly; do not await an eliminated animation callback. Avoid redundant container/child entrances and keep controls interactive throughout sequencing.
 
 ### 7. A11y
 
@@ -67,7 +69,7 @@ Transitions (or springs) for rapid fire; symmetric enter/exit paths for dismiss 
 | `scale(0)` enter | `scale(0.95)` + opacity |
 | `ease-in` on UI | ease-out + strong bezier |
 | Keyframes on toasts/toggles | Transitions |
-| Motion x/y under load | `transform` string |
+| Unmeasured shorthand replacement | Profile the installed version, feature, and browser under load |
 | Ungated hover | fine-pointer media query |
 
 ## Recipes

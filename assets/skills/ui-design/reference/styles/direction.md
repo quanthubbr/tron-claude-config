@@ -58,7 +58,7 @@ Before implementation, commit to a deterministic layout pick (seed from brief le
 
 ## Motion rules
 
-If `MOTION_INTENSITY > 4`, ship visible motion (hero enter, section reveals, CTA hover)—or lower the dial and stay static. Every animation needs a one-sentence purpose (hierarchy, story, feedback, state). Max one horizontal marquee per page. GSAP pin/scrub: `start: "top top"`, cleanup in `useEffect`. Honor `prefers-reduced-motion` for intensity >3. No mixing GSAP/Three with Motion in one component tree. Spring default when using Motion: `stiffness: 100`, `damping: 20`. Grain/noise only on fixed `pointer-events-none` overlays.
+If `MOTION_INTENSITY > 4`, ship visible motion (hero enter, section reveals, CTA hover)—or lower the dial and stay static. Every animation needs a one-sentence purpose (hierarchy, story, feedback, state). Max one horizontal marquee per page. GSAP pin/scrub: `start: "top top"`, cleanup in `useEffect`. Honor `prefers-reduced-motion` for intensity >3. Keep a complete static fallback when motion is reduced, unsupported, or interrupted; content and controls must remain available. No mixing GSAP/Three with Motion in one component tree. Spring default when using Motion: `stiffness: 100`, `damping: 20`. Grain/noise only on fixed `pointer-events-none` overlays.
 
 ## States & forms
 
@@ -66,7 +66,7 @@ Ship loading (layout-matched skeletons), empty, error, hover, active (`scale-[0.
 
 ## Assets
 
-Landings are visual: prefer project image tools, then seeded placeholder photography (`picsum.photos/seed/{topic}/{w}/{h}`), never div-built fake dashboards. Logo walls use real SVG marks (e.g. simple-icons CDN) or invented monogram SVGs—not plain text faux logos; no category subtitles under logos. Minimal briefs still need real photography in key slots.
+Landings are visual: prefer project image tools, then seeded placeholder photography (`picsum.photos/seed/{topic}/{w}/{h}`), never div-built fake dashboards. Logo walls use real SVG marks (e.g. simple-icons CDN) or invented monogram SVGs—not plain text faux logos; no category subtitles under logos. Choose assets that serve the brief; static or type-led work does not require an asset kit. Verify real assets render at every delivered viewport width. Reserve image dimensions or aspect ratios, use responsive sources, and set loading priority for actual visibility rather than lazy-loading the first-view focal image.
 
 ## Content bans
 
@@ -78,7 +78,7 @@ Neon outer glows, gradient-filled giant headlines, custom cursors, three equal f
 
 ## Performance & a11y
 
-Animate transform/opacity only. Dark mode designed up front with paired tokens. Target LCP <2.5s, INP <200ms, CLS <0.1. Document z-index layers; do not spam arbitrary high z-index. Cards only when elevation means hierarchy; tint shadows to background hue; one radius system per page.
+Animate transform/opacity only. Dark mode designed up front with paired tokens. Target LCP <2.5s, INP <200ms, CLS <0.1. Label lab measurements with their device/network conditions; use available field data for real-user conclusions and disclose when it is absent. Document z-index layers; do not spam arbitrary high z-index. Cards only when elevation means hierarchy; tint shadows to background hue; one radius system per page.
 
 ## Internal plan (before UI code)
 
@@ -90,6 +90,7 @@ Document briefly: chosen dials and why; AIDA sections present; hero width/line m
 - Zero em-dashes; single page theme; locked accent and radius system
 - Hero viewport, nav, eyebrow, zigzag, CTA, and form contrast rules pass
 - Bento/images/logos/marquee/motion/GSAP rules pass; no scroll listeners in state
-- Mobile collapse, `min-h-[100dvh]`, cleanup on effects, empty/load/error states
+- Mobile collapse, content-sized sections, cleanup on effects, empty/load/error states; use viewport minimum height only where the composition needs it
+- Assets visible at delivered widths; reserved image dimensions and loading priorities checked; static fallback usable; lab and field evidence identified
 - Content and Section 9-style tells absent; dependencies verified; one icon family
 - Dashboards/tools: stop—use Operate mode and official dense UI systems instead

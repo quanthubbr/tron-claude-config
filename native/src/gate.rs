@@ -14,7 +14,7 @@ fn deny_text(kind: &str, why: &str) -> String {
             "exonous: git push blocked — {why}. Run `exonous workflow commit`, review, then `exonous token push` and retry."
         ),
         "pr" => format!(
-            "exonous: gh pr create blocked — {why}. Run `exonous workflow pr`, review, then retry."
+            "exonous: gh pr create blocked — {why}. Run `exonous workflow pr`, review, then use `exonous pr create --body-file <file>`."
         ),
         _ => format!("exonous: blocked — {why}. Run the command again on its own line."),
     }
@@ -359,7 +359,7 @@ fn check_push(home: &Path, call: &shell::Call, opts: &shell::Options) -> Result<
         .map_err(|e| format!("push needs review; {}", token_error("push", e)))
 }
 
-fn check_pr(home: &Path, call: &shell::Call, opts: &shell::Options) -> Result<()> {
+pub fn check_pr(home: &Path, call: &shell::Call, opts: &shell::Options) -> Result<()> {
     if opts.has(&["help"])
         && !matches!(
             opts.last("help"),
@@ -447,7 +447,7 @@ pub fn run(home: &Path, cwd: &Path, adapter: &str, raw: &str) -> payload::Decisi
         .and_then(|opts| match call.kind {
             "commit" => check_commit(home, &call, &opts, &mut warnings),
             "push" => check_push(home, &call, &opts),
-            _ => check_pr(home, &call, &opts),
+            _ => Err("use the managed `exonous pr create` helper for automatic handoff".into()),
         });
     match result {
         Ok(()) => payload::allow(adapter, &warnings),

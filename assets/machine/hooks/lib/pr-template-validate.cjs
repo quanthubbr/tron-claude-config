@@ -9,6 +9,7 @@ const { resolveTemplate } = require('./template.cjs');
 const { gitEnv } = require('./paths.cjs');
 
 const MAX_CHANGED_FILES = 30;
+const PR_CREATE_GUIDANCE = 'Use `exonous pr create --base <base> --head <branch> --title <title> --body-file <file>` so the validated PR and its handoff are created together';
 
 function normalize(text) {
   return text.normalize('NFC').toLowerCase();
@@ -95,6 +96,7 @@ function validateGhPrCreateCommand(command, cwd = process.cwd()) {
 
 module.exports = {
   MAX_CHANGED_FILES,
+  PR_CREATE_GUIDANCE,
   validateBodyContent,
   validateBodyFile,
   validateGhPrCreateCommand,

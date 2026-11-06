@@ -6,7 +6,7 @@ const { spawnSync } = require('child_process');
 
 // A half-updated or broken runtime must still block git/gh: Windsurf, for one, only blocks on exit 2.
 let payload, token, repoRoot, gitEnv, gitOut, analyze, isolationProblem, redirectionProblem;
-let parseOptions, has, COMMIT, PUSH, GH_PR_CREATE, validatePrCreate, prFields;
+let parseOptions, has, COMMIT, PUSH, GH_PR_CREATE, PR_CREATE_GUIDANCE;
 let loadError = null;
 try {
   payload = require('./lib/payload.cjs');
@@ -14,7 +14,7 @@ try {
   ({ repoRoot, gitEnv, gitOut } = require('./lib/paths.cjs'));
   ({ analyze, isolationProblem, redirectionProblem } = require('./lib/shell.cjs'));
   ({ parseOptions, has, COMMIT, PUSH, GH_PR_CREATE } = require('./lib/cli-options.cjs'));
-  ({ validatePrCreate, prFields } = require('./lib/pr-template-validate.cjs'));
+  ({ PR_CREATE_GUIDANCE } = require('./lib/pr-template-validate.cjs'));
 } catch (err) {
   loadError = err;
 }
@@ -185,8 +185,7 @@ function checkPr(call) {
   if (parsed.error) return `cannot verify its options: ${parsed.error}`;
   if (has(parsed, 'help')) return null;
   if (parsed.positional.length) return `unexpected argument "${parsed.positional[0]}"`;
-  const result = validatePrCreate(prFields(parsed), call.cwd);
-  return result.ok ? null : result.reason.replace(/\.$/, '');
+  return PR_CREATE_GUIDANCE;
 }
 
 // ── Gate ─────────────────────────────────────────────────────────────────────

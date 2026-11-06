@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { randomUUID } = require('crypto');
+const { randomUUID, createHash } = require('crypto');
 const vault = require('./vault');
 const paths = require('./paths');
 const { vaultContext } = require('../vault-cli');
@@ -52,6 +52,24 @@ function graph(body) {
   return { v: 1, k: body.k, g: body.g.map((triple) => triple.map(sanitize)) };
 }
 
+function prUrl(body) {
+  const urls = body.g.filter(([subject, relation]) => subject === 'pr' && relation === 'url');
+  if (urls.length !== 1 || !/^https:\/\/github\.com\/[A-Za-z0-9][A-Za-z0-9-]*\/[A-Za-z0-9_.-]+\/pull\/[1-9][0-9]*$/.test(urls[0][2]) || ['.', '..'].includes(urls[0][2].split('/')[4])) throw new Error('invalid PR handoff URL');
+  return urls[0][2];
+}
+
+function existingPr(file, url, repo) {
+  try {
+    const stat = fs.lstatSync(file);
+    if (!stat.isFile() || stat.isSymbolicLink()) throw new Error();
+    const data = JSON.parse(readText(file));
+    if (data.v !== 1 || data.k !== 'pr' || fullTimestamp(data.ts) === null || data.r !== repo.r || typeof data.b !== 'string' || typeof data.h !== 'string' || prUrl(graph(data)) !== url) throw new Error();
+    return data;
+  } catch {
+    throw new Error('invalid existing PR handoff');
+  }
+}
+
 function sessionFolder(root, name) {
   const folder = path.resolve(root, name);
   if (path.dirname(folder) !== path.resolve(root)) throw new Error('invalid handoff repository folder');
@@ -60,6 +78,7 @@ function sessionFolder(root, name) {
 
 function save(body, options = {}) {
   const valid = graph(body);
+  const url = valid.k === 'pr' ? prUrl(valid) : null;
   const ts = options.now || new Date().toISOString();
   if (fullTimestamp(ts) === null) throw new Error('invalid handoff timestamp');
   const root = roots(options)[0];
@@ -68,9 +87,31 @@ function save(body, options = {}) {
   const folder = sessionFolder(root, repo.r);
   fs.mkdirSync(folder, { recursive: true });
   if (fs.lstatSync(folder).isSymbolicLink()) throw new Error('handoff folder must not be a symlink');
-  const file = path.join(folder, `${ts.replace(/:/g, '-')}-${valid.k}-${randomUUID()}.md`);
+  const name = url ? `pr-${createHash('sha256').update(url).digest('hex')}.md` : `${ts.replace(/:/g, '-')}-${valid.k}-${randomUUID()}.md`;
+  const file = path.join(folder, name);
   const content = JSON.stringify({ v: valid.v, ts, k: valid.k, ...Object.fromEntries(Object.entries(repo).map(([key, value]) => [key, sanitize(value)])), g: valid.g });
-  fs.writeFileSync(file, `${content}\n`, { encoding: 'utf8', flag: 'wx', mode: 0o600 });
+  if (url) {
+    const temporary = path.join(folder, `.pr-${randomUUID()}.tmp`);
+    let fd;
+    try {
+      fd = fs.openSync(temporary, 'wx', 0o600);
+      fs.writeFileSync(fd, `${content}\n`, 'utf8');
+      fs.fsyncSync(fd);
+      fs.closeSync(fd);
+      fd = undefined;
+      try { fs.linkSync(temporary, file); }
+      catch (error) {
+        if (error.code !== 'EEXIST') throw error;
+        const first = existingPr(file, url, repo);
+        return { status: 'already-saved', vault: root, path: file, timestamp: first.ts, kind: 'pr' };
+      }
+    } finally {
+      if (fd !== undefined) fs.closeSync(fd);
+      fs.rmSync(temporary, { force: true });
+    }
+  } else {
+    fs.writeFileSync(file, `${content}\n`, { encoding: 'utf8', flag: 'wx', mode: 0o600 });
+  }
   return { status: 'saved', vault: root, path: file, timestamp: ts, kind: valid.k };
 }
 

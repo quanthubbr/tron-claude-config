@@ -507,3 +507,278 @@ fn legacy_spawn_retains_existing_role_brief_in_prompt() {
     assert!(prompt.contains("planner.md"));
     assert!(prompt.ends_with("plan it"));
 }
+
+#[cfg(unix)]
+mod pr_create {
+    use super::*;
+    use exonous::runtime;
+    use std::os::unix::fs::PermissionsExt;
+    struct Fixture {
+        home: tempfile::TempDir,
+        repo: tempfile::TempDir,
+        vault: tempfile::TempDir,
+        bin: tempfile::TempDir,
+        body: std::path::PathBuf,
+    }
+    impl Fixture {
+        fn new() -> Self {
+            let home = tempfile::tempdir().unwrap();
+            let repo = tempfile::tempdir().unwrap();
+            let vault = tempfile::tempdir().unwrap();
+            let bin = tempfile::tempdir().unwrap();
+            runtime::git(repo.path(), &["init", "-q", "-b", "feature"]).unwrap();
+            fs::write(repo.path().join("a"), "a").unwrap();
+            runtime::git(repo.path(), &["add", "."]).unwrap();
+            runtime::git(
+                repo.path(),
+                &[
+                    "-c",
+                    "user.name=T",
+                    "-c",
+                    "user.email=t@t",
+                    "commit",
+                    "-qm",
+                    "init",
+                ],
+            )
+            .unwrap();
+            fs::write(repo.path().join(".claude-template-unused"), "").unwrap();
+            fs::create_dir(repo.path().join(".github")).unwrap();
+            fs::write(
+                repo.path().join(".github/pull_request_template.md"),
+                "## Why\n## Tests\n",
+            )
+            .unwrap();
+            let state = runtime::state(home.path());
+            fs::create_dir_all(state.join("pr")).unwrap();
+            fs::write(
+                home.path().join(".claude/exonous/config.json"),
+                serde_json::json!({"vault":vault.path()}).to_string(),
+            )
+            .unwrap();
+            let body = state
+                .join("pr")
+                .join(format!("{}.md", runtime::repo_key(repo.path()).unwrap()));
+            fs::write(&body, "## Why\nprivate body\n## Tests\npassed\n").unwrap();
+            Self {
+                home,
+                repo,
+                vault,
+                bin,
+                body,
+            }
+        }
+        fn gh(&self, tail: &str) {
+            let script = format!(
+                "#!/bin/sh\nprintf 'called\\n' >>\"$EXONOUS_HOME/calls\"\nprintf '%s\\n' \"$@\" >\"$EXONOUS_HOME/argv\"\nwhile [ \"$#\" -gt 0 ]; do if [ \"$1\" = --body-file ]; then shift; printf '%s' \"$1\" >\"$EXONOUS_HOME/snapshot\"; cat \"$1\" >\"$EXONOUS_HOME/sent\"; break; fi; shift; done\n{tail}\n"
+            );
+            fs::write(self.bin.path().join("gh"), script).unwrap();
+            fs::set_permissions(
+                self.bin.path().join("gh"),
+                fs::Permissions::from_mode(0o700),
+            )
+            .unwrap();
+        }
+        fn run(&self, extra: &[&str]) -> std::process::Output {
+            let path = std::env::join_paths(std::iter::once(self.bin.path().to_path_buf()).chain(
+                std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default()),
+            ))
+            .unwrap();
+            Command::new(env!("CARGO_BIN_EXE_exonous"))
+                .args(["pr", "create", "--title", "private title", "--body-file"])
+                .arg(&self.body)
+                .args(extra)
+                .current_dir(self.repo.path())
+                .env("EXONOUS_HOME", self.home.path())
+                .env("EXONOUS_NO_UPDATE", "1")
+                .env("PR_TEST_BODY", &self.body)
+                .env("PATH", path)
+                .env_remove("PROJECT_MEMORY_VAULT")
+                .output()
+                .unwrap()
+        }
+        fn notes(&self) -> Vec<std::path::PathBuf> {
+            let folder = self
+                .vault
+                .path()
+                .join(self.repo.path().file_name().unwrap());
+            fs::read_dir(folder)
+                .map(|rows| rows.map(|row| row.unwrap().path()).collect())
+                .unwrap_or_default()
+        }
+    }
+    #[test]
+    fn creates_from_private_snapshot_saves_minimal_handoff_and_cleans_expected_draft() {
+        let f = Fixture::new();
+        f.gh("printf 'https://github.com/acme/repo/pull/12\\n'; printf 'gh warning\\n' >&2");
+        let expected = fs::read(&f.body).unwrap();
+        let out = f.run(&["--draft"]);
+        assert!(
+            out.status.success(),
+            "{}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        assert_eq!(out.stdout, b"https://github.com/acme/repo/pull/12\n");
+        assert!(String::from_utf8_lossy(&out.stderr).contains("gh warning"));
+        assert_eq!(fs::read(f.home.path().join("sent")).unwrap(), expected);
+        let snapshot = fs::read_to_string(f.home.path().join("snapshot")).unwrap();
+        assert!(!std::path::Path::new(&snapshot).exists());
+        assert_ne!(std::path::Path::new(&snapshot), f.body);
+        assert!(!f.body.exists());
+        let notes = f.notes();
+        assert_eq!(notes.len(), 1);
+        let note = fs::read_to_string(&notes[0]).unwrap();
+        assert!(note.contains("https://github.com/acme/repo/pull/12"));
+        assert!(!note.contains("private title"));
+        assert!(!note.contains("private body"));
+        assert!(!note.contains("gh warning"));
+    }
+    #[test]
+    fn failed_or_ambiguous_gh_output_never_saves_or_retries() {
+        for (tail, code) in [
+            (
+                "printf 'https://github.com/acme/repo/pull/12\\n'; exit 7",
+                7,
+            ),
+            (
+                "printf 'Created https://github.com/acme/repo/pull/12\\n'",
+                0,
+            ),
+            (
+                "printf 'https://github.com/acme/repo/pull/12\\nhttps://github.com/acme/repo/pull/13\\n'",
+                0,
+            ),
+        ] {
+            let f = Fixture::new();
+            f.gh(tail);
+            let out = f.run(&[]);
+            assert_eq!(out.status.code(), Some(code));
+            assert!(f.body.exists());
+            assert!(f.notes().is_empty());
+            assert_eq!(
+                fs::read_to_string(f.home.path().join("calls")).unwrap(),
+                "called\n"
+            );
+        }
+    }
+
+    #[test]
+    fn cleanup_preserves_changed_replaced_arbitrary_and_unsaved_drafts() {
+        for mode in ["changed", "replaced", "arbitrary", "no-vault", "bad-vault"] {
+            let mut f = Fixture::new();
+            let mutation = match mode {
+                "changed" => "printf changed >\"$PR_TEST_BODY\"; ",
+                "replaced" => {
+                    "cp \"$PR_TEST_BODY\" \"$PR_TEST_BODY.next\"; mv \"$PR_TEST_BODY.next\" \"$PR_TEST_BODY\"; "
+                }
+                "arbitrary" => {
+                    let original = f.body.clone();
+                    f.body = f.repo.path().join("arbitrary.md");
+                    fs::rename(original, &f.body).unwrap();
+                    ""
+                }
+                "no-vault" => {
+                    fs::remove_file(f.home.path().join(".claude/exonous/config.json")).unwrap();
+                    ""
+                }
+                _ => {
+                    fs::write(f.home.path().join(".claude/exonous/config.json"), "invalid")
+                        .unwrap();
+                    ""
+                }
+            };
+            f.gh(&format!(
+                "{mutation}printf 'https://github.com/acme/repo/pull/12\\n'"
+            ));
+            let out = f.run(&[]);
+            assert_eq!(
+                out.status.code(),
+                Some(0),
+                "{mode}: {}",
+                String::from_utf8_lossy(&out.stderr)
+            );
+            assert!(f.body.exists(), "{mode}");
+            assert_eq!(
+                fs::read_to_string(f.home.path().join("calls")).unwrap(),
+                "called\n"
+            );
+            let snapshot = fs::read_to_string(f.home.path().join("snapshot")).unwrap();
+            assert!(!std::path::Path::new(&snapshot).exists());
+            if mode.ends_with("vault") {
+                assert!(f.notes().is_empty());
+            }
+        }
+    }
+
+    #[test]
+    fn validation_rejects_unsupported_duplicate_flags_and_bad_body_before_gh() {
+        for options in [
+            vec!["--repo", "other/repo"],
+            vec!["--draft", "--draft"],
+            vec!["--title", "duplicate"],
+            vec!["--body", "inline"],
+        ] {
+            let f = Fixture::new();
+            f.gh("exit 0");
+            assert_eq!(f.run(&options).status.code(), Some(2));
+            assert!(!f.home.path().join("calls").exists());
+        }
+        let f = Fixture::new();
+        f.gh("exit 0");
+        fs::write(&f.body, "missing headings").unwrap();
+        assert_eq!(f.run(&[]).status.code(), Some(1));
+        assert!(!f.home.path().join("calls").exists());
+        assert_eq!(
+            fs::read_dir(runtime::state(f.home.path()).join("pr"))
+                .unwrap()
+                .count(),
+            1
+        );
+    }
+
+    #[test]
+    fn gh_signals_keep_their_exit_status_and_never_save() {
+        let f = Fixture::new();
+        f.gh("kill -TERM $$");
+        assert_eq!(f.run(&[]).status.code(), Some(143));
+        assert!(f.body.exists());
+        assert!(f.notes().is_empty());
+    }
+
+    #[test]
+    fn another_worktree_draft_and_symlinked_body_are_preserved() {
+        let mut f = Fixture::new();
+        let linked = f.repo.path().join("linked");
+        runtime::git(
+            f.repo.path(),
+            &[
+                "worktree",
+                "add",
+                "-q",
+                "-b",
+                "linked",
+                linked.to_str().unwrap(),
+            ],
+        )
+        .unwrap();
+        let other = runtime::state(f.home.path())
+            .join("pr")
+            .join(format!("{}.md", runtime::repo_key(&linked).unwrap()));
+        fs::rename(&f.body, &other).unwrap();
+        f.body = other;
+        f.gh("printf 'https://github.com/acme/repo/pull/12\\n'");
+        assert!(f.run(&[]).status.success());
+        assert!(f.body.exists());
+        let original = f.body.clone();
+        let link = f.repo.path().join("symlink.md");
+        std::os::unix::fs::symlink(&original, &link).unwrap();
+        f.body = link;
+        assert_eq!(f.run(&[]).status.code(), Some(1));
+        assert!(f.body.is_symlink());
+        assert!(original.exists());
+        assert_eq!(
+            fs::read_to_string(f.home.path().join("calls")).unwrap(),
+            "called\n"
+        );
+    }
+}

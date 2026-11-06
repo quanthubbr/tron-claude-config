@@ -164,3 +164,28 @@ test('unrelated repo Markdown never outranks or blocks a real legacy handoff', (
   fs.writeFileSync(path.join(folder, 'architecture.md'), '{ ordinary Markdown');
   assert.equal(handoff().latest(opts()).path, actual);
 });
+
+const prBody = (url = 'https://github.com/acme/project/pull/42') => ({ v: 1, k: 'pr', g: [['pr', 'url', url], ['pr', 'proof', 'created'], ['pr', 'next', 'review']] });
+
+test('PR handoffs publish one complete deterministic note and preserve the first record', () => {
+  const root = vault('exonous-vault');
+  const one = handoff().save(prBody(), { ...opts(), now: '2026-11-05T12:00:00Z' });
+  const before = fs.readFileSync(one.path, 'utf8');
+  const two = handoff().save({ ...prBody(), g: [...prBody().g, ['pr', 'did', 'later value']] }, { ...opts(), now: '2026-11-05T13:00:00Z' });
+  assert.equal(two.status, 'already-saved');
+  assert.equal(two.path, one.path);
+  assert.equal(fs.readFileSync(one.path, 'utf8'), before);
+  assert.match(path.basename(one.path), /^pr-[a-f0-9]{64}\.md$/);
+  assert.deepEqual(fs.readdirSync(path.join(root, 'avulsas')), [path.basename(one.path)]);
+});
+
+test('PR handoffs reject noncanonical and ambiguous URLs and corrupted existing envelopes', () => {
+  vault('exonous-vault');
+  for (const url of ['https://example.test/acme/project/pull/42', 'https://github.com/acme/project/pull/0', 'https://github.com/acme/project/pull/01', 'https://github.com/acme/project/pull/42?token=secret', 'https://github.com/acme/../pull/1', 'https://github.com/acme/project/pull/42\n']) assert.throws(() => handoff().save(prBody(url), opts()), /URL/);
+  assert.throws(() => handoff().save(body('pr'), opts()), /URL/);
+  assert.throws(() => handoff().save({ ...prBody(), g: [...prBody().g, ['pr', 'url', 'https://github.com/acme/project/pull/43']] }, opts()), /URL/);
+  const saved = handoff().save(prBody(), opts());
+  fs.writeFileSync(saved.path, '{broken');
+  assert.throws(() => handoff().save(prBody(), opts()), /existing PR handoff/);
+  assert.equal(fs.readFileSync(saved.path, 'utf8'), '{broken');
+});

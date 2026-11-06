@@ -7,7 +7,9 @@ use chrono::{DateTime, SecondsFormat, Utc};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
+use sha2::{Digest, Sha256};
 use std::fs::{self, OpenOptions};
+use std::hash::BuildHasher;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
@@ -20,6 +22,32 @@ pub struct Graph {
     pub v: u8,
     pub k: String,
     pub g: Vec<[String; 3]>,
+}
+
+pub fn canonical_pr_url(url: &str) -> bool {
+    static URL: OnceLock<Regex> = OnceLock::new();
+    URL.get_or_init(|| {
+        Regex::new(
+            r"\Ahttps://github\.com/[A-Za-z0-9][A-Za-z0-9-]*/[A-Za-z0-9_.-]+/pull/[1-9][0-9]*\z",
+        )
+        .unwrap()
+    })
+    .is_match(url)
+        && !matches!(url.split('/').nth(4), Some("." | ".."))
+}
+
+fn pr_url(graph: &Graph) -> Result<&str> {
+    let urls = graph
+        .g
+        .iter()
+        .filter(|triple| triple[0] == "pr" && triple[1] == "url")
+        .collect::<Vec<_>>();
+    if urls.len() != 1 || !canonical_pr_url(&urls[0][2]) {
+        return Err(
+            "invalid PR handoff graph: expected exactly one canonical pr url triple".into(),
+        );
+    }
+    Ok(&urls[0][2])
 }
 
 fn scrub(value: &Value) -> Value {
@@ -77,11 +105,15 @@ pub fn validate_graph(body: &Value) -> Result<Graph> {
             return Err(format!("invalid handoff graph: missing {relation}"));
         }
     }
-    Ok(Graph {
+    let result = Graph {
         v: 1,
         k: body["k"].as_str().unwrap().into(),
         g: graph,
-    })
+    };
+    if result.k == "pr" {
+        pr_url(&result)?;
+    }
+    Ok(result)
 }
 
 fn timestamp(raw: &str) -> Option<i64> {
@@ -186,13 +218,23 @@ pub fn save(home: &Path, cwd: &Path, body: &Value, now: Option<&str>) -> Result<
     fs::create_dir_all(&folder).map_err(|_| "cannot create handoff folder")?;
     vault::no_symlink_children(&root, &folder)
         .map_err(|_| "handoff folder must not be a symlink")?;
-    let file = folder.join(format!(
-        "{}-{}-{}.md",
-        ts.replace(':', "-"),
-        graph.k,
-        runtime::nonce()
-    ));
+    let file = if graph.k == "pr" {
+        folder.join(format!(
+            "pr-{:x}.md",
+            Sha256::digest(pr_url(&graph)?.as_bytes())
+        ))
+    } else {
+        folder.join(format!(
+            "{}-{}-{}.md",
+            ts.replace(':', "-"),
+            graph.k,
+            runtime::nonce()
+        ))
+    };
     let content = json!({"v":graph.v,"ts":ts,"k":graph.k,"r":sanitize(&repo),"b":sanitize(&branch),"h":sanitize(&head),"g":graph.g});
+    if graph.k == "pr" {
+        return publish_pr(&folder, &file, &content, &root, &ts, &repo, pr_url(&graph)?);
+    }
     let mut options = OpenOptions::new();
     options.write(true).create_new(true);
     #[cfg(unix)]
@@ -208,6 +250,70 @@ pub fn save(home: &Path, cwd: &Path, body: &Value, now: Option<&str>) -> Result<
         .and_then(|_| output.sync_all())
         .map_err(|_| "cannot persist handoff note")?;
     Ok(json!({"status":"saved","vault":root,"path":file,"timestamp":ts,"kind":graph.k}))
+}
+
+fn publish_pr(
+    folder: &Path,
+    file: &Path,
+    content: &Value,
+    root: &Path,
+    ts: &str,
+    repo: &str,
+    url: &str,
+) -> Result<Value> {
+    let random = std::collections::hash_map::RandomState::new().hash_one(runtime::nonce());
+    let temporary = folder.join(format!(".pr-{}-{random:x}.tmp", runtime::nonce()));
+    let mut options = OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600).custom_flags(libc::O_NOFOLLOW);
+    }
+    let mut output = options
+        .open(&temporary)
+        .map_err(|_| "cannot create private handoff temporary")?;
+    let result = (|| {
+        output
+            .write_all(format!("{content}\n").as_bytes())
+            .and_then(|_| output.sync_all())
+            .map_err(|_| "cannot persist handoff note")?;
+        drop(output);
+        match fs::hard_link(&temporary, file) {
+            Ok(()) => {
+                Ok(json!({"status":"saved","vault":root,"path":file,"timestamp":ts,"kind":"pr"}))
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+                let metadata =
+                    fs::symlink_metadata(file).map_err(|_| "cannot inspect existing PR handoff")?;
+                if !metadata.is_file() || metadata.file_type().is_symlink() {
+                    return Err("existing PR handoff must be regular".into());
+                }
+                let existing: Value =
+                    serde_json::from_slice(&vault::read_regular(file, MAX_BYTES)?)
+                        .map_err(|_| "existing PR handoff is invalid")?;
+                let graph = validate_graph(&existing)?;
+                if graph.k != "pr"
+                    || pr_url(&graph)? != url
+                    || existing["ts"].as_str().and_then(timestamp).is_none()
+                    || existing["r"] != repo
+                    || !existing["b"].is_string()
+                    || !existing["h"].is_string()
+                {
+                    return Err("existing PR handoff envelope does not match".into());
+                }
+                Ok(
+                    json!({"status":"already-saved","vault":root,"path":file,"timestamp":existing["ts"],"kind":"pr"}),
+                )
+            }
+            Err(_) => Err("cannot publish PR handoff".into()),
+        }
+    })();
+    let cleanup = fs::remove_file(&temporary);
+    if cleanup.is_err() && result.is_ok() {
+        return Err("cannot remove handoff temporary".into());
+    }
+    result
 }
 
 pub fn dated_name(name: &str) -> bool {

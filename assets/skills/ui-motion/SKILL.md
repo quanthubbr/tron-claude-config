@@ -79,12 +79,14 @@ High-frequency paths, keyboard actions, and data users must read should stay sti
 
 ### Performance
 
-Animate **transform** and **opacity** (plus sanctioned **clip-path** where recipes allow). Avoid width/height/margin/padding/top/left — they trigger layout every frame.
+Prefer **transform** and **opacity** (plus sanctioned **clip-path** where recipes allow). Per-frame changes to width/height/margin/padding/top/left can trigger layout; distinguish those updates from library-managed layout transitions.
 
 - CSS transitions retarget mid-flight; keyframes restart — use transitions for rapid toggles (toasts, stacks).
-- Springs carry velocity through interruption — good for drags.
-- Motion library shorthand `x`/`y`/`scale` runs on the main thread; under load use `transform: "translateX(...)"` for GPU paths.
+- Springs carry velocity through interruption — good for drags. Cancellation or removal must leave intended content visible, focus valid, and state settled without waiting for callbacks from animations that no longer run.
+- Diagnose before optimizing: identify the installed library version, feature used, and target browser. Profile the interaction under representative load before replacing `x`/`y`/`scale` with a full `transform` string; syntax alone proves neither execution thread nor GPU acceleration.
 - Do not drive child transforms via a CSS variable on a parent — set `transform` on the element being moved.
+
+Avoid redundant entrances on both a container and its children. Sequencing must keep controls usable while motion runs.
 
 ### Physicality shortcuts
 

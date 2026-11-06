@@ -7,6 +7,7 @@ pub mod install;
 pub mod memory;
 pub mod migrate;
 pub mod payload;
+pub mod pr;
 pub mod project_memory;
 pub mod reminder;
 pub mod routing;

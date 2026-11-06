@@ -7,8 +7,8 @@ Lock a single review target, execute **Track A** (judgment) and **Track B** (ins
 - Track A and Track B are both required every run.
 - Exposed Task/subagent tooling → launch A and B as **parallel isolated workers** (see exo-designer briefs below). Parent-thread execution is **degraded** unless no subagent tool exists (or the user declined where the harness asks)—banner: `⚠️ DEGRADED: single-context (<reason>)`.
 - **Track A must finish before Track B influences synthesis.** Instrumentation output still anchors the merge even though it is deterministic.
-- Omitting B fails the command unless the detect CLI is absent or crashed after a genuine attempt.
-- Viewable targets require browser inspection when automation exists.
+- Omitting B fails the command unless the detect CLI is absent or crashed after a genuine attempt. For native-only targets, B inspects platform tooling and runtime behavior; mark the web detector and DOM overlay inapplicable without attempting them. Both tracks and the complete UX judgment remain required; web targets retain every detector/browser requirement.
+- Viewable web targets require browser inspection when automation exists; native-only targets use available platform inspection.
 - Critique-only servers: `--background`, recorded stop method, stop before final report unless the user keeps them.
 - Claim in-page overlays only after successful script injection **and** an in-tab detector pass.
 - **Questions are last** in the message—full report first; nothing after questions.
@@ -56,7 +56,7 @@ Spawn **exo-designer** with an isolated brief equivalent to:
 
 Spawn **exo-designer** with an isolated brief equivalent to:
 
-**CLI scan:**
+**CLI scan (web targets; native-only targets use applicable platform/runtime evidence):**
 
 ```bash
 <skill-dir>/scripts/ui-design detect --json [markup-targets...]
@@ -68,7 +68,7 @@ Spawn **exo-designer** with an isolated brief equivalent to:
 - Process exit code 0 = clean; 2 = findings present.
 - Missing detector → report unavailable; continue manual/browser review.
 
-**Browser overlay (required for viewable targets when automation exists):**
+**Browser overlay (required for viewable web targets when automation exists; native-only targets use platform inspection):**
 
 1. Fresh tab; prefer harness browser tools over custom Playwright.
 2. Preflight **mutable** injection (`document.title`, append `<script>`). Read-only evaluate does not count.
@@ -337,8 +337,8 @@ Renormalize totals when 7 and/or 10 are `n/a`; never display `/40` on a partial 
 
 B must return structured bundles the parent can merge without rerun:
 
-1. CLI: exit code, finding count, top rules with paths (or “skipped: URL-only”)
-2. Browser: injection yes/no, port used, console excerpt or “none”
+1. CLI: exit code, finding count, top rules with paths (or “skipped: URL-only” / “inapplicable: native-only” with platform evidence)
+2. Browser: injection yes/no, port used, console excerpt or “none”; native-only targets report platform inspection and mark the DOM overlay inapplicable
 3. False positives: list with one-line rebuttal each
 4. Skips: step name + reason (mutation blocked, tool missing, user URL only)
 

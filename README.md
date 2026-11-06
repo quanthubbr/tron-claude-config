@@ -8,10 +8,17 @@ Shared rules, delivery workflows, memory and commit gates for AI coding agents. 
 
 ## Install
 
-With Node 18+:
+With Node 18+, install the [official npm package](https://www.npmjs.com/package/exonous) globally:
 
 ```sh
-npx exonous
+npm install --global exonous@latest
+exonous install
+```
+
+Or run it without a global npm installation:
+
+```sh
+npx exonous@latest
 ```
 
 The command runs the packaged native executable and installs the detected tools. The npm package contains binaries for macOS ARM64/x64, Linux ARM64/x64 and Windows x64, plus shared assets. Installation requires no Rust compiler, build step or package lifecycle scripts.

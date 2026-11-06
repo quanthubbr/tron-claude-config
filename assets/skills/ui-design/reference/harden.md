@@ -61,14 +61,14 @@ Responsive type: `clamp()`; 16px body floor on mobile (14px only for truly secon
 
 RTL: logical properties (`margin-inline-start`, `padding-inline`, `border-inline-end`) or `[dir="rtl"]` transforms.
 
-UTF-8 everywhere; test CJK and emoji.
+UTF-8 everywhere; test CJK and emoji. Preserve canonical stored text; derive search-normalized values separately. Do not strip meaningful diacritics, joiners, or other script characters to simplify matching.
 
 ```javascript
 new Intl.DateTimeFormat('de-DE').format(date);
 new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 ```
 
-Pluralization via i18n library, not English-only string hacks.
+Use the active locale for dates, numbers, currency, and pluralization; the examples above illustrate APIs, not fixed locales for every user. Pluralization via i18n library, not English-only string hacks.
 
 ### Errors
 
@@ -81,6 +81,8 @@ API: status-appropriate UX (400 validation, 401 login, 403 permission, 404 not f
 Graceful degradation: core path without JS where possible; alt text; progressive enhancement.
 
 ### Edge cases
+
+Gestures: handle `pointercancel`, lost pointer capture, and window blur; define extra-pointer behavior. Resolve scroll conflicts without trapping the page; clear drag state and recover to a usable position after interruption.
 
 Empty, loading (named operation, estimates), large data (pagination/virtual scroll), double-submit guards, race handling, optimistic rollback, permission states with explanation, browser feature detection + polyfills.
 
@@ -109,7 +111,7 @@ const throttledScroll = throttle(handleScroll, 100);
 
 ## Testing
 
-Manual: extremes, locales, offline, 3G throttle, screen reader, keyboard-only, old browsers.
+Manual: extremes, locales, offline, 3G throttle, screen reader, keyboard-only, old browsers. Screenshots prove layout only; gesture evidence names the actual device, OS, and browser engine tested, including interruption and recovery.
 
 Automated: unit edge cases, integration errors, E2E critical paths, visual regression, axe/WAVE.
 

@@ -139,11 +139,18 @@ fn protected_push_and_pr_body_are_checked() {
         "## Why\n## Tests",
     )
     .unwrap();
+    let direct = run(
+        home.path(),
+        repo.path(),
+        "gh pr create --body 'Why: fix; Tests: pass'",
+    );
+    assert_eq!(direct.code, 2);
+    assert!(direct.stderr.contains("exonous pr create"));
     assert_eq!(
         run(
             home.path(),
             repo.path(),
-            "gh pr create --body 'Why: fix; Tests: pass'"
+            "exonous pr create --body-file draft.md"
         )
         .code,
         0
@@ -301,14 +308,14 @@ fn pr_size_counts_content_changes_but_excludes_pure_moves() {
         ],
     )
     .unwrap();
+    let call = exonous::shell::analyze("gh pr create --base main --body x", repo.path())
+        .unwrap()
+        .unwrap();
+    let options = exonous::shell::options(&call.args, "pr").unwrap();
     assert!(
-        run(
-            home.path(),
-            repo.path(),
-            "gh pr create --base main --body x"
-        )
-        .stderr
-        .contains("max 30")
+        gate::check_pr(home.path(), &call, &options)
+            .unwrap_err()
+            .contains("max 30")
     );
 }
 

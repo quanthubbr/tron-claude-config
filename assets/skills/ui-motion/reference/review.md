@@ -16,18 +16,20 @@ Specialized motion review only. Default **flag**; approval is earned.
 4. **Sub-300ms UI** — unless justified (drawer/marketing tiers).
 5. **Origin & physicality** — trigger-anchored origin; no `scale(0)`; modals centered OK.
 6. **Interruptibility** — transitions/springs for rapid/gesture UI; not keyframes that restart.
-7. **GPU props** — transform/opacity; no layout props; Motion shorthands under load → full transform string.
+7. **Measured performance** — prefer transform/opacity; distinguish per-frame layout updates from library-managed layout transitions. Record installed library version, feature, and browser; profile under load before recommending full `transform` over `x`/`y`/`scale`. Neither syntax guarantees GPU acceleration.
 8. **Accessibility** — reduced motion (gentler, not zero); hover behind `(hover: hover) and (pointer: fine)`.
 9. **Asymmetric timing** — slow deliberate user phase, fast system response.
 10. **Cohesion** — motion matches product personality; blur(2px) seam optional on bad crossfades.
 
 ### Escalate immediately
 
-`transition: all`; `scale(0)`; ease-in on UI; animation on keyboard/high-frequency; UI &gt;300ms unjustified; center origin on anchored popover; keyframes on toasts/toggles; layout animation; Motion x/y on busy pages; parent CSS var driving child transform; missing reduced-motion or hover gate; symmetric press/release on hold flows; group entrance without 30–80ms stagger.
+`transition: all`; `scale(0)`; ease-in on UI; animation on keyboard/high-frequency; UI &gt;300ms unjustified; center origin on anchored popover; keyframes on toasts/toggles; unmeasured per-frame layout updates; parent CSS var driving child transform; missing reduced-motion or hover gate; symmetric press/release on hold flows; redundant container/child entrances; sequencing that blocks input; cancellation that strands content, focus, or final state.
 
 ### Fix preference order
 
-1. Delete animation → 2. Reduce → 3. Fix easing → 4. Fix origin/physicality → 5. Interruptible mechanism → 6. GPU path → 7. Asymmetric timing → 8. Polish (stagger, blur, `@starting-style`, spring) → 9. A11y & cohesion.
+Diagnose the cause before optimizing; validate performance findings under representative load.
+
+1. Delete animation → 2. Reduce → 3. Fix easing → 4. Fix origin/physicality → 5. Interruptible mechanism → 6. Measured rendering improvement → 7. Asymmetric timing → 8. Polish (stagger, blur, `@starting-style`, spring) → 9. A11y & cohesion.
 
 ### Required output
 
@@ -38,7 +40,7 @@ Specialized motion review only. Default **flag**; approval is earned.
 
 **Verdict tiers:** feel-breaking → simplifications → performance → interruptibility → origin/cohesion → a11y.
 
-Close with **Block** (any feel-breaking, keyboard motion, scale(0), ease-in, easy GPU fix missed) or **Approve**.
+Close with **Block** (any feel-breaking, keyboard motion, scale(0), ease-in, confirmed performance defect left unresolved) or **Approve**.
 
 Cite `file:line`. Values from reference tables below — never approximate.
 
@@ -72,11 +74,11 @@ No `scale(0)` — use 0.9–0.97 + opacity. Popovers: `transform-origin: var(--t
 
 ### 4. Interruptibility
 
-Transitions vs keyframes; `@starting-style` or mount flag; springs for gestures `{ type: "spring", duration: 0.5, bounce: 0.2 }` bounce 0.1–0.3; velocity dismiss &gt; ~0.11; rubber-band not wall; asymmetric hold/release.
+Transitions vs keyframes; `@starting-style` or mount flag; springs for gestures `{ type: "spring", duration: 0.5, bounce: 0.2 }` bounce 0.1–0.3; velocity dismiss &gt; ~0.11; rubber-band not wall; asymmetric hold/release. Cancel or remove motion without losing intended visible content, valid focus, or final state; no waiting for callbacks that removal eliminates.
 
 ### 5. Performance
 
-transform/opacity; no `transition: all`; no parent `--var` driving child transform; Motion → transform string; CSS/WAAPI for predetermined under load; blur &lt;20px.
+Prefer transform/opacity; no `transition: all`; no parent `--var` driving child transform; blur &lt;20px. Check installed library version, feature, and browser; separate layout transitions from per-frame updates and profile under representative load before changing `x`/`y`/`scale` to full `transform`. Record evidence rather than assuming thread or GPU behavior.
 
 ### 6. Accessibility
 
@@ -84,7 +86,7 @@ Reduced motion + hover gating (snippets in `SKILL.md`).
 
 ### 7. Cohesion & tokens
 
-Personality match; consolidate duplicate beziers; stagger 30–80ms; crossfade blur mask.
+Personality match; consolidate duplicate beziers; decorative stagger 30–80ms without blocking interaction; crossfade blur mask. Avoid simultaneous redundant entrances on containers and their children.
 
 ### 8. Missed opportunities
 

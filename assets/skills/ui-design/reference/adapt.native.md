@@ -28,7 +28,7 @@ Reconform: platform nav, platform controls, touch-first, Dynamic Type/sp. Full p
 
 ## Verify
 
-Drive structure from size classes—never device-model checks. Safe areas/insets in every configuration. Simulators for breadth; hardware for posture, gestures, performance.
+Drive structure from size classes—never device-model checks. Safe areas/insets in every configuration. Simulators for breadth; hardware for posture, gestures, performance. Exercise gesture cancellation, focus loss, extra touches, scroll competition, and recovery. Screenshots prove layout only; name the actual device, OS, and native runtime tested (plus browser engine for embedded web gestures).
 
 Then `/ui-design polish`.
 

@@ -40,6 +40,7 @@ Fewest roles/families for unmistakable hierarchy. Combine size, weight, space, t
 
 - Body readable and zoomable; 1rem/16px web floor unless dense role, platform norm, or user setting says otherwise.
 - Prose 45–75ch; wider lines → more leading.
+- Progressively enhance web headings with `text-wrap: balance` and body copy with `text-wrap: pretty` where supported; keep readable fallback wrapping and preserve intentional line breaks. Verify at delivered widths and languages.
 - Light-on-dark: slightly more leading, tracking, and weight when the face needs it.
 - Tune leading to face, width, language, contrast—not one global ratio.
 - Repeat roles identically across states.

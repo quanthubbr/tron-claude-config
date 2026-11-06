@@ -1,6 +1,14 @@
 # Decisão sobre a leva de fontes de 2026-11-06
 
-Decisão: adotar correções pequenas com benefício local demonstrável. Rejeitar a importação integral dos novos motores, catálogos e workflows. Adoção nesta nota significa seleção para implementação; nenhum port ou avanço de pin foi executado.
+Decisão: adotar correções pequenas com benefício local demonstrável. Rejeitar a importação integral dos novos motores, catálogos e workflows. A análise original abaixo registra a seleção para implementação. O estado da entrega está na seção seguinte; os pins das fontes permanecem inalterados.
+
+## Estado da entrega
+
+- [PR #69](https://github.com/zaqueu-1/exonous/pull/69), versão 2.10.5: guard de todos os destinos de edições em lote, extensões adicionais, associação exata de diagnósticos, pipelines com consumo integral e propriedade de buffers Go. Merge concluído após CI multiplataforma verde; 577 testes Node passaram localmente.
+- [PR #70](https://github.com/zaqueu-1/exonous/pull/70), versão 2.10.6: integridade do engine 0.1.5 em todos os launchers automáticos, com manifesto fixado, staging privado e override explícito. 591 testes Node e 136 Rust, fmt e Clippy completos passaram localmente. Merge concluído após CI multiplataforma verde, incluindo os launchers e seletores Windows, WSL e instalações npm.
+- Esta unidade documental aplica as orientações selecionadas de UI e motion nas referências existentes: desempenho condicionado à versão e ao perfil, interrupções, gestos, texto, crítica nativa, assets e limites da aprovação de hooks.
+
+O relatório dos 56 escopos permanece como registro da análise inicial. As implementações selecionadas não importam escopos inteiros nem resolvem as perguntas dos itens adiados.
 
 ## Base da análise
 

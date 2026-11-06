@@ -12,11 +12,12 @@ exonous gates `git commit`, `git push` and `gh pr create` in every gated AI tool
 ```
 /commit-changes → /security-review → /code-review → exonous token commit → git commit   (token: one commit of the staged tree, 15 min)
 force-push or push to main/master → only on the user's explicit request → exonous token push → git push
-/make-pr → ≤ 30 changed files → body at `exonous draft-path` → exonous validate-pr <file> → gh pr create --body-file <file>
+/make-pr → ≤ 30 changed files → body at `exonous draft-path` → exonous validate-pr <file> → exonous pr create --body-file <file>
 ```
 
 - Run each gated command **alone** (optionally after one `cd <dir> &&`): no `&&` chains, pipes, `;`, wrappers, `sh -c`, `-a`/`-i`/`-o`/`-p` or pathspecs on `git commit`.
-- If the gate blocks you, read its reason, run `exonous workflow commit` (or `pr`), fix what it names, then retry. Never work around it.
+- If the gate blocks you before execution, read its reason, run `exonous workflow commit` (or `pr`), fix what it names, then retry the managed command. Never work around it.
+- After remote PR success, memory failure or `no-vault` never justifies repeating creation. For ambiguous output, inspect the remote PR state before another attempt; use `/make-pr`'s explicit handoff fallback for a confirmed existing PR.
 
 Steps:
 1. Run `git status --short` and `git branch --show-current`. If there is nothing to commit and nothing unpushed, say so and stop.

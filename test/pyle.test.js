@@ -219,15 +219,18 @@ test('pushing a branch that does not exist locally says so', () => {
   assert.ok(!/cannot resolve what/.test(res.stderr));
 });
 
-test('gh pr create is checked against the template', () => {
+test('direct PR creation is blocked and the native helper is allowed', () => {
   const { dir, env } = setup();
   fs.mkdirSync(path.join(dir, '.github'));
   fs.writeFileSync(path.join(dir, '.github', 'pull_request_template.md'), '## Summary\n## Test plan\n');
   fs.writeFileSync(path.join(dir, 'body.md'), '## Summary\nx\n## Test plan\ny\n');
-  assert.strictEqual(run('pr', claude('gh pr create --body-file body.md', dir), env).code, 0);
+  const direct = run('pr', claude('gh pr create --body-file body.md', dir), env);
+  assert.strictEqual(direct.code, 2);
+  assert.match(direct.stderr, /exonous pr create/);
+  assert.strictEqual(run('pr', claude('exonous pr create --base main --title test --body-file body.md', dir), env).code, 0);
   const res = run('pr', claude('gh -R o/r pr create --body "## Summary"', dir), env);
   assert.strictEqual(res.code, 2);
-  assert.match(res.stderr, /Test plan/);
+  assert.match(res.stderr, /exonous pr create/);
   assert.match(res.stderr, /exonous workflow pr/);
 });
 
@@ -373,7 +376,7 @@ test('gh pr create must run alone and with known options', () => {
   assert.strictEqual(run('pr', claude('gh pr create --body-file body.md && echo ok', dir), env).code, 2);
   assert.strictEqual(run('pr', claude('gh pr create --body-file body.md --frob', dir), env).code, 2);
   assert.strictEqual(run('pr', claude('gh pr create --body-file body.md extra', dir), env).code, 2);
-  assert.strictEqual(run('pr', claude('cd . && gh pr create -F body.md', dir), env).code, 0);
+  assert.strictEqual(run('pr', claude('cd . && gh pr create -F body.md', dir), env).code, 2);
 });
 
 test('gh pr create denies an inline gh config dir, plain or through env', () => {
@@ -391,7 +394,7 @@ test('gh pr create denies an inline gh config dir, plain or through env', () => 
     if (!/points gh at a config/.test(redirectionProblem(call) || '')) failures.push(`${wrapped} not a redirection`);
   }
   assert.deepStrictEqual(failures, []);
-  assert.strictEqual(run('pr', claude('FOO=1 gh pr create -F body.md', dir), env).code, 0);
+  assert.strictEqual(run('pr', claude('FOO=1 gh pr create -F body.md', dir), env).code, 2);
   assert.strictEqual(run('pr', claude('FOO=1 gh pr list', dir), env).code, 0);
 });
 
@@ -592,7 +595,7 @@ test('PR titles are checked in the body only, and --base comes from the parsed o
   fs.writeFileSync(path.join(dir, '.github', 'pull_request_template.md'), '## Summary\n## Test plan\n');
   assert.strictEqual(run('pr', claude('gh pr create --title "## Summary ## Test plan" --body "x"', dir), env).code, 2);
   assert.strictEqual(run('pr', claude('gh pr create --label "## Summary" --label "## Test plan" --fill', dir), env).code, 2);
-  assert.strictEqual(run('pr', claude('gh pr create --title t --body "## Summary\n## Test plan"', dir), env).code, 0);
+  assert.strictEqual(run('pr', claude('gh pr create --title t --body "## Summary\n## Test plan"', dir), env).code, 2);
 });
 
 test('a hook runtime that cannot load fails closed for git/gh (exit 2) and open for anything else', () => {
