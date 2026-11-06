@@ -1,7 +1,7 @@
 use crate::runtime::Result;
 use crate::{install, runtime};
 use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
+use sha2::{Digest, Sha256, Sha512};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
@@ -16,6 +16,7 @@ const MAX_BUNDLE: u64 = 128 * 1024 * 1024;
 const MAX_EXPANDED: u64 = 512 * 1024 * 1024;
 const SOURCE: &str = "https://github.com/zaqueu-1/exonous.git";
 const RELEASES: &str = "https://github.com/zaqueu-1/exonous/releases/download";
+const REGISTRY: &str = "https://registry.npmjs.org/exonous";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 struct Version(u64, u64, u64);
@@ -121,6 +122,90 @@ fn verify_checksum(raw: &str, filename: &str, file: &Path) -> Result<()> {
     Ok(())
 }
 
+fn sha512_sri(value: &str) -> Result<[u8; 64]> {
+    let encoded = value
+        .strip_prefix("sha512-")
+        .ok_or("npm integrity must be one canonical SHA512 SRI")?;
+    if encoded.len() != 88 || !encoded.ends_with("==") {
+        return Err("npm integrity must be one canonical SHA512 SRI".into());
+    }
+    let mut bytes = [0u8; 64];
+    let mut accumulator = 0u32;
+    let mut bits = 0;
+    let mut offset = 0;
+    for byte in encoded.bytes().take(86) {
+        let value = match byte {
+            b'A'..=b'Z' => byte - b'A',
+            b'a'..=b'z' => byte - b'a' + 26,
+            b'0'..=b'9' => byte - b'0' + 52,
+            b'+' => 62,
+            b'/' => 63,
+            _ => return Err("npm integrity must be one canonical SHA512 SRI".into()),
+        };
+        accumulator = (accumulator << 6) | value as u32;
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            bytes[offset] = (accumulator >> bits) as u8;
+            offset += 1;
+        }
+    }
+    if accumulator & 15 != 0 {
+        return Err("npm integrity must be one canonical SHA512 SRI".into());
+    }
+    Ok(bytes)
+}
+
+struct NpmMetadata {
+    tarball: String,
+    integrity: [u8; 64],
+}
+
+fn npm_metadata(raw: &str, release: &Release) -> Result<NpmMetadata> {
+    let value: Value = serde_json::from_str(raw).map_err(|_| "invalid npm release metadata")?;
+    let version = release.version.text();
+    let sha = value["gitHead"]
+        .as_str()
+        .ok_or("npm release has no source commit")?;
+    if value["name"] != "exonous"
+        || value["version"] != version
+        || sha.len() != 40
+        || !sha.bytes().all(|byte| byte.is_ascii_hexdigit())
+        || sha != release.sha
+    {
+        return Err("npm release identity or source commit mismatch".into());
+    }
+    let tarball = format!("{REGISTRY}/-/exonous-{version}.tgz");
+    if value["dist"]["tarball"].as_str() != Some(&tarball) {
+        return Err("npm release tarball URL is not canonical".into());
+    }
+    let integrity = sha512_sri(
+        value["dist"]["integrity"]
+            .as_str()
+            .ok_or("npm release has no integrity")?,
+    )?;
+    Ok(NpmMetadata { tarball, integrity })
+}
+
+fn verify_npm_integrity(file: &Path, expected: &[u8; 64]) -> Result<()> {
+    let mut file = fs::File::open(file).map_err(|_| "cannot read npm tarball")?;
+    let mut hash = Sha512::new();
+    let mut buffer = [0u8; 65536];
+    loop {
+        let count = file
+            .read(&mut buffer)
+            .map_err(|_| "cannot hash npm tarball")?;
+        if count == 0 {
+            break;
+        }
+        hash.update(&buffer[..count]);
+    }
+    if hash.finalize().as_slice() != expected {
+        return Err("npm tarball SHA512 integrity verification failed".into());
+    }
+    Ok(())
+}
+
 fn archive_path(path: &Path) -> Result<PathBuf> {
     let text = path.to_str().ok_or("archive path is not UTF-8")?;
     if text.len() > 512 || text.contains(['\\', ':', '\0']) {
@@ -152,7 +237,7 @@ fn archive_path(path: &Path) -> Result<PathBuf> {
     Ok(result)
 }
 
-fn unpack(file: &Path, destination: &Path) -> Result<()> {
+fn unpack(file: &Path, destination: &Path, npm: bool) -> Result<()> {
     let mut seen = BTreeSet::new();
     let mut total = 0u64;
     for pass in 0..2 {
@@ -176,20 +261,23 @@ fn unpack(file: &Path, destination: &Path) -> Result<()> {
                 .next()
                 .and_then(|part| part.as_os_str().to_str())
                 .ok_or("invalid archive root")?;
-            if ![
-                "assets",
-                "exonous",
-                "exonous.exe",
-                "Cargo.toml",
-                "Cargo.lock",
-                "package.json",
-                "LICENSE",
-                "LICENSE.md",
-                "THIRD-PARTY-NOTICES.md",
-                "README.md",
-            ]
-            .contains(&root)
-            {
+            if if npm {
+                root != "package"
+            } else {
+                ![
+                    "assets",
+                    "exonous",
+                    "exonous.exe",
+                    "Cargo.toml",
+                    "Cargo.lock",
+                    "package.json",
+                    "LICENSE",
+                    "LICENSE.md",
+                    "THIRD-PARTY-NOTICES.md",
+                    "README.md",
+                ]
+                .contains(&root)
+            } {
                 return Err("unexpected release archive root".into());
             }
             if pass == 0 {
@@ -546,23 +634,29 @@ fn pinned(info: &Value, cwd: &Path) -> bool {
     false
 }
 
-fn validate_bundle(bundle: &Path, version: &str) -> Result<()> {
+fn validate_bundle(bundle: &Path, version: &str, npm_sha: Option<&str>) -> Result<()> {
     let package: Value = serde_json::from_str(&runtime::read_limited(
         &bundle.join("package.json"),
         1024 * 1024,
     )?)
     .map_err(|_| "invalid release package metadata")?;
-    if package["name"] != "exonous" || package["version"] != version {
+    if package["name"] != "exonous"
+        || package["version"] != version
+        || npm_sha.is_some_and(|sha| package["gitHead"].as_str() != Some(sha))
+    {
         return Err("release package identity mismatch".into());
     }
-    for name in [
-        if cfg!(windows) {
-            "exonous.exe"
-        } else {
-            "exonous"
-        },
-        "assets/THIRD-PARTY-NOTICES.md",
-    ] {
+    let binary = if cfg!(windows) {
+        "exonous.exe"
+    } else {
+        "exonous"
+    };
+    let binary = if npm_sha.is_some() {
+        format!("native/{}/{binary}", target()?)
+    } else {
+        binary.into()
+    };
+    for name in [binary.as_str(), "assets/THIRD-PARTY-NOTICES.md"] {
         if !bundle.join(name).is_file() {
             return Err("native release is missing required files".into());
         }
@@ -626,20 +720,54 @@ fn run_with(
         return Err("install changed during update; retry".into());
     }
     let staging = Temporary::new(&runtime::state(home))?;
-    let filename = format!("exonous-{}.tar.gz", target()?);
-    let archive = staging.path.join(&filename);
-    let checksums = staging.path.join("SHA256SUMS");
-    let base = format!("{RELEASES}/v{}", latest.version.text());
-    source.download(&format!("{base}/SHA256SUMS"), &checksums, 64 * 1024)?;
-    source.download(&format!("{base}/{filename}"), &archive, MAX_BUNDLE)?;
-    verify_checksum(
-        &runtime::read_limited(&checksums, 64 * 1024)?,
-        &filename,
-        &archive,
-    )?;
+    let npm = latest.version >= Version(2, 10, 4);
+    let archive = staging.path.join("archive.tgz");
+    if npm {
+        let metadata = staging.path.join("npm.json");
+        source.download(
+            &format!("{REGISTRY}/{}", latest.version.text()),
+            &metadata,
+            1024 * 1024,
+        )?;
+        let metadata = npm_metadata(&runtime::read_limited(&metadata, 1024 * 1024)?, latest)?;
+        source.download(&metadata.tarball, &archive, MAX_BUNDLE)?;
+        verify_npm_integrity(&archive, &metadata.integrity)?;
+    } else {
+        let filename = format!("exonous-{}.tar.gz", target()?);
+        let checksums = staging.path.join("SHA256SUMS");
+        let base = format!("{RELEASES}/v{}", latest.version.text());
+        source.download(&format!("{base}/SHA256SUMS"), &checksums, 64 * 1024)?;
+        source.download(&format!("{base}/{filename}"), &archive, MAX_BUNDLE)?;
+        verify_checksum(
+            &runtime::read_limited(&checksums, 64 * 1024)?,
+            &filename,
+            &archive,
+        )?;
+    }
     let bundle = staging.path.join("bundle");
-    unpack(&archive, &bundle)?;
-    validate_bundle(&bundle, &latest.version.text())?;
+    unpack(&archive, &bundle, npm)?;
+    let bundle = if npm { bundle.join("package") } else { bundle };
+    validate_bundle(
+        &bundle,
+        &latest.version.text(),
+        npm.then_some(latest.sha.as_str()),
+    )?;
+    if npm {
+        let binary = if cfg!(windows) {
+            "exonous.exe"
+        } else {
+            "exonous"
+        };
+        let normalized = bundle.join(binary);
+        if normalized.exists() {
+            return Err("npm package contains an unexpected root executable".into());
+        }
+        fs::rename(
+            bundle.join("native").join(target()?).join(binary),
+            normalized,
+        )
+        .map_err(|_| "cannot normalize verified npm executable")?;
+    }
     let tools: Vec<String> = info["tools"]
         .as_array()
         .ok_or("install metadata has no tools")?
@@ -802,7 +930,238 @@ pub fn hook(home: &Path, cwd: &Path, adapter: &str, run: bool) -> Result<String>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::cell::Cell;
+    use std::cell::{Cell, RefCell};
+
+    struct NpmFixture {
+        archive: PathBuf,
+        metadata: Value,
+        downloads: RefCell<Vec<String>>,
+        activates: Cell<usize>,
+    }
+    impl Source for NpmFixture {
+        fn releases(&self, _: &Path) -> Result<Vec<Release>> {
+            Ok(vec![Release {
+                version: Version(2, 10, 4),
+                sha: "b".repeat(40),
+            }])
+        }
+        fn download(&self, url: &str, destination: &Path, limit: u64) -> Result<()> {
+            self.downloads.borrow_mut().push(url.into());
+            match url {
+                "https://registry.npmjs.org/exonous/2.10.4" => {
+                    assert_eq!(limit, 1024 * 1024);
+                    fs::write(destination, serde_json::to_vec(&self.metadata).unwrap()).unwrap();
+                }
+                "https://registry.npmjs.org/exonous/-/exonous-2.10.4.tgz" => {
+                    assert_eq!(limit, MAX_BUNDLE);
+                    fs::copy(&self.archive, destination).unwrap();
+                }
+                _ => return Err(format!("unexpected download: {url}")),
+            }
+            Ok(())
+        }
+        fn activate(
+            &self,
+            bundle: &Path,
+            _: &Path,
+            _: &Path,
+            version: &str,
+            sha: &str,
+            tools: &[String],
+        ) -> Result<()> {
+            assert_eq!(version, "2.10.4");
+            assert_eq!(sha, "b".repeat(40));
+            assert_eq!(tools, ["claude"]);
+            assert_eq!(
+                fs::read(bundle.join(if cfg!(windows) {
+                    "exonous.exe"
+                } else {
+                    "exonous"
+                }))
+                .unwrap(),
+                b"native binary"
+            );
+            assert_eq!(
+                fs::read(bundle.join("assets/rules/nomos.md")).unwrap(),
+                b"rules"
+            );
+            self.activates.set(self.activates.get() + 1);
+            Ok(())
+        }
+    }
+    fn sri(bytes: &[u8]) -> String {
+        let alphabet = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        let mut result = "sha512-".to_owned();
+        for chunk in sha2::Sha512::digest(bytes).chunks(3) {
+            let bits = ((chunk[0] as u32) << 16)
+                | ((chunk.get(1).copied().unwrap_or(0) as u32) << 8)
+                | chunk.get(2).copied().unwrap_or(0) as u32;
+            for (index, shift) in [18, 12, 6, 0].into_iter().enumerate() {
+                result.push(if index > chunk.len() {
+                    '='
+                } else {
+                    alphabet[((bits >> shift) & 63) as usize] as char
+                });
+            }
+        }
+        result
+    }
+    fn npm_fixture(directory: &Path, package: Value, extra: Option<&str>) -> NpmFixture {
+        let archive = directory.join("npm.tgz");
+        let out = fs::File::create(&archive).unwrap();
+        let mut tar = tar::Builder::new(flate2::write::GzEncoder::new(
+            out,
+            flate2::Compression::fast(),
+        ));
+        let binary = format!(
+            "package/native/{}/exonous{}",
+            target().unwrap(),
+            if cfg!(windows) { ".exe" } else { "" }
+        );
+        let mut files = vec![
+            (
+                "package/package.json".to_owned(),
+                serde_json::to_vec(&package).unwrap(),
+            ),
+            (binary, b"native binary".to_vec()),
+            (
+                "package/assets/THIRD-PARTY-NOTICES.md".into(),
+                b"notices".to_vec(),
+            ),
+            ("package/assets/rules/nomos.md".into(), b"rules".to_vec()),
+        ];
+        if let Some(extra) = extra {
+            files.push((extra.into(), b"unexpected".to_vec()));
+        }
+        for (name, bytes) in files {
+            let mut header = tar::Header::new_gnu();
+            header.set_size(bytes.len() as u64);
+            header.set_mode(0o700);
+            header.set_cksum();
+            tar.append_data(&mut header, name, bytes.as_slice())
+                .unwrap();
+        }
+        tar.into_inner().unwrap().finish().unwrap();
+        let metadata = json!({"name":"exonous","version":"2.10.4","gitHead":"b".repeat(40),"dist":{"tarball":"https://registry.npmjs.org/exonous/-/exonous-2.10.4.tgz","integrity":sri(&fs::read(&archive).unwrap())}});
+        NpmFixture {
+            archive,
+            metadata,
+            downloads: RefCell::new(Vec::new()),
+            activates: Cell::new(0),
+        }
+    }
+    fn npm_package() -> Value {
+        json!({"name":"exonous","version":"2.10.4","gitHead":"b".repeat(40)})
+    }
+    #[test]
+    fn npm_update_verifies_metadata_integrity_and_source_commit_before_activation() {
+        let temp = tempfile::tempdir().unwrap();
+        fixture_info(temp.path(), json!({}));
+        let source = npm_fixture(temp.path(), npm_package(), None);
+        assert!(
+            run_with(temp.path(), temp.path(), &Options::default(), &source, true)
+                .unwrap()
+                .contains("2.10.4")
+        );
+        assert_eq!(source.activates.get(), 1);
+        assert_eq!(source.downloads.borrow().len(), 2);
+    }
+    #[test]
+    fn npm_integrity_matches_a_known_sha512_vector_and_detects_changed_bytes() {
+        let temp = tempfile::tempdir().unwrap();
+        let file = temp.path().join("tarball");
+        fs::write(&file, b"verified bytes").unwrap();
+        let expected = sha512_sri("sha512-TlyPO1NzT32/5OA15ndIOYzkWMVsy4LemDplZpN3+9TqPNIYAFpZZrJcTsra2tmiV5sHJ2q4hD/fUhxu6P7jew==").unwrap();
+        verify_npm_integrity(&file, &expected).unwrap();
+        fs::write(&file, b"changed bytes").unwrap();
+        assert!(verify_npm_integrity(&file, &expected).is_err());
+    }
+    #[test]
+    fn npm_invalid_metadata_never_downloads_an_archive_or_falls_back() {
+        for (pointer, bad) in [
+            ("/name", json!("foreign")),
+            ("/version", json!("2.10.04")),
+            ("/version", json!("2.10.5")),
+            ("/gitHead", json!("a".repeat(40))),
+            ("/gitHead", json!("b".repeat(39))),
+            ("/gitHead", json!("z".repeat(40))),
+            (
+                "/dist/tarball",
+                json!("https://foreign.example/exonous.tgz"),
+            ),
+            (
+                "/dist/tarball",
+                json!("https://registry.npmjs.org/exonous/-/exonous-2.10.4.tgz?extra"),
+            ),
+            ("/dist/integrity", json!("sha256-AAAA")),
+            (
+                "/dist/integrity",
+                json!(format!("sha512-{}", "A".repeat(88))),
+            ),
+            (
+                "/dist/integrity",
+                json!(format!("sha512-{}B==", "A".repeat(85))),
+            ),
+            (
+                "/dist/integrity",
+                json!(format!("sha512-{}== extra", "A".repeat(86))),
+            ),
+        ] {
+            let temp = tempfile::tempdir().unwrap();
+            fixture_info(temp.path(), json!({}));
+            let mut source = npm_fixture(temp.path(), npm_package(), None);
+            *source.metadata.pointer_mut(pointer).unwrap() = bad;
+            let before = read_info(temp.path()).unwrap();
+            assert!(
+                run_with(temp.path(), temp.path(), &Options::default(), &source, true).is_err(),
+                "{pointer}"
+            );
+            assert_eq!(source.activates.get(), 0);
+            assert_eq!(
+                source.downloads.borrow().as_slice(),
+                ["https://registry.npmjs.org/exonous/2.10.4"],
+                "{pointer}"
+            );
+            assert_eq!(read_info(temp.path()).unwrap(), before);
+        }
+    }
+    #[test]
+    fn npm_corruption_archive_identity_and_unexpected_roots_block_activation() {
+        for (pointer, bad, extra, corrupt) in [
+            ("/name", json!("foreign"), None, false),
+            ("/version", json!("2.10.5"), None, false),
+            ("/gitHead", json!("c".repeat(40)), None, false),
+            (
+                "/gitHead",
+                json!("b".repeat(40)),
+                Some("outside/escape"),
+                false,
+            ),
+            (
+                "/gitHead",
+                json!("b".repeat(40)),
+                Some("package/package.json"),
+                false,
+            ),
+            ("/gitHead", json!("b".repeat(40)), None, true),
+        ] {
+            let temp = tempfile::tempdir().unwrap();
+            fixture_info(temp.path(), json!({}));
+            let mut package = npm_package();
+            *package.pointer_mut(pointer).unwrap() = bad;
+            let source = npm_fixture(temp.path(), package, extra);
+            if corrupt {
+                fs::write(&source.archive, b"corrupted tarball").unwrap();
+            }
+            let before = read_info(temp.path()).unwrap();
+            assert!(
+                run_with(temp.path(), temp.path(), &Options::default(), &source, true).is_err()
+            );
+            assert_eq!(source.activates.get(), 0);
+            assert_eq!(source.downloads.borrow().len(), 2);
+            assert_eq!(read_info(temp.path()).unwrap(), before);
+        }
+    }
 
     struct Fixture {
         archive: PathBuf,
@@ -817,7 +1176,7 @@ mod tests {
                     sha: "a".repeat(40),
                 },
                 Release {
-                    version: Version(2, 11, 0),
+                    version: Version(2, 10, 3),
                     sha: "b".repeat(40),
                 },
                 Release {
@@ -827,6 +1186,7 @@ mod tests {
             ])
         }
         fn download(&self, url: &str, destination: &Path, _: u64) -> Result<()> {
+            assert!(url.starts_with(&format!("{RELEASES}/v2.10.3/")));
             if url.ends_with("SHA256SUMS") {
                 fs::write(
                     destination,
@@ -855,7 +1215,7 @@ mod tests {
             sha: &str,
             tools: &[String],
         ) -> Result<()> {
-            assert_eq!(version, "2.11.0");
+            assert_eq!(version, "2.10.3");
             assert_eq!(sha, "b".repeat(40));
             assert_eq!(tools, ["claude"]);
             assert!(bundle.join("assets/rules/nomos.md").is_file());
@@ -873,7 +1233,7 @@ mod tests {
         for (name, bytes) in [
             (
                 "package.json",
-                "{\"name\":\"exonous\",\"version\":\"2.11.0\"}",
+                "{\"name\":\"exonous\",\"version\":\"2.10.3\"}",
             ),
             (
                 if cfg!(windows) {
@@ -933,7 +1293,7 @@ mod tests {
                 false
             )
             .unwrap()
-            .contains("2.11.0")
+            .contains("2.10.3")
         );
         assert!(!runtime::state(&home).exists());
         assert_eq!(source.activates.get(), 0);
@@ -1029,26 +1389,36 @@ mod tests {
     fn archive_boundary_rejects_parent_paths_and_links_before_writing() {
         assert!(archive_path(Path::new("../escape")).is_err());
         assert!(archive_path(Path::new("C:\\escape")).is_err());
-        let temp = tempfile::tempdir().unwrap();
-        let archive = temp.path().join("bad.tar.gz");
-        let out = fs::File::create(&archive).unwrap();
-        let mut builder = tar::Builder::new(flate2::write::GzEncoder::new(
-            out,
-            flate2::Compression::default(),
-        ));
-        let mut header = tar::Header::new_gnu();
-        header.set_entry_type(tar::EntryType::Symlink);
-        header.set_size(0);
-        header.set_mode(0o777);
-        header.set_link_name("../../escape").unwrap();
-        header.set_cksum();
-        builder
-            .append_data(&mut header, "assets/link", std::io::empty())
-            .unwrap();
-        builder.into_inner().unwrap().finish().unwrap();
-        let dest = temp.path().join("extracted");
-        assert!(unpack(&archive, &dest).is_err());
-        assert!(!dest.exists());
+        for npm in [false, true] {
+            let temp = tempfile::tempdir().unwrap();
+            let archive = temp.path().join("bad.tar.gz");
+            let out = fs::File::create(&archive).unwrap();
+            let mut builder = tar::Builder::new(flate2::write::GzEncoder::new(
+                out,
+                flate2::Compression::default(),
+            ));
+            let prefix = if npm { "package/assets" } else { "assets" };
+            let mut regular = tar::Header::new_gnu();
+            regular.set_size(1);
+            regular.set_mode(0o600);
+            regular.set_cksum();
+            builder
+                .append_data(&mut regular, format!("{prefix}/before"), b"x".as_slice())
+                .unwrap();
+            let mut header = tar::Header::new_gnu();
+            header.set_entry_type(tar::EntryType::Symlink);
+            header.set_size(0);
+            header.set_mode(0o777);
+            header.set_link_name("../../escape").unwrap();
+            header.set_cksum();
+            builder
+                .append_data(&mut header, format!("{prefix}/link"), std::io::empty())
+                .unwrap();
+            builder.into_inner().unwrap().finish().unwrap();
+            let dest = temp.path().join("extracted");
+            assert!(unpack(&archive, &dest, npm).is_err());
+            assert!(!dest.exists());
+        }
     }
     #[test]
     fn checksum_requires_one_exact_bundle_entry() {

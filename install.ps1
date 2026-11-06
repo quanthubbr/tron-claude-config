@@ -56,6 +56,101 @@ function Save-ReleaseFile([string] $Url, [string] $Destination, [long] $Limit) {
     }
 }
 
+if (-not ('Exonous.BootstrapJson' -as [type])) {
+    Add-Type -TypeDefinition @'
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
+using System.Text.RegularExpressions;
+namespace Exonous {
+    public sealed class BootstrapJson {
+        readonly string text;
+        int position;
+        BootstrapJson(string input) { text=input; }
+        void Fail() { throw new FormatException("invalid or ambiguous npm JSON"); }
+        void Space() { while(position<text.Length && " \t\r\n".IndexOf(text[position])>=0) position++; }
+        char Take() { if(position>=text.Length) Fail(); return text[position++]; }
+        string String(bool key) {
+            if(Take()!='"') Fail();
+            var value=new StringBuilder();
+            while(position<text.Length) {
+                char c=Take();
+                if(c=='"') return value.ToString();
+                if(c<32) Fail();
+                if(c=='\\') {
+                    if(key) Fail();
+                    char escape=Take();
+                    switch(escape) {
+                        case '"': c='"'; break; case '\\': c='\\'; break; case '/': c='/'; break;
+                        case 'b': c='\b'; break; case 'f': c='\f'; break; case 'n': c='\n'; break; case 'r': c='\r'; break; case 't': c='\t'; break;
+                        case 'u': c=Unicode(); break; default: Fail(); break;
+                    }
+                }
+                if(char.IsHighSurrogate(c)) {
+                    value.Append(c);
+                    if(position+1<text.Length && text[position]=='\\' && text[position+1]=='u') { position+=2; c=Unicode(); }
+                    else c=Take();
+                    if(!char.IsLowSurrogate(c)) Fail();
+                } else if(char.IsLowSurrogate(c)) Fail();
+                value.Append(c);
+            }
+            Fail(); return null;
+        }
+        char Unicode() {
+            if(position+4>text.Length) Fail();
+            string hex=text.Substring(position,4);
+            if(!Regex.IsMatch(hex,"^[0-9a-fA-F]{4}$")) Fail();
+            position+=4; return (char)int.Parse(hex,NumberStyles.HexNumber,CultureInfo.InvariantCulture);
+        }
+        object Value(int depth) {
+            if(depth>64) Fail(); Space();
+            if(position>=text.Length) Fail();
+            char c=text[position];
+            if(c=='{') {
+                position++; Space(); var values=new Dictionary<string,object>(StringComparer.Ordinal);
+                if(position<text.Length && text[position]=='}') {position++;return values;}
+                while(true) {
+                    Space(); string key=String(true); Space(); if(Take()!=':') Fail();
+                    if(values.ContainsKey(key)) Fail(); values.Add(key,Value(depth+1)); Space(); c=Take();
+                    if(c=='}') return values; if(c!=',') Fail();
+                }
+            }
+            if(c=='[') {
+                position++; Space(); var values=new List<object>();
+                if(position<text.Length && text[position]==']') {position++;return values;}
+                while(true) {values.Add(Value(depth+1));Space();c=Take();if(c==']')return values;if(c!=',')Fail();}
+            }
+            if(c=='"') return String(false);
+            string remaining=text.Substring(position);
+            foreach(string literal in new[]{"true","false","null"}) if(remaining.StartsWith(literal,StringComparison.Ordinal)) {position+=literal.Length;return null;}
+            Match number=Regex.Match(remaining,@"^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?");
+            if(!number.Success) Fail(); position+=number.Length;return null;
+        }
+        public static Dictionary<string,object> Parse(string input) {
+            if(input.Length>1048576) throw new FormatException("npm JSON exceeds size limit");
+            var parser=new BootstrapJson(input);var value=parser.Value(0) as Dictionary<string,object>;parser.Space();
+            if(value==null || parser.position!=input.Length) parser.Fail();return value;
+        }
+    }
+}
+'@
+}
+
+function Read-NpmIdentity([string] $Path, [bool] $Registry) {
+    if ((Get-Item -LiteralPath $Path).Length -gt 1048576) { throw 'npm JSON exceeds size limit' }
+    $Encoding = New-Object Text.UTF8Encoding($false, $true)
+    $Value = [Exonous.BootstrapJson]::Parse([IO.File]::ReadAllText($Path, $Encoding))
+    if ($Value['name'] -isnot [string] -or $Value['name'] -cne 'exonous' -or $Value['version'] -isnot [string] -or $Value['version'] -cnotmatch '^(0|[1-9][0-9]*)[.](0|[1-9][0-9]*)[.](0|[1-9][0-9]*)$' -or $Value['gitHead'] -isnot [string] -or $Value['gitHead'] -cnotmatch '^[0-9a-f]{40}$') { throw 'invalid npm package identity' }
+    $Identity = @{ Version = $Value['version']; GitHead = $Value['gitHead']; Digest = '' }
+    if ($Registry) {
+        $Dist = $Value['dist']
+        if ($Dist -isnot [Collections.Generic.Dictionary[string,object]] -or $Dist['tarball'] -isnot [string] -or $Dist['tarball'] -cne "https://registry.npmjs.org/exonous/-/exonous-$($Identity.Version).tgz" -or $Dist['integrity'] -isnot [string] -or $Dist['integrity'] -cnotmatch '^sha512-[A-Za-z0-9+/]{85}[AQgw]==$') { throw 'invalid npm tarball URL or canonical SHA512 integrity' }
+        $Identity.Digest = [BitConverter]::ToString([Convert]::FromBase64String($Dist['integrity'].Substring(7))).Replace('-', '')
+    }
+    return $Identity
+}
+
 function Read-TarText([byte[]] $Header, [int] $Offset, [int] $Length) {
     $Text = ''
     $Ended = $false
@@ -84,7 +179,7 @@ function Read-TarOctal([byte[]] $Header, [int] $Offset, [int] $Length) {
 
 function Test-ReleaseArchive([string] $Archive) {
     $InputStream = [IO.File]::OpenRead($Archive)
-    $Names = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
+    $Names = New-Object 'System.Collections.Generic.Dictionary[string,bool]' ([StringComparer]::OrdinalIgnoreCase)
     try {
         $Header = New-Object byte[] 512
         $Entries = 0
@@ -106,32 +201,37 @@ function Test-ReleaseArchive([string] $Archive) {
             $Checksum = Read-TarOctal $Header 148 8
             for ($Index = 148; $Index -lt 156; $Index++) { $Sum += 32 - $Header[$Index] }
             if ($Checksum -ne $Sum -or (Read-TarText $Header 257 6) -cne 'ustar' -or (Read-TarText $Header 263 2) -cne '00') { throw 'invalid USTAR release header' }
-            if ($Header[156] -ne 0 -and $Header[156] -ne 48) { throw 'release archive must contain regular USTAR files' }
+            $Directory = $Header[156] -eq 53
+            if (-not $Directory -and $Header[156] -ne 0 -and $Header[156] -ne 48) { throw 'npm archive must contain regular USTAR files and directories' }
             $Name = Read-TarText $Header 0 100
             $Prefix = Read-TarText $Header 345 155
             if ($Prefix) { $Name = "$Prefix/$Name" }
+            if ($Directory) { $Name = $Name.TrimEnd('/') }
             if ($Name -cnotmatch '^[A-Za-z0-9][A-Za-z0-9._+@/-]*$' -or $Name -match '(^|/)\.{1,2}($|/)|//|/$') { throw 'unsafe release archive path' }
             foreach ($Part in $Name.Split('/')) {
                 if ($Part.EndsWith('.') -or $Part -match '^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])($|\.)') { throw 'unsafe Windows release filename' }
             }
-            if ($Name -cnotmatch '^assets/' -and $Name -cnotmatch '^(exonous[.]exe|package[.]json|Cargo[.]toml|Cargo[.]lock|README[.]md|LICENSE|LICENSE[.]md|THIRD-PARTY-NOTICES[.]md)$') { throw 'unexpected release archive root' }
-            if (-not $Names.Add($Name)) { throw 'duplicate release archive path' }
+            if ($Directory) {
+                if ($Name -cnotmatch '^package($|/assets($|/)|/bin$|/native($|/(aarch64-apple-darwin|x86_64-apple-darwin|aarch64-unknown-linux-gnu|x86_64-unknown-linux-gnu|x86_64-pc-windows-msvc)$))') { throw 'unexpected npm archive directory' }
+            } elseif ($Name -cnotmatch '^package/assets/' -and $Name -cnotmatch '^package/(package[.]json|README[.]md|LICENSE|LICENSE[.]md|bin/native[.]cjs)$' -and $Name -cnotmatch '^package/native/(aarch64-apple-darwin|x86_64-apple-darwin|aarch64-unknown-linux-gnu|x86_64-unknown-linux-gnu)/exonous$' -and $Name -cne 'package/native/x86_64-pc-windows-msvc/exonous.exe') { throw 'unexpected npm archive root' }
+            if ($Names.ContainsKey($Name)) { throw 'duplicate release archive path' }
+            $Names.Add($Name, $Directory)
             $Entries++
             if ($Entries -gt 20000) { throw 'too many release archive entries' }
             $Size = Read-TarOctal $Header 124 12
-            if ($Size -gt 134217728) { throw 'release archive entry exceeds size limit' }
+            if ($Size -gt 134217728 -or ($Directory -and $Size -ne 0)) { throw 'release archive entry exceeds size limit' }
             $Next = $InputStream.Position + [long] ([Math]::Ceiling($Size / 512.0) * 512)
             if ($Next -gt $InputStream.Length) { throw 'truncated release archive member' }
             $InputStream.Position = $Next
         }
-        foreach ($Name in $Names) {
+        foreach ($Name in $Names.Keys) {
             $Parent = $Name
             while ($Parent.Contains('/')) {
                 $Parent = $Parent.Substring(0, $Parent.LastIndexOf('/'))
-                if ($Names.Contains($Parent)) { throw 'release archive file/parent collision' }
+                if ($Names.ContainsKey($Parent) -and -not $Names[$Parent]) { throw 'release archive file/parent collision' }
             }
         }
-        if (-not $Names.Contains('exonous.exe') -or -not $Names.Contains('package.json') -or -not ($Names | Where-Object { $_.StartsWith('assets/', [StringComparison]::Ordinal) })) { throw 'release archive is missing required files' }
+        if (-not $Names.ContainsKey('package/native/x86_64-pc-windows-msvc/exonous.exe') -or $Names['package/native/x86_64-pc-windows-msvc/exonous.exe'] -or -not $Names.ContainsKey('package/package.json') -or $Names['package/package.json'] -or -not ($Names.Keys | Where-Object { $_.StartsWith('package/assets/', [StringComparison]::Ordinal) -and -not $Names[$_] })) { throw 'npm archive is missing required files' }
     } finally { $InputStream.Dispose() }
 }
 
@@ -182,20 +282,13 @@ try {
     } else {
         [IO.Directory]::CreateDirectory($Stage, $Security) | Out-Null
     }
-    $Response = Get-ReleaseResponse 'https://github.com/zaqueu-1/exonous/releases/latest' 'HEAD'
-    try { $Release = $Response.ResponseUri.AbsoluteUri } finally { $Response.Close() }
-    if ($Release -cnotmatch '^https://github[.]com/zaqueu-1/exonous/releases/tag/v((0|[1-9][0-9]*)[.](0|[1-9][0-9]*)[.](0|[1-9][0-9]*))$') { throw 'latest release did not resolve to a stable Exonous tag' }
-    $Version = $Matches[1]
-    $Filename = 'exonous-x86_64-pc-windows-msvc.tar.gz'
-    $Base = "https://github.com/zaqueu-1/exonous/releases/download/v$Version"
-    $Checksums = Join-Path $Stage 'SHA256SUMS'
-    Save-ReleaseFile "$Base/SHA256SUMS" $Checksums 65536
-    $Matching = @([IO.File]::ReadAllLines($Checksums) | Where-Object { ($_ -split '\s+')[-1] -ceq $Filename -or ($_ -split '\s+')[-1] -ceq "*$Filename" })
-    if ($Matching.Count -ne 1 -or $Matching[0] -cnotmatch "^([A-Fa-f0-9]{64}) [ *]$([Regex]::Escape($Filename))$") { throw 'checksum manifest must contain one exact SHA-256 entry' }
-    $Expected = $Matches[1]
-    $Compressed = Join-Path $Stage $Filename
-    Save-ReleaseFile "$Base/$Filename" $Compressed 134217728
-    if ((Get-FileHash -LiteralPath $Compressed -Algorithm SHA256).Hash -ine $Expected) { throw 'native bundle checksum verification failed' }
+    $Metadata = Join-Path $Stage 'latest.json'
+    Save-ReleaseFile 'https://registry.npmjs.org/exonous/latest' $Metadata 1048576
+    $Identity = Read-NpmIdentity $Metadata $true
+    $Version = $Identity.Version
+    $Compressed = Join-Path $Stage "exonous-$Version.tgz"
+    Save-ReleaseFile "https://registry.npmjs.org/exonous/-/exonous-$Version.tgz" $Compressed 134217728
+    if ((Get-FileHash -LiteralPath $Compressed -Algorithm SHA512).Hash -cne $Identity.Digest) { throw 'npm package SHA512 integrity verification failed' }
     $Raw = Join-Path $Stage 'release.tar'
     $InputStream = [IO.File]::OpenRead($Compressed)
     $Gzip = New-Object IO.Compression.GZipStream($InputStream, [IO.Compression.CompressionMode]::Decompress)
@@ -214,13 +307,16 @@ try {
     [IO.Directory]::CreateDirectory($Bundle) | Out-Null
     & $Tar -xf $Raw -C $Bundle
     if ($LASTEXITCODE -ne 0) { throw 'cannot extract verified release archive' }
-    $Candidate = Join-Path $Bundle 'exonous.exe'
-    $env:EXONOUS_ASSETS = Join-Path $Bundle 'assets'
+    $Package = Join-Path $Bundle 'package'
+    $Manifest = Read-NpmIdentity (Join-Path $Package 'package.json') $false
+    if ($Manifest.Version -cne $Version -or $Manifest.GitHead -cne $Identity.GitHead) { throw 'archived npm manifest does not match registry' }
+    $Candidate = Join-Path $Package 'native/x86_64-pc-windows-msvc/exonous.exe'
+    $env:EXONOUS_ASSETS = Join-Path $Package 'assets'
     $env:EXONOUS_NO_FORWARD = '1'
     $env:EXONOUS_NO_UPDATE = '1'
     if (Test-Path -LiteralPath Env:EXONOUS_VERIFIED_RELEASE) { Remove-Item -LiteralPath Env:EXONOUS_VERIFIED_RELEASE }
     $Probe = Invoke-ReleaseBinary $Candidate @('--version') $true
-    if ($Probe.ExitCode -ne 0 -or $Probe.Output -cne $Version) { throw 'native executable version does not match release tag' }
+    if ($Probe.ExitCode -ne 0 -or $Probe.Output -cne $Version) { throw 'native executable version does not match npm package' }
     Write-Host "Installing Exonous $Version..."
     $Installed = Invoke-ReleaseBinary $Candidate (@('install') + $InstallArguments) $false
     $ExitCode = $Installed.ExitCode

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import base64
 import functools
 import gzip
 import hashlib
@@ -19,7 +20,9 @@ import unittest
 
 ROOT = Path(__file__).resolve().parent.parent
 VERSION = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["version"]
-RELEASE = f"https://github.com/zaqueu-1/exonous/releases/tag/v{VERSION}"
+REGISTRY = "https://registry.npmjs.org/exonous"
+GIT_HEAD = "a" * 40
+TARGETS = ("aarch64-apple-darwin", "x86_64-apple-darwin", "aarch64-unknown-linux-gnu", "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc")
 TARGET = {("Darwin", "arm64"): "aarch64-apple-darwin", ("Darwin", "x86_64"): "x86_64-apple-darwin", ("Linux", "aarch64"): "aarch64-unknown-linux-gnu", ("Linux", "x86_64"): "x86_64-unknown-linux-gnu", ("Windows", "AMD64"): "x86_64-pc-windows-msvc"}.get((platform.system(), platform.machine()))
 POWERSHELL = os.name == "nt"
 POWERSHELL_COMMAND = shutil.which("powershell") or shutil.which("pwsh")
@@ -40,11 +43,8 @@ function Get-ReleaseResponse([string] $Url, [string] $Method) {
     $Uri = [Uri] $Url
     $Path = $null
     $Length = 0
-    if ($Url.EndsWith('/latest')) { $Uri = [Uri] $env:FIXTURE_RELEASE }
-    else {
-        $Path = Join-Path $env:FIXTURE_TRANSPORT ([IO.Path]::GetFileName($Uri.AbsolutePath))
-        $Length = (Get-Item -LiteralPath $Path).Length
-    }
+    $Path = Join-Path $env:FIXTURE_TRANSPORT ([IO.Path]::GetFileName($Uri.AbsolutePath))
+    $Length = (Get-Item -LiteralPath $Path).Length
     $Response = [pscustomobject] @{ ResponseUri = $Uri; ContentLength = $Length; FixturePath = $Path }
     $Response | Add-Member -MemberType ScriptMethod -Name GetResponseStream -Value { [IO.File]::OpenRead($this.FixturePath) }
     $Response | Add-Member -MemberType ScriptMethod -Name Close -Value {}
@@ -83,7 +83,7 @@ def archive(path, entries):
         for name, body, kind in entries:
             header = tarfile.TarInfo(name)
             header.type = kind
-            header.mode = 0o755 if name.startswith("exonous") else 0o644
+            header.mode = 0o755 if "/native/" in name or name.endswith(".cjs") else 0o644
             header.size = len(body) if kind == tarfile.REGTYPE else 0
             if kind in (tarfile.SYMTYPE, tarfile.LNKTYPE):
                 header.linkname = "../outside"
@@ -103,12 +103,14 @@ class Bootstrap(unittest.TestCase):
         self.staging.mkdir()
         self.network = self.work / "network"
         self.network.mkdir()
-        self.filename = f"exonous-{TARGET}.tar.gz"
+        self.filename = f"exonous-{VERSION}.tgz"
         self.bundle = self.transport / self.filename
         candidate = f'#!/bin/sh\nif [ "$1" = --version ]; then echo "${{FIXTURE_VERSION-{VERSION}}}"; exit; fi\nprintf "%s\\n" "$@" > "$EXONOUS_HOME/arguments"\nprintf "%s\\n" "$EXONOUS_ASSETS" > "$EXONOUS_HOME/assets"\nprintf "%s" "${{EXONOUS_VERIFIED_RELEASE-unset}}" > "$EXONOUS_HOME/provenance"\nexit "${{FIXTURE_EXIT-0}}"\n'.encode()
         if POWERSHELL:
             candidate = windows_candidate()
-        self.entries = [("exonous.exe" if POWERSHELL else "exonous", candidate, tarfile.REGTYPE), ("assets/rules/nomos.md", b"rules", tarfile.REGTYPE), ("package.json", json.dumps({"version": VERSION}).encode(), tarfile.REGTYPE)]
+        self.manifest = {"name": "exonous", "version": VERSION, "gitHead": GIT_HEAD, "bin": {"exonous": "bin/native.cjs"}}
+        self.entries = [(f"package/native/{target}/exonous" + (".exe" if "windows" in target else ""), candidate, tarfile.REGTYPE) for target in TARGETS]
+        self.entries += [("package/bin/native.cjs", (ROOT / "bin/native.cjs").read_bytes(), tarfile.REGTYPE), ("package/assets/rules/nomos.md", b"rules", tarfile.REGTYPE), ("package/package.json", json.dumps(self.manifest).encode(), tarfile.REGTYPE)]
         self.env = dict(os.environ, HOME=str(self.home), EXONOUS_HOME=str(self.home), TMPDIR=str(self.staging), EXONOUS_NO_UPDATE="1", EXONOUS_VERIFIED_RELEASE="inherited-untrusted", FIXTURE_TRANSPORT=str(self.transport), PATH=str(self.network) + os.pathsep + os.environ["PATH"])
         curl = self.network / "curl"
         curl.write_text("#!" + sys.executable + "\n" + '''import os, pathlib, shutil, sys
@@ -116,14 +118,11 @@ a=sys.argv[1:]; root=pathlib.Path(os.environ["FIXTURE_TRANSPORT"])
 url=a[-1]
 with (root/"requests").open("a") as f: f.write(url+"\\n")
 if os.environ.get("FIXTURE_DOWNLOAD_FAIL"): sys.exit(22)
-if url.endswith("/latest"):
- print(os.environ.get("FIXTURE_RELEASE", "'''+RELEASE+'''"),end=""); sys.exit()
 destination=pathlib.Path(a[a.index("--output")+1])
 shutil.copyfile(root/url.rsplit("/",1)[-1],destination)
 ''')
         curl.chmod(0o755)
         if POWERSHELL:
-            self.env["FIXTURE_RELEASE"] = RELEASE
             self.env["FIXTURE_BOOTSTRAP"] = str(ROOT / "install.ps1")
             self.env["TEMP"] = self.env["TMP"] = str(self.staging)
             (self.network / "tar.exe").write_bytes(candidate)
@@ -136,8 +135,9 @@ shutil.copyfile(root/url.rsplit("/",1)[-1],destination)
         self.checksums()
 
     def checksums(self):
-        digest = hashlib.sha256(self.bundle.read_bytes()).hexdigest()
-        (self.transport / "SHA256SUMS").write_text(f"{digest}  {self.filename}\n")
+        integrity = "sha512-" + base64.b64encode(hashlib.sha512(self.bundle.read_bytes()).digest()).decode()
+        self.metadata = {"name": "exonous", "version": VERSION, "gitHead": self.manifest["gitHead"], "dist": {"tarball": f"{REGISTRY}/-/{self.filename}", "integrity": integrity}}
+        (self.transport / "latest").write_text(json.dumps(self.metadata), encoding="utf-8")
 
     def run_bootstrap(self, *arguments):
         if POWERSHELL:
@@ -160,11 +160,30 @@ shutil.copyfile(root/url.rsplit("/",1)[-1],destination)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual((self.home / "arguments").read_text(encoding="utf-8").splitlines(), ["install", *values])
         self.assertEqual((self.home / "provenance").read_text(encoding="utf-8"), "unset")
-        self.assertTrue((self.home / "assets").read_text(encoding="utf-8").strip().replace('\\', '/').endswith("/bundle/assets"))
+        self.assertTrue((self.home / "assets").read_text(encoding="utf-8").strip().replace('\\', '/').endswith("/bundle/package/assets"))
         self.assertEqual(list(self.staging.iterdir()), [])
         requests = (self.transport / "requests").read_text(encoding="utf-8").splitlines()
-        latest = ["https://github.com/zaqueu-1/exonous/releases/latest"]
-        self.assertEqual(requests, [*latest, RELEASE.replace("/tag/", "/download/") + "/SHA256SUMS", RELEASE.replace("/tag/", "/download/") + "/" + self.filename])
+        self.assertEqual(requests, [f"{REGISTRY}/latest", f"{REGISTRY}/-/{self.filename}"])
+
+    def npm(self, *arguments):
+        temporary = self.work / 'npm-temp'
+        temporary.mkdir(exist_ok=True)
+        env = dict(self.env, TMPDIR=str(temporary), TEMP=str(temporary), TMP=str(temporary))
+        command = [shutil.which("npm"), "exec", "--yes", "--offline", "--ignore-scripts", "--cache", str(self.work / "npm-cache"), "--package", str(self.bundle), "--", "exonous", *arguments]
+        if os.name == "nt":
+            command = [os.environ.get("COMSPEC", "cmd.exe"), "/d", "/c", *command]
+        return subprocess.run(command, cwd=self.work, env=env, text=True, encoding="utf-8", capture_output=True)
+
+    def test_npx_dispatches_native_default_and_explicit_arguments(self):
+        result = self.npm()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual((self.home / "arguments").read_text().splitlines(), ["install"])
+        result = self.npm("status", "--example", "one two", 'one"two', '', 'trailing\\')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual((self.home / "arguments").read_text().splitlines(), ["status", "--example", "one two", 'one"two', '', 'trailing\\'])
+        self.assertEqual((self.home / "provenance").read_text(), "unset")
+        self.env["FIXTURE_EXIT"] = "23"
+        self.assertEqual(self.npm("status").returncode, 23)
 
     def test_child_failure_status_is_preserved(self):
         self.env["FIXTURE_EXIT"] = "23"
@@ -175,21 +194,56 @@ shutil.copyfile(root/url.rsplit("/",1)[-1],destination)
         self.env["FIXTURE_DOWNLOAD_FAIL"] = "1"
         self.rejected()
 
-    def test_untrusted_release_redirects(self):
-        for release in ["http://github.com/zaqueu-1/exonous/releases/tag/v1.2.3", "https://github.com/else/exonous/releases/tag/v1.2.3", RELEASE + "-rc1", RELEASE + "/more", RELEASE.replace("/v", "/v0", 1)]:
-            with self.subTest(release=release):
-                self.env["FIXTURE_RELEASE"] = release
+    def test_metadata_identity_and_integrity_are_pinned(self):
+        import copy
+        cases = [("name", "other"), ("version", VERSION + "-rc1"), ("gitHead", "A" * 40), ("gitHead", "a" * 39), ("tarball", f"{REGISTRY}/-/{self.filename}?extra"), ("tarball", f"http://registry.npmjs.org/exonous/-/{self.filename}"), ("integrity", "sha256-AAAA"), ("integrity", "sha512-" + "A" * 85 + "B==")]
+        for key, value in cases:
+            with self.subTest(key=key, value=value):
+                metadata = copy.deepcopy(self.metadata)
+                (metadata["dist"] if key in ("tarball", "integrity") else metadata)[key] = value
+                (self.transport / "latest").write_text(json.dumps(metadata))
                 self.rejected()
 
-    def test_checksum_is_unique_exact_and_well_formed(self):
-        digest = hashlib.sha256(self.bundle.read_bytes()).hexdigest()
-        for manifest in [f'{"0" * 64}  {self.filename}\n', f"{digest}  {self.filename}.other\n", f"{digest}  {self.filename}\n{digest}  {self.filename}\n", f"xyz  {self.filename}\n"]:
-            with self.subTest(manifest=manifest):
-                (self.transport / "SHA256SUMS").write_text(manifest)
+    def test_metadata_json_is_strict(self):
+        raw = json.dumps(self.metadata)
+        cases = ['{"name":"wrong",' + raw[1:], raw.replace('"name"', '"na\\u006de"', 1), raw[:-1] + ',}', raw + ' null', raw.replace('"dist": {', '"dist": {"extra":1,"extra":2,', 1), raw.replace('"dist": {', '"dist": {"extra":[1,],', 1)]
+        for text in cases:
+            with self.subTest(text=text):
+                (self.transport / "latest").write_text(text)
                 self.rejected()
+
+    def test_corrupt_archive_is_rejected(self):
+        self.bundle.write_bytes(self.bundle.read_bytes() + b"corrupt")
+        self.rejected()
+
+    def test_json_paths_cannot_alias_nested_metadata(self):
+        self.metadata['dist/tarball'] = self.metadata['dist']['tarball']
+        self.metadata['dist']['tarball'] += '?untrusted'
+        (self.transport / 'latest').write_text(json.dumps(self.metadata))
+        self.rejected()
+
+    def test_unknown_json_values_are_consumed(self):
+        self.metadata['extra'] = {'unicode': 'ação 🏛', 'nested': [True, False, None, -1.5e20, {'message': '"name":"wrong"'}]}
+        (self.transport / 'latest').write_text(json.dumps(self.metadata, ensure_ascii=False), encoding='utf-8')
+        result = self.run_bootstrap()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_archived_manifest_matches_registry(self):
+        for key, value in (("name", "other"), ("version", "0.0.0"), ("gitHead", "b" * 40)):
+            with self.subTest(key=key):
+                manifest = dict(self.manifest, **{key: value})
+                self.entries[-1] = ("package/package.json", json.dumps(manifest).encode(), tarfile.REGTYPE)
+                self.publish()
+                self.rejected()
+
+    def test_archived_manifest_is_bounded(self):
+        body = json.dumps(self.manifest).encode() + b' ' * 1048576
+        self.entries[-1] = ('package/package.json', body, tarfile.REGTYPE)
+        self.publish()
+        self.rejected()
 
     def test_archive_boundary(self):
-        cases = [("../outside", tarfile.REGTYPE), ("/assets/outside", tarfile.REGTYPE), ("assets/../outside", tarfile.REGTYPE), ("assets/link", tarfile.SYMTYPE), ("assets/hardlink", tarfile.LNKTYPE), ("assets/pipe", tarfile.FIFOTYPE), ("assets/sparse", tarfile.GNUTYPE_SPARSE), ("assets/pax", tarfile.XHDTYPE), ("assets/global-pax", tarfile.XGLTYPE), ("assets/longname", tarfile.GNUTYPE_LONGNAME), ("assets/longlink", tarfile.GNUTYPE_LONGLINK), ("unexpected/file", tarfile.REGTYPE), ("assets/name\\escape", tarfile.REGTYPE), ("assets/a\n../outside", tarfile.REGTYPE), ("assets/C:escape", tarfile.REGTYPE), ("assets/CON", tarfile.REGTYPE), ("assets/trailing.", tarfile.REGTYPE)]
+        cases = [("../outside", tarfile.REGTYPE), ("/package/assets/outside", tarfile.REGTYPE), ("package/assets/../outside", tarfile.REGTYPE), ("package/assets/link", tarfile.SYMTYPE), ("package/assets/hardlink", tarfile.LNKTYPE), ("package/assets/pipe", tarfile.FIFOTYPE), ("package/assets/sparse", tarfile.GNUTYPE_SPARSE), ("package/assets/pax", tarfile.XHDTYPE), ("package/assets/global-pax", tarfile.XGLTYPE), ("package/assets/longname", tarfile.GNUTYPE_LONGNAME), ("package/assets/longlink", tarfile.GNUTYPE_LONGLINK), ("unexpected/file", tarfile.REGTYPE), ("package/assets/name\\escape", tarfile.REGTYPE), ("package/assets/a\n../outside", tarfile.REGTYPE), ("package/assets/C:escape", tarfile.REGTYPE), ("package/assets/CON", tarfile.REGTYPE), ("package/assets/trailing.", tarfile.REGTYPE)]
         original = list(self.entries)
         for name, kind in cases:
             with self.subTest(name=name, kind=kind):
@@ -204,7 +258,7 @@ shutil.copyfile(root/url.rsplit("/",1)[-1],destination)
         self.rejected()
 
     def test_case_alias_archive_paths(self):
-        self.entries += [("assets/Name", b"file", tarfile.REGTYPE), ("assets/name", b"file", tarfile.REGTYPE)]
+        self.entries += [("package/assets/Name", b"file", tarfile.REGTYPE), ("package/assets/name", b"file", tarfile.REGTYPE)]
         self.publish()
         self.rejected()
 
@@ -217,12 +271,12 @@ shutil.copyfile(root/url.rsplit("/",1)[-1],destination)
                 self.rejected()
 
     def test_parent_file_collision(self):
-        self.entries += [("assets/file", b"file", tarfile.REGTYPE), ("assets/file/child", b"child", tarfile.REGTYPE)]
+        self.entries += [("package/assets/file", b"file", tarfile.REGTYPE), ("package/assets/file/child", b"child", tarfile.REGTYPE)]
         self.publish()
         self.rejected()
 
-    def test_oversized_checksum_download(self):
-        (self.transport / "SHA256SUMS").write_text("x" * 65537)
+    def test_oversized_metadata_download(self):
+        (self.transport / "latest").write_text("x" * (1048576 + 1))
         self.rejected()
 
     def test_mismatched_candidate_version(self):
@@ -250,7 +304,7 @@ shutil.copyfile(root/url.rsplit("/",1)[-1],destination)
         self.assertEqual((self.home / "arguments").read_text(encoding="utf-8").splitlines(), ["install", "--tools", "claude,cursor,codex"])
 
 
-def real_bundle(binary, target):
+def real_bundle(binary, target, package_path=None):
     started = time.monotonic()
     import importlib.util
     spec = importlib.util.spec_from_file_location("package_native", ROOT / "maintainer/package-native.py")
@@ -259,8 +313,18 @@ def real_bundle(binary, target):
     case = Bootstrap()
     case.setUp()
     try:
-        bundle = packager.package(ROOT, binary.resolve(), target, case.transport)
-        (case.transport / "SHA256SUMS").write_bytes((case.transport / (bundle.name + ".sha256")).read_bytes())
+        if package_path:
+            shutil.copyfile(package_path, case.bundle)
+        else:
+            binaries = case.work / "fixture-binaries"
+            for platform_target in TARGETS:
+                destination = binaries / platform_target / ("exonous.exe" if "windows" in platform_target else "exonous")
+                destination.parent.mkdir(parents=True)
+                shutil.copyfile(binary.resolve(), destination)
+            packager.package(ROOT, binaries, case.transport, GIT_HEAD)
+        with tarfile.open(case.bundle) as package:
+            case.manifest = json.load(package.extractfile("package/package.json"))
+        case.checksums()
         for directory in (".claude", ".cursor", ".codex"):
             (case.home / directory).mkdir()
         personal = {".claude/settings.json": '{"personal":"preserve"}', ".cursor/hooks.json": '{"version":1,"hooks":{},"personal":"preserve"}', ".codex/config.toml": 'personal = "preserve"\n'}
@@ -272,6 +336,10 @@ def real_bundle(binary, target):
         config = case.home / ".claude/exonous/config.json"
         config.parent.mkdir()
         config.write_text(json.dumps({"vault": str(vault), "autoUpdate": False}))
+        result = case.npm()
+        assert result.returncode == 0, result.stdout + result.stderr
+        version = case.npm("--version")
+        assert version.returncode == 0 and version.stdout.strip() == VERSION, version.stdout + version.stderr
         for _ in range(2):
             result = case.run_bootstrap("--tools", "claude,cursor,codex")
             assert result.returncode == 0, result.stdout + result.stderr
@@ -279,6 +347,7 @@ def real_bundle(binary, target):
                 assert "preserve" in (case.home / name).read_text(encoding="utf-8"), name
         info = json.loads((case.home / ".claude/exonous/install.json").read_text(encoding="utf-8"))
         assert info["runtime"] == "rust" and info["complete"] is True, info
+        assert 'tagSha' not in info, 'first installation must not invent verified Git provenance'
         assert set(info["tools"]) == {"claude", "cursor", "codex"}, info
         installed = Path(info["binary"])
         assert installed.is_file()
@@ -287,7 +356,10 @@ def real_bundle(binary, target):
         assert installed_assets.is_dir()
         assert (installed_assets / "rules/nomos.md").read_bytes() == (ROOT / "assets/rules/nomos.md").read_bytes()
         assert (installed_assets / "machine/PR-TEMPLATE.md").read_bytes() == (ROOT / "assets/machine/PR-TEMPLATE.md").read_bytes()
+        size = case.bundle.stat().st_size
         shutil.rmtree(case.transport)
+        shutil.rmtree(case.work / "npm-cache")
+        shutil.rmtree(case.work / "npm-temp")
         assert list(case.staging.iterdir()) == []
         case.env.pop("EXONOUS_ASSETS", None)
         case.env.pop("EXONOUS_VERIFIED_RELEASE", None)
@@ -309,7 +381,7 @@ def real_bundle(binary, target):
             assert str(installed).replace('\\', '/') not in content.replace('\\\\', '\\').replace('\\', '/'), name
         assert (vault / "personal.md").read_text(encoding="utf-8") == "Keep this note.\n"
         assert json.loads(config.read_text(encoding="utf-8"))["vault"] == str(vault)
-        print(f"PASS native bootstrap ({time.monotonic() - started:.2f}s): install twice, persistent launcher, doctor, uninstall; Claude/Cursor/Codex personal config and vault preserved")
+        print(f"PASS native npm/bootstrap ({time.monotonic() - started:.2f}s, {size} package bytes): install twice, persistent launcher, doctor, uninstall; Claude/Cursor/Codex personal config and vault preserved")
     finally:
         case.doCleanups()
 
@@ -317,6 +389,7 @@ def real_bundle(binary, target):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--binary", type=Path)
+    parser.add_argument("--package", type=Path)
     parser.add_argument("--target", default=TARGET)
     parser.add_argument("--powershell", choices=["powershell", "pwsh"])
     args = parser.parse_args()
@@ -324,7 +397,7 @@ if __name__ == "__main__":
         POWERSHELL_COMMAND = shutil.which(args.powershell)
         if not POWERSHELL_COMMAND:
             parser.error(f"{args.powershell} is not installed")
-    if args.binary:
-        real_bundle(args.binary, args.target)
+    if args.binary or args.package:
+        real_bundle(args.binary, args.target, args.package)
     else:
         unittest.main(argv=[__file__])

@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 #[cfg(unix)]
 #[test]
 fn native_update_activates_verified_release_through_real_candidate_process() {
-    use sha2::{Digest, Sha256};
+    use sha2::{Digest, Sha512};
     use std::os::unix::fs::PermissionsExt;
     use std::process::Command;
     let temp = tempfile::tempdir().unwrap();
@@ -14,15 +14,13 @@ fn native_update_activates_verified_release_through_real_candidate_process() {
     fs::create_dir(&home).unwrap();
     let mock = temp.path().join("network-tools");
     fs::create_dir(&mock).unwrap();
-    let filename = format!(
-        "exonous-{}.tar.gz",
-        match std::env::consts::OS {
-            "macos" if std::env::consts::ARCH == "aarch64" => "aarch64-apple-darwin",
-            "macos" => "x86_64-apple-darwin",
-            _ if std::env::consts::ARCH == "aarch64" => "aarch64-unknown-linux-gnu",
-            _ => "x86_64-unknown-linux-gnu",
-        }
-    );
+    let target = match std::env::consts::OS {
+        "macos" if std::env::consts::ARCH == "aarch64" => "aarch64-apple-darwin",
+        "macos" => "x86_64-apple-darwin",
+        _ if std::env::consts::ARCH == "aarch64" => "aarch64-unknown-linux-gnu",
+        _ => "x86_64-unknown-linux-gnu",
+    };
+    let filename = format!("exonous-{}.tgz", env!("CARGO_PKG_VERSION"));
     let archive = temp.path().join(&filename);
     let output = fs::File::create(&archive).unwrap();
     let mut tar = tar::Builder::new(flate2::write::GzEncoder::new(
@@ -30,15 +28,26 @@ fn native_update_activates_verified_release_through_real_candidate_process() {
         flate2::Compression::fast(),
     ));
     tar.sparse(false);
-    tar.append_path_with_name(env!("CARGO_BIN_EXE_exonous"), "exonous")
-        .unwrap();
+    tar.append_path_with_name(
+        env!("CARGO_BIN_EXE_exonous"),
+        format!("package/native/{target}/exonous"),
+    )
+    .unwrap();
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    tar.append_dir_all("assets", root.join("assets")).unwrap();
+    tar.append_dir_all("package/assets", root.join("assets"))
+        .unwrap();
     let sparse = temp.path().join("sparse-asset");
     fs::File::create(&sparse).unwrap().set_len(65536).unwrap();
-    tar.append_path_with_name(&sparse, "assets/sparse-asset")
+    tar.append_path_with_name(&sparse, "package/assets/sparse-asset")
         .unwrap();
-    tar.append_path_with_name(root.join("package.json"), "package.json")
+    let mut package = json_file(&root.join("package.json"));
+    package["gitHead"] = json!("a".repeat(40));
+    let bytes = serde_json::to_vec(&package).unwrap();
+    let mut header = tar::Header::new_gnu();
+    header.set_size(bytes.len() as u64);
+    header.set_mode(0o600);
+    header.set_cksum();
+    tar.append_data(&mut header, "package/package.json", bytes.as_slice())
         .unwrap();
     tar.into_inner().unwrap().finish().unwrap();
     let mut release = tar::Archive::new(flate2::read::GzDecoder::new(
@@ -54,9 +63,23 @@ fn native_update_activates_verified_release_through_real_candidate_process() {
             entry.path().unwrap()
         );
     }
-    let sum = format!("{:x}", Sha256::digest(fs::read(&archive).unwrap()));
-    let checksums = temp.path().join("SHA256SUMS");
-    fs::write(&checksums, format!("{sum}  {filename}\n")).unwrap();
+    let hash = Sha512::digest(fs::read(&archive).unwrap());
+    let alphabet = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut encoded = String::new();
+    for chunk in hash.chunks(3) {
+        let bits = ((chunk[0] as u32) << 16)
+            | ((chunk.get(1).copied().unwrap_or(0) as u32) << 8)
+            | chunk.get(2).copied().unwrap_or(0) as u32;
+        for (index, shift) in [18, 12, 6, 0].into_iter().enumerate() {
+            encoded.push(if index > chunk.len() {
+                '='
+            } else {
+                alphabet[((bits >> shift) & 63) as usize] as char
+            });
+        }
+    }
+    let metadata = temp.path().join("metadata.json");
+    fs::write(&metadata, serde_json::to_vec(&json!({"name":"exonous","version":env!("CARGO_PKG_VERSION"),"gitHead":"a".repeat(40),"dist":{"integrity":format!("sha512-{encoded}"),"tarball":format!("https://registry.npmjs.org/exonous/-/{filename}")}})).unwrap()).unwrap();
     let git = mock.join("git");
     fs::write(
         &git,
@@ -69,7 +92,7 @@ fn native_update_activates_verified_release_through_real_candidate_process() {
     .unwrap();
     let curl = mock.join("curl");
     let shell_path = |path: &Path| format!("'{}'", path.to_str().unwrap().replace('\'', "'\\''"));
-    fs::write(&curl, format!("#!/bin/sh\nwhile [ \"$#\" -gt 0 ]; do\n if [ \"$1\" = --output ]; then shift; dest=$1; fi\n url=$1\n shift\ndone\ncase \"$url\" in */SHA256SUMS) /bin/cp {} \"$dest\";; *) /bin/cp {} \"$dest\";; esac\n", shell_path(&checksums), shell_path(&archive))).unwrap();
+    fs::write(&curl, format!("#!/bin/sh\nwhile [ \"$#\" -gt 0 ]; do\n if [ \"$1\" = --output ]; then shift; dest=$1; fi\n url=$1\n shift\ndone\ncase \"$url\" in https://registry.npmjs.org/exonous/{}) /bin/cp {} \"$dest\";; https://registry.npmjs.org/exonous/-/{filename}) /bin/cp {} \"$dest\";; *) exit 1;; esac\n", env!("CARGO_PKG_VERSION"), shell_path(&metadata), shell_path(&archive))).unwrap();
     for executable in [&git, &curl] {
         fs::set_permissions(executable, fs::Permissions::from_mode(0o700)).unwrap();
     }
