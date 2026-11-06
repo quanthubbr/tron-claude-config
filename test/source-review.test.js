@@ -376,14 +376,19 @@ test('Claude real transport rejects malformed, refusal, error, invalid decisions
 
 test('Claude transport terminates at 180 seconds and removes its private directory', { skip: process.platform === 'win32' }, async (t) => {
   const { source, options } = claudeFixture(t, `setInterval(() => {}, 1000);`);
-  const privateDirectories = () => fs.readdirSync(os.tmpdir()).filter((name) => name.startsWith('source-review-claude-')).sort();
-  const before = privateDirectories();
-  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const created = t.mock.method(fs, 'mkdtempSync');
+  let expire;
+  const timeout = t.mock.method(global, 'setTimeout', (callback, delay) => {
+    assert.equal(delay, 180000);
+    expire = callback;
+  });
   const pending = reviewAndPlan([source], options);
   const rejected = assert.rejects(pending, { message: 'fixture: reviewer failed' });
-  t.mock.timers.tick(180000);
+  assert.equal(timeout.mock.callCount(), 1);
+  expire();
   await rejected;
-  assert.deepEqual(privateDirectories(), before);
+  assert.equal(created.mock.callCount(), 1);
+  assert.equal(fs.existsSync(created.mock.calls[0].result), false);
 });
 
 test('Claude executable launch failure exposes no process details', async (t) => {

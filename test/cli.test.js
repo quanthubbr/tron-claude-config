@@ -13,6 +13,25 @@ const { test } = require('node:test');
 const BIN = path.join(__dirname, '..', 'bin', 'exonous.js');
 const GIT_ENV = { GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t', GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' };
 
+for (const [args, status] of [[['help'], 0], [['unknown-command'], 2], [['workflow', 'commit'], 0], [['workflow', 'deploy'], 1]]) {
+  test(`CLI drains delayed stdout and stderr for ${args.join(' ')}`, (t) => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cli-output-'));
+    t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+    const preload = path.join(dir, 'slow-output.cjs');
+    fs.writeFileSync(preload, `for (const stream of [process.stdout, process.stderr]) {
+  const write = stream._write.bind(stream);
+  stream._write = (chunk, encoding, callback) => setTimeout(() => write(chunk, encoding, callback), 25);
+}\n`);
+    const env = { ...process.env, EXONOUS_HOME: dir, EXONOUS_NO_UPDATE: '1' };
+    const normal = spawnSync(process.execPath, [BIN, ...args], { cwd: dir, env, encoding: 'utf8' });
+    const delayed = spawnSync(process.execPath, ['--require', preload, BIN, ...args], { cwd: dir, env, encoding: 'utf8' });
+    assert.strictEqual(normal.status, status, normal.stderr);
+    assert.strictEqual(delayed.status, status, delayed.stderr);
+    assert.strictEqual(delayed.stdout, normal.stdout);
+    assert.strictEqual(delayed.stderr, normal.stderr);
+  });
+}
+
 function fixture() {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cli-home-'));
   fs.mkdirSync(path.join(home, '.claude'));

@@ -172,11 +172,12 @@ const commands = {
 const command = process.argv[2];
 if (!commands[command]) {
   console.log(USAGE);
-  process.exit(command && !['help', '--help', '-h'].includes(command) ? 2 : 0);
+  process.exitCode = command && !['help', '--help', '-h'].includes(command) ? 2 : 0;
+} else {
+  Promise.resolve().then(() => commands[command]())
+    .then((code) => { process.exitCode = typeof code === 'number' ? code : 0; })
+    .catch((err) => {
+      console.error(`exonous ${command}: ${err.message}`);
+      process.exitCode = 1;
+    });
 }
-Promise.resolve().then(() => commands[command]())
-  .then((code) => process.exit(typeof code === 'number' ? code : 0))
-  .catch((err) => {
-    console.error(`exonous ${command}: ${err.message}`);
-    process.exit(1);
-  });
