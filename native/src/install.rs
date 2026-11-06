@@ -1042,7 +1042,7 @@ pub fn install_from(
     };
     if plan.current(launcher)?.is_none() || plan.previous.files.contains_key(launcher) {
         let command = if cfg!(windows) {
-            format!("@echo off\r\n{} %*\r\n", quote(&binary)?)
+            format!("@echo off\r\n{} %* & exit /b\r\n", quote(&binary)?)
         } else {
             format!("#!/bin/sh\nexec {} \"$@\"\n", quote(&binary)?)
         };
@@ -1712,6 +1712,213 @@ fn execute(plan: &Plan<'_>) -> Result<()> {
     execute_with(plan, &mut runtime::atomic_private)
 }
 
+#[cfg(windows)]
+mod windows_removal {
+    use super::*;
+    use std::io::{self, Read};
+    use std::os::windows::{fs::OpenOptionsExt, io::AsRawHandle};
+    use windows_sys::Win32::Storage::FileSystem::*;
+
+    fn open(path: &Path) -> io::Result<fs::File> {
+        fs::OpenOptions::new()
+            .read(true)
+            .access_mode(DELETE | FILE_GENERIC_READ)
+            .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE)
+            .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT)
+            .open(path)
+    }
+
+    fn identity(file: &fs::File) -> io::Result<(u32, u32, u32)> {
+        let mut info = BY_HANDLE_FILE_INFORMATION::default();
+        if unsafe { GetFileInformationByHandle(file.as_raw_handle(), &mut info) } == 0 {
+            return Err(io::Error::last_os_error());
+        }
+        if info.dwFileAttributes & (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY) != 0 {
+            return Err(io::Error::other("owned executable is not a regular file"));
+        }
+        Ok((
+            info.dwVolumeSerialNumber,
+            info.nFileIndexHigh,
+            info.nFileIndexLow,
+        ))
+    }
+
+    fn rename_stream(file: &fs::File, name: &str, replace: bool) -> io::Result<()> {
+        let name = name.encode_utf16().collect::<Vec<_>>();
+        let size = std::mem::offset_of!(FILE_RENAME_INFO, FileName) + name.len() * 2;
+        let mut buffer = vec![0usize; size.div_ceil(std::mem::size_of::<usize>())];
+        let info = buffer.as_mut_ptr().cast::<FILE_RENAME_INFO>();
+        let renamed = unsafe {
+            (*info).Anonymous.ReplaceIfExists = replace;
+            (*info).FileNameLength = (name.len() * 2) as u32;
+            std::ptr::copy_nonoverlapping(
+                name.as_ptr(),
+                std::ptr::addr_of_mut!((*info).FileName).cast::<u16>(),
+                name.len(),
+            );
+            SetFileInformationByHandle(
+                file.as_raw_handle(),
+                FileRenameInfo,
+                info.cast(),
+                size as u32,
+            )
+        };
+        if renamed == 0 {
+            Err(io::Error::last_os_error())
+        } else {
+            Ok(())
+        }
+    }
+
+    fn dispose(file: &fs::File) -> io::Result<()> {
+        let info = FILE_DISPOSITION_INFO_EX {
+            Flags: FILE_DISPOSITION_FLAG_DELETE | FILE_DISPOSITION_FLAG_POSIX_SEMANTICS,
+        };
+        if unsafe {
+            SetFileInformationByHandle(
+                file.as_raw_handle(),
+                FileDispositionInfoEx,
+                (&info as *const FILE_DISPOSITION_INFO_EX).cast(),
+                std::mem::size_of_val(&info) as u32,
+            )
+        } == 0
+        {
+            Err(io::Error::last_os_error())
+        } else {
+            Ok(())
+        }
+    }
+
+    fn remove_stream(
+        path: &Path,
+        stream: fs::File,
+        name: &str,
+        dispose: &mut dyn FnMut(&fs::File) -> io::Result<()>,
+        recovery_failed: &mut bool,
+    ) -> io::Result<()> {
+        let original = identity(&stream)?;
+        rename_stream(&stream, name, false)?;
+        let result = (|| {
+            let file = open(path)?;
+            if identity(&file)? != original {
+                return Err(io::Error::other("owned executable identity changed"));
+            }
+            dispose(&file)?;
+            drop(file);
+            match fs::symlink_metadata(path) {
+                Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
+                _ => Err(io::Error::other(
+                    "owned executable removal was not completed",
+                )),
+            }
+        })();
+        if let Err(error) = result {
+            if let Err(restore) = rename_stream(&stream, "::$DATA", true) {
+                *recovery_failed = true;
+                return Err(io::Error::other(format!(
+                    "{error}; cannot restore executable stream {name}: {restore}"
+                )));
+            }
+            return Err(error);
+        }
+        Ok(())
+    }
+
+    pub(super) fn remove_current(
+        path: &Path,
+        expected: &[u8],
+        recovery_failed: &mut bool,
+    ) -> io::Result<()> {
+        let stream = open(path)?;
+        let current = fs::File::open(std::env::current_exe()?)?;
+        if identity(&stream)? != identity(&current)? {
+            return Err(io::Error::other("owned file is not the running executable"));
+        }
+        let mut bytes = Vec::new();
+        (&stream)
+            .take(expected.len() as u64 + 1)
+            .read_to_end(&mut bytes)?;
+        if bytes != expected {
+            return Err(io::Error::other("owned executable changed before removal"));
+        }
+        drop(current);
+        remove_stream(
+            path,
+            stream,
+            &format!(":exonous-delete-{}", runtime::nonce()),
+            &mut dispose,
+            recovery_failed,
+        )
+    }
+
+    #[test]
+    fn successful_disposition_removes_the_file_and_temporary_stream() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("runtime.exe");
+        fs::write(&path, b"owned executable bytes").unwrap();
+        let stream = open(&path).unwrap();
+        let mut recovery_failed = false;
+        remove_stream(
+            &path,
+            stream,
+            ":exonous-delete-test",
+            &mut dispose,
+            &mut recovery_failed,
+        )
+        .unwrap();
+        assert!(!recovery_failed);
+        assert_eq!(
+            fs::symlink_metadata(&path).unwrap_err().kind(),
+            io::ErrorKind::NotFound
+        );
+        assert!(open(&dir.path().join("runtime.exe:exonous-delete-test")).is_err());
+        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 0);
+    }
+
+    #[test]
+    fn failed_disposition_restores_the_original_stream() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("runtime.exe");
+        fs::write(&path, b"owned executable bytes").unwrap();
+        let stream = open(&path).unwrap();
+        let original = identity(&stream).unwrap();
+        let mut recovery_failed = false;
+        let error = remove_stream(
+            &path,
+            stream,
+            ":exonous-delete-test",
+            &mut |_| Err(io::Error::other("injected disposition failure")),
+            &mut recovery_failed,
+        )
+        .unwrap_err();
+        assert_eq!(error.to_string(), "injected disposition failure");
+        assert!(!recovery_failed);
+        assert_eq!(fs::read(&path).unwrap(), b"owned executable bytes");
+        assert_eq!(identity(&open(&path).unwrap()).unwrap(), original);
+        assert!(open(&dir.path().join("runtime.exe:exonous-delete-test")).is_err());
+    }
+}
+
+fn remove_owned_file(
+    path: &Path,
+    _expected: &[u8],
+    _recovery_failed: &mut bool,
+) -> std::io::Result<()> {
+    match fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(error) => {
+            #[cfg(windows)]
+            if error.kind() == std::io::ErrorKind::PermissionDenied
+                && fs::canonicalize(path).ok()
+                    == std::env::current_exe().and_then(fs::canonicalize).ok()
+            {
+                return windows_removal::remove_current(path, _expected, _recovery_failed);
+            }
+            Err(error)
+        }
+    }
+}
+
 fn execute_with(plan: &Plan<'_>, write: &mut dyn FnMut(&Path, &[u8]) -> Result<()>) -> Result<()> {
     let _lock = InstallLock::acquire(plan.home)?;
     let mut previous_permissions = BTreeMap::new();
@@ -1759,6 +1966,7 @@ fn execute_with(plan: &Plan<'_>, write: &mut dyn FnMut(&Path, &[u8]) -> Result<(
             .map_err(|_| "cannot encode pending ownership ledger")?,
     )?;
     let mut applied = Vec::new();
+    let mut removal_recovery_failed = false;
     let result = (|| {
         for (relative, change) in &plan.changes {
             let path = contained(plan.home, relative)?;
@@ -1778,7 +1986,15 @@ fn execute_with(plan: &Plan<'_>, write: &mut dyn FnMut(&Path, &[u8]) -> Result<(
                         .map_err(|_| "cannot set installed executable mode")?;
                 }
             } else if path.exists() {
-                fs::remove_file(&path).map_err(|_| "cannot remove owned file")?;
+                remove_owned_file(
+                    &path,
+                    change
+                        .before
+                        .as_deref()
+                        .ok_or("missing owned file snapshot")?,
+                    &mut removal_recovery_failed,
+                )
+                .map_err(|error| format!("cannot remove owned file {relative}: {error}"))?;
                 applied.push(relative);
             }
         }
@@ -1788,7 +2004,7 @@ fn execute_with(plan: &Plan<'_>, write: &mut dyn FnMut(&Path, &[u8]) -> Result<(
         )
     })();
     if let Err(error) = result {
-        let mut restored = true;
+        let mut restored = !removal_recovery_failed;
         for relative in applied.into_iter().rev() {
             let change = &plan.changes[relative];
             let path = contained(plan.home, relative)?;

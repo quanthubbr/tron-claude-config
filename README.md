@@ -12,16 +12,33 @@ The machine runtime is written in Rust. Installation registers absolute native h
 
 ## Install
 
-Needs git. Build from a source checkout with Rust 1.88+:
+On macOS, Linux or WSL:
 
 ```bash
-cargo build --release --locked
-./target/release/exonous install --real-home
+curl -fsSL https://raw.githubusercontent.com/zaqueu-1/exonous/main/install.sh | sh
 ```
 
-Windows uses `target/release/exonous.exe`. `--real-home` explicitly selects your home when running from a development checkout; use `EXONOUS_HOME=<temporary-directory>` for an isolated trial. Install is safe to re-run and supports `--dry-run` and `--tools codex,cursor`.
+On Windows, in PowerShell:
 
-Release CI prepares checksum manifests and native bundles for macOS ARM64/x64, Linux ARM64/x64 and Windows x64. When a release is published, download its matching `exonous-<target>.tar.gz` and `SHA256SUMS`, verify the checksum, extract them together, and run the included executable with `install`. Keep its sibling `assets/` directory. The installer copies the runtime and assets into a versioned directory and prepares a launcher in `~/.local/bin`; add that directory to PATH or use the absolute command printed in installed skills. Foreign launchers and user settings are preserved.
+```powershell
+& ([scriptblock]::Create((Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/zaqueu-1/exonous/main/install.ps1).Content))
+```
+
+The command selects the latest stable release for macOS ARM64/x64, Linux ARM64/x64 or Windows x64, verifies its checksum and archive, and installs the native CLI with its assets. Node and Rust are unnecessary. Install is safe to re-run; it preserves personal settings, foreign launchers and vault notes. Git is used for subsequent release checks and repository commands.
+
+The installer prepares `~/.local/bin/exonous` (`exonous.cmd` on Windows). Add `~/.local/bin` to PATH and restart the terminal, then run `exonous doctor`. Registered hooks and skills already use the installed executable's absolute path.
+
+Choose tools or try a dry run by passing installer arguments:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zaqueu-1/exonous/main/install.sh | sh -s -- --tools codex,cursor --dry-run
+```
+
+```powershell
+& ([scriptblock]::Create((Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/zaqueu-1/exonous/main/install.ps1).Content)) --tools 'codex,cursor' --dry-run
+```
+
+Use `EXONOUS_HOME=<temporary-directory>` for an isolated trial. Developers can [build from source](#native-rust-runtime) with Rust 1.88+; add `--real-home` to `exonous install` when intentionally installing from a development checkout.
 
 Install also picks the vault agents write notes to, so there is nothing to configure:
 

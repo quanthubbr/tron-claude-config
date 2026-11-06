@@ -148,7 +148,7 @@ dependencies = [
 
 [[package]]
 name = "exonous"
-version = "2.10.2"
+version = "2.10.3"
 dependencies = [
  "chrono",
  "flate2",
@@ -162,6 +162,7 @@ dependencies = [
  "tempfile",
  "toml",
  "unicode-normalization",
+ "windows-sys",
 ]
 
 [[package]]
