@@ -2,6 +2,7 @@
 // ui-design — runs the bundled design engine with exonous defaults: no telemetry, no self-update, rebranded agent-facing output.
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -46,18 +47,48 @@ export function cmdQuote(value) {
   return `"${text.replace(/(\\+)$/, '$1$1')}"`;
 }
 
-/** The trusted engine binaries impeccable.cmd would run (no probe needed), so arguments skip cmd.exe entirely. */
+function integrityError(message) {
+  return Object.assign(new Error(`engine integrity: ${message}; reinstall exonous or set IMPECCABLE_BIN to an explicitly trusted engine`), { code: 127 });
+}
+
+export function engineManifest(dir) {
+  try {
+    const version = fs.readFileSync(path.join(dir, 'VERSION'), 'utf8').replace(/\r\n/g, '\n').replace(/\n$/, '');
+    const lines = fs.readFileSync(path.join(dir, 'ENGINE-CHECKSUMS'), 'utf8').replace(/\r\n/g, '\n').replace(/\n$/, '').split('\n');
+    if (version !== '0.1.5' || lines.shift() !== `version ${version}`) throw new Error('version mismatch');
+    const hashes = new Map();
+    for (const line of lines) {
+      const match = line.match(/^([a-f0-9]{64})  (impeccable-(?:darwin|linux)-(?:arm64|x64)|impeccable-windows-x64\.exe)$/);
+      if (!match || hashes.has(match[2])) throw new Error('invalid or duplicate asset');
+      hashes.set(match[2], match[1]);
+    }
+    if (!hashes.size) throw new Error('missing assets');
+    return hashes;
+  } catch (error) {
+    throw integrityError(`invalid manifest: ${error.message}`);
+  }
+}
+
 export function windowsEngine(dir, env = process.env) {
-  const arch = /^arm64$/i.test(env.PROCESSOR_ARCHITECTURE ?? '') ? 'arm64' : 'x64';
-  const versionFile = path.join(dir, 'VERSION');
-  const version = fs.existsSync(versionFile) ? fs.readFileSync(versionFile, 'utf8').split(/\r?\n/)[0].trim() : '';
+  if (Object.hasOwn(env, 'IMPECCABLE_BIN')) {
+    if (env.IMPECCABLE_BIN && fs.statSync(env.IMPECCABLE_BIN, { throwIfNoEntry: false })?.isFile()) return env.IMPECCABLE_BIN;
+    throw integrityError('invalid IMPECCABLE_BIN override');
+  }
+  const expected = engineManifest(dir).get('impeccable-windows-x64.exe');
+  if (!expected) throw integrityError('manifest missing Windows x64 hash');
   const cacheRoot = env.IMPECCABLE_HOME || (env.USERPROFILE && path.join(env.USERPROFILE, '.impeccable'));
   const candidates = [
-    env.IMPECCABLE_BIN,
-    path.join(dir, 'bin', `windows-${arch}`, 'impeccable.exe'),
-    version && cacheRoot && path.join(cacheRoot, 'bin', version, 'impeccable.exe'),
+    path.join(dir, 'bin', 'windows-x64', 'impeccable.exe'),
+    env.USERPROFILE && path.join(env.USERPROFILE, '.impeccable', 'bin', 'impeccable.exe'),
+    cacheRoot && path.join(cacheRoot, 'bin', '0.1.5', 'impeccable.exe'),
+    ...(env.PATH || '').split(path.delimiter).filter(Boolean).map((entry) => path.join(entry, 'impeccable.exe')),
   ];
-  return candidates.find((file) => file && fs.existsSync(file)) ?? null;
+  for (const file of candidates.filter(Boolean)) {
+    if (!fs.existsSync(file)) continue;
+    if (!fs.statSync(file).isFile() || createHash('sha256').update(fs.readFileSync(file)).digest('hex') !== expected) throw integrityError(`checksum mismatch: ${file}`);
+    return file;
+  }
+  return null;
 }
 
 export function engineCommand(dir, args, platform = process.platform, env = process.env) {
@@ -101,7 +132,7 @@ export function main(args = process.argv.slice(2), platform = process.platform, 
   try {
     run = engineCommand(dir, args, platform);
   } catch (error) {
-    fail(error.message, 2);
+    fail(error.message, error.code === 127 ? 127 : 2);
   }
 
   if (BUFFERED.has(verb)) {

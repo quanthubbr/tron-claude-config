@@ -298,6 +298,61 @@ fn native_design_driver_preserves_arguments_privacy_flags_and_engine_exit() {
     );
 }
 
+#[cfg(windows)]
+#[test]
+fn native_design_driver_rejects_untrusted_candidates_and_invalid_override_without_fallback() {
+    use sha2::{Digest, Sha256};
+    let home = tempfile::tempdir().unwrap();
+    let scripts = home.path().join(".claude/skills/ui-design/scripts");
+    fs::create_dir_all(scripts.join("bin/windows-x64")).unwrap();
+    fs::write(scripts.join("VERSION"), "0.1.5\n").unwrap();
+    fs::write(
+        scripts.join("ENGINE-CHECKSUMS"),
+        format!(
+            "version 0.1.5\n{:x}  impeccable-windows-x64.exe\n",
+            Sha256::digest(b"verified inert bytes")
+        ),
+    )
+    .unwrap();
+    fs::write(
+        scripts.join("bin/windows-x64/impeccable.exe"),
+        b"tampered inert bytes",
+    )
+    .unwrap();
+    let marker = home.path().join("launcher-ran");
+    fs::write(
+        scripts.join("impeccable.cmd"),
+        format!(
+            "@echo off\r\necho ran>\"{}\"\r\nexit /b 0\r\n",
+            marker.display()
+        ),
+    )
+    .unwrap();
+    for override_bin in [
+        None,
+        Some(home.path().join("missing.exe")),
+        Some(scripts.clone()),
+    ] {
+        let mut command = Command::new(env!("CARGO_BIN_EXE_exonous"));
+        command
+            .args(["ui-design", "context", "--target", r#"{"value":"%PATH%!"}"#])
+            .env("EXONOUS_HOME", home.path())
+            .env("EXONOUS_NO_UPDATE", "1")
+            .env_remove("IMPECCABLE_BIN");
+        if let Some(binary) = override_bin {
+            command.env("IMPECCABLE_BIN", binary);
+        }
+        let out = command.output().unwrap();
+        assert_eq!(
+            out.status.code(),
+            Some(127),
+            "{}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        assert!(!marker.exists());
+    }
+}
+
 #[cfg(unix)]
 #[test]
 fn an_older_cli_forwards_to_verified_newer_native_runtime() {

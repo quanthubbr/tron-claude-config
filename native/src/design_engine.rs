@@ -35,6 +35,106 @@ fn batch_quote(value: &str) -> Result<String, String> {
     Ok(format!("\"{value}{}\"", "\\".repeat(trailing)))
 }
 
+#[cfg(any(windows, test))]
+pub fn select_windows_binary(
+    dir: &Path,
+    home: &Path,
+    override_bin: Option<&std::ffi::OsStr>,
+    cache_home: Option<&std::ffi::OsStr>,
+    search_path: Option<&std::ffi::OsStr>,
+) -> Result<Option<PathBuf>, String> {
+    use sha2::{Digest, Sha256};
+    use std::{collections::HashMap, fs, io::Read};
+
+    if let Some(binary) = override_bin {
+        let binary = PathBuf::from(binary);
+        return if binary.is_file() {
+            Ok(Some(binary))
+        } else {
+            Err("IMPECCABLE_BIN is not a file".into())
+        };
+    }
+    let version = runtime::read_limited(&dir.join("VERSION"), 1024)
+        .map_err(|_| "engine VERSION missing or invalid")?;
+    let version = version.replace("\r\n", "\n");
+    let version = version.strip_suffix('\n').unwrap_or(&version);
+    if version != "0.1.5" {
+        return Err("engine VERSION does not match pinned version 0.1.5".into());
+    }
+    let manifest = runtime::read_limited(&dir.join("ENGINE-CHECKSUMS"), 4096)
+        .map_err(|_| "engine checksum manifest missing or invalid")?;
+    let manifest = manifest.replace("\r\n", "\n");
+    let body = manifest
+        .strip_prefix("version 0.1.5\n")
+        .ok_or("engine checksum manifest version mismatch")?;
+    let body = body.strip_suffix('\n').unwrap_or(body);
+    let mut hashes = HashMap::new();
+    for line in body.split('\n') {
+        let (hash, asset) = line
+            .split_once("  ")
+            .ok_or("invalid engine checksum manifest")?;
+        if hash.len() != 64
+            || !hash
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+            || ![
+                "impeccable-darwin-arm64",
+                "impeccable-darwin-x64",
+                "impeccable-linux-arm64",
+                "impeccable-linux-x64",
+                "impeccable-windows-x64.exe",
+            ]
+            .contains(&asset)
+            || hashes.insert(asset, hash).is_some()
+        {
+            return Err("invalid engine checksum manifest".into());
+        }
+    }
+    let expected = hashes
+        .get("impeccable-windows-x64.exe")
+        .ok_or("engine checksum manifest has no Windows x64 hash")?;
+    let cache = cache_home
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+        .unwrap_or_else(|| home.join(".impeccable"));
+    let mut candidates = vec![
+        dir.join("bin/windows-x64/impeccable.exe"),
+        home.join(".impeccable/bin/impeccable.exe"),
+        cache.join("bin").join(version).join("impeccable.exe"),
+    ];
+    if let Some(search_path) = search_path {
+        candidates
+            .extend(std::env::split_paths(search_path).map(|entry| entry.join("impeccable.exe")));
+    }
+    for candidate in candidates {
+        match fs::symlink_metadata(&candidate) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(_) => return Err("cannot inspect engine candidate".into()),
+            Ok(_) => {}
+        }
+        if !candidate.is_file() {
+            return Err("engine candidate is not a file".into());
+        }
+        let mut file = fs::File::open(&candidate).map_err(|_| "cannot read engine candidate")?;
+        let mut hash = Sha256::new();
+        let mut buffer = [0_u8; 65536];
+        loop {
+            let count = file
+                .read(&mut buffer)
+                .map_err(|_| "cannot hash engine candidate")?;
+            if count == 0 {
+                break;
+            }
+            hash.update(&buffer[..count]);
+        }
+        if format!("{:x}", hash.finalize()) != *expected {
+            return Err("engine checksum mismatch".into());
+        }
+        return Ok(Some(candidate));
+    }
+    Ok(None)
+}
+
 pub fn execute(home: &Path, args: &[String]) -> Decision {
     let mut args = args.to_vec();
     let dir = if args.first().is_some_and(|s| s == "--skill-dir") {
@@ -105,33 +205,21 @@ pub fn execute(home: &Path, args: &[String]) -> Decision {
     }
     #[cfg(windows)]
     {
-        let arch = if std::env::consts::ARCH == "aarch64" {
-            "arm64"
-        } else {
-            "x64"
+        let binary = match select_windows_binary(
+            &dir,
+            home,
+            std::env::var_os("IMPECCABLE_BIN").as_deref(),
+            std::env::var_os("IMPECCABLE_HOME").as_deref(),
+            std::env::var_os("PATH").as_deref(),
+        ) {
+            Ok(binary) => binary,
+            Err(error) => {
+                return failure(
+                    127,
+                    &format!("{error}; reinstall exonous or set IMPECCABLE_BIN explicitly"),
+                );
+            }
         };
-        let version = runtime::read_limited(&dir.join("VERSION"), 1024)
-            .unwrap_or_default()
-            .lines()
-            .next()
-            .unwrap_or("")
-            .trim()
-            .to_owned();
-        let cache = std::env::var_os("IMPECCABLE_HOME")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| home.join(".impeccable"));
-        let binary = [
-            std::env::var_os("IMPECCABLE_BIN").map(PathBuf::from),
-            Some(
-                dir.join("bin")
-                    .join(format!("windows-{arch}"))
-                    .join("impeccable.exe"),
-            ),
-            Some(cache.join("bin").join(version).join("impeccable.exe")),
-        ]
-        .into_iter()
-        .flatten()
-        .find(|p| p.is_file());
         if let Some(binary) = binary {
             command = Command::new(binary);
         } else {
@@ -233,6 +321,208 @@ fn status(status: std::process::ExitStatus) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn manifest_fixture(dir: &Path, bytes: &[u8]) {
+        use sha2::{Digest, Sha256};
+        std::fs::write(dir.join("VERSION"), "0.1.5\n").unwrap();
+        std::fs::write(
+            dir.join("ENGINE-CHECKSUMS"),
+            format!(
+                "version 0.1.5\n{:x}  impeccable-windows-x64.exe\n",
+                Sha256::digest(bytes)
+            ),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn windows_selector_authenticates_each_automatic_location_without_execution() {
+        let root = tempfile::tempdir().unwrap();
+        let dir = root.path().join("scripts");
+        let home = root.path().join("home");
+        let cache = home.join(".impeccable");
+        let path = root.path().join("path");
+        std::fs::create_dir_all(&dir).unwrap();
+        manifest_fixture(&dir, b"inert verified engine");
+        let candidates = [
+            dir.join("bin/windows-x64/impeccable.exe"),
+            home.join(".impeccable/bin/impeccable.exe"),
+            cache.join("bin/0.1.5/impeccable.exe"),
+            path.join("impeccable.exe"),
+        ];
+        for candidate in candidates {
+            std::fs::create_dir_all(candidate.parent().unwrap()).unwrap();
+            std::fs::write(&candidate, b"inert verified engine").unwrap();
+            assert_eq!(
+                select_windows_binary(&dir, &home, None, None, Some(path.as_os_str())).unwrap(),
+                Some(candidate.clone())
+            );
+            std::fs::write(&candidate, b"tampered").unwrap();
+            assert!(
+                select_windows_binary(&dir, &home, None, None, Some(path.as_os_str())).is_err()
+            );
+            std::fs::remove_file(candidate).unwrap();
+        }
+        assert_eq!(
+            select_windows_binary(&dir, &home, None, None, None).unwrap(),
+            None
+        );
+    }
+
+    #[test]
+    fn windows_selector_override_is_explicit_and_never_falls_back() {
+        let root = tempfile::tempdir().unwrap();
+        let binary = root.path().join("override.exe");
+        assert!(
+            select_windows_binary(
+                root.path(),
+                root.path(),
+                Some(binary.as_os_str()),
+                None,
+                None
+            )
+            .is_err()
+        );
+        assert!(
+            select_windows_binary(
+                root.path(),
+                root.path(),
+                Some(std::ffi::OsStr::new("")),
+                None,
+                None
+            )
+            .is_err()
+        );
+        std::fs::write(&binary, b"operator supplied").unwrap();
+        assert_eq!(
+            select_windows_binary(
+                root.path(),
+                root.path(),
+                Some(binary.as_os_str()),
+                None,
+                None
+            )
+            .unwrap(),
+            Some(binary)
+        );
+    }
+
+    #[test]
+    fn windows_selector_rejects_invalid_manifest_before_discovery() {
+        let root = tempfile::tempdir().unwrap();
+        manifest_fixture(root.path(), b"engine");
+        let valid = std::fs::read_to_string(root.path().join("ENGINE-CHECKSUMS")).unwrap();
+        for invalid in [
+            valid.replace("version 0.1.5", "version 0.1.6"),
+            valid.replace("version 0.1.5\n", ""),
+            valid.replace("  impeccable-", " impeccable-"),
+            valid.replace("windows-x64.exe", "windows-arm64.exe"),
+            format!("{valid}{}", valid.lines().nth(1).unwrap()),
+            valid.to_uppercase(),
+            format!("{valid}\n"),
+        ] {
+            std::fs::write(root.path().join("ENGINE-CHECKSUMS"), invalid).unwrap();
+            assert!(select_windows_binary(root.path(), root.path(), None, None, None).is_err());
+        }
+        std::fs::remove_file(root.path().join("ENGINE-CHECKSUMS")).unwrap();
+        assert!(select_windows_binary(root.path(), root.path(), None, None, None).is_err());
+    }
+
+    #[test]
+    fn windows_selector_accepts_crlf_but_rejects_duplicate_version_and_bare_cr() {
+        let root = tempfile::tempdir().unwrap();
+        manifest_fixture(root.path(), b"engine");
+        let manifest = std::fs::read_to_string(root.path().join("ENGINE-CHECKSUMS")).unwrap();
+        let binary = root.path().join("bin/windows-x64/impeccable.exe");
+        std::fs::create_dir_all(binary.parent().unwrap()).unwrap();
+        std::fs::write(&binary, b"engine").unwrap();
+        std::fs::write(root.path().join("VERSION"), "0.1.5\r\n").unwrap();
+        std::fs::write(
+            root.path().join("ENGINE-CHECKSUMS"),
+            manifest.replace('\n', "\r\n"),
+        )
+        .unwrap();
+        assert_eq!(
+            select_windows_binary(root.path(), root.path(), None, None, None).unwrap(),
+            Some(binary.clone())
+        );
+        for invalid in [
+            format!("version 0.1.5\n{manifest}"),
+            manifest.replace('\n', "\r"),
+            manifest.replace("version 0.1.5", "version 0.\r1.5"),
+        ] {
+            std::fs::write(root.path().join("ENGINE-CHECKSUMS"), invalid).unwrap();
+            assert!(select_windows_binary(root.path(), root.path(), None, None, None).is_err());
+        }
+        std::fs::write(root.path().join("ENGINE-CHECKSUMS"), &manifest).unwrap();
+        std::fs::write(&binary, b"tampered").unwrap();
+        assert!(select_windows_binary(root.path(), root.path(), None, None, None).is_err());
+    }
+
+    #[test]
+    fn windows_selector_accepts_optional_manifest_final_newline_and_rejects_blank_records() {
+        let root = tempfile::tempdir().unwrap();
+        manifest_fixture(root.path(), b"engine");
+        let manifest = std::fs::read_to_string(root.path().join("ENGINE-CHECKSUMS")).unwrap();
+        let binary = root.path().join("bin/windows-x64/impeccable.exe");
+        std::fs::create_dir_all(binary.parent().unwrap()).unwrap();
+        std::fs::write(&binary, b"engine").unwrap();
+        std::fs::write(
+            root.path().join("ENGINE-CHECKSUMS"),
+            manifest.strip_suffix('\n').unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            select_windows_binary(root.path(), root.path(), None, None, None).unwrap(),
+            Some(binary)
+        );
+        std::fs::write(
+            root.path().join("ENGINE-CHECKSUMS"),
+            format!("{manifest}\n"),
+        )
+        .unwrap();
+        assert!(select_windows_binary(root.path(), root.path(), None, None, None).is_err());
+        std::fs::write(root.path().join("ENGINE-CHECKSUMS"), &manifest).unwrap();
+        std::fs::write(root.path().join("VERSION"), "0.1.5\n\n").unwrap();
+        assert!(select_windows_binary(root.path(), root.path(), None, None, None).is_err());
+    }
+
+    #[test]
+    fn windows_selector_checks_manifest_version_and_platform_hash() {
+        let root = tempfile::tempdir().unwrap();
+        manifest_fixture(root.path(), b"engine");
+        let manifest = std::fs::read_to_string(root.path().join("ENGINE-CHECKSUMS")).unwrap();
+        std::fs::write(root.path().join("VERSION"), "0.1.6\n").unwrap();
+        assert!(select_windows_binary(root.path(), root.path(), None, None, None).is_err());
+        std::fs::write(root.path().join("VERSION"), "0.1.5\n").unwrap();
+        std::fs::write(
+            root.path().join("ENGINE-CHECKSUMS"),
+            manifest.replace("windows-x64.exe", "linux-x64"),
+        )
+        .unwrap();
+        assert!(select_windows_binary(root.path(), root.path(), None, None, None).is_err());
+    }
+
+    #[test]
+    fn windows_selector_cache_override_does_not_move_unversioned_home_binary() {
+        let root = tempfile::tempdir().unwrap();
+        let dir = root.path().join("scripts");
+        let home = root.path().join("home");
+        let cache = root.path().join("cache");
+        let binary = cache.join("bin/0.1.5/impeccable.exe");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::create_dir_all(binary.parent().unwrap()).unwrap();
+        manifest_fixture(&dir, b"engine");
+        std::fs::write(&binary, b"engine").unwrap();
+        assert_eq!(
+            select_windows_binary(&dir, &home, None, Some(cache.as_os_str()), None).unwrap(),
+            Some(binary)
+        );
+        let home_binary = home.join(".impeccable/bin/impeccable.exe");
+        std::fs::create_dir_all(home_binary.parent().unwrap()).unwrap();
+        std::fs::write(&home_binary, b"tampered").unwrap();
+        assert!(select_windows_binary(&dir, &home, None, Some(cache.as_os_str()), None).is_err());
+    }
+
     #[test]
     fn design_rebranding_preserves_json_paths_and_hook_record_count() {
         assert_eq!(
