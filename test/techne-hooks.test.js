@@ -176,3 +176,89 @@ test('gh aliases are read from %APPDATA%\\GitHub CLI on Windows, like gh itself'
   assert.strictEqual(ghConfigDir({ APPDATA: appdata, XDG_CONFIG_HOME: '/x' }, 'win32'), path.join('/x', 'gh'));
   assert.strictEqual(ghConfigDir({ APPDATA: appdata, GH_CONFIG_DIR: '/g' }, 'win32'), '/g');
 });
+
+
+test('config guard inspects every MultiEdit destination before allowing the call', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'techne-multi-'));
+  const guarded = path.join(dir, '.prettierrc');
+  const ordinary = path.join(dir, 'index.ts');
+  fs.writeFileSync(guarded, '{}');
+  fs.writeFileSync(ordinary, '');
+  for (const position of [0, 1, 2]) {
+    const edits = Array.from({ length: 3 }, () => ({ file_path: ordinary }));
+    edits[position] = { file_path: guarded };
+    assert.strictEqual(hook('pre:config-guard', { cwd: dir, tool_name: 'MultiEdit', tool_input: { file_path: ordinary, edits } }).code, 2, `protected destination at ${position}`);
+  }
+  for (const input of [
+    { path: ordinary, edits: [{ path: guarded }] },
+    { file_path: guarded, edits: [{ old_string: 'a', new_string: 'b' }] },
+    { edits: [{ file_path: ordinary }, { path: guarded }] },
+  ]) {
+    assert.strictEqual(hook('pre:config-guard', { cwd: dir, tool_name: 'MultiEdit', tool_input: input }).code, 2);
+  }
+  assert.strictEqual(hook('pre:config-guard', { cwd: dir, tool_input: { edits: [{ path: 'new/.prettierrc' }] } }).code, 0);
+  assert.strictEqual(hook('pre:config-guard', { tool_input: { edits: [{ path: guarded }] } }, { EXONOUS_ALLOW_CONFIG_EDITS: '1' }).code, 0);
+});
+
+test('config guard covers supported config extensions and keeps payload handling neutral', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'techne-forms-'));
+  for (const name of ['.prettierrc.json5', '.prettierrc.mts', '.prettierrc.cts', '.stylelintrc.json5', 'prettier.config.mts', 'eslint.config.cts', '.markdownlint-cli2.yaml', '.markdownlint-cli2.jsonc', '.eslintrc.yaml', '.ruff.toml']) {
+    fs.writeFileSync(path.join(dir, name), '{}');
+    assert.strictEqual(hook('pre:config-guard', { cwd: dir, tool_input: { path: name } }).code, 2, name);
+  }
+  for (const payload of ['{broken', 'null', '[]', '{}', '{"tool_input":{"file_path":12,"edits":[null,{}]}}']) {
+    assert.strictEqual(hook('pre:config-guard', payload).code, 0, payload);
+  }
+  assert.strictEqual(hook('pre:config-guard', 'x'.repeat(1024 * 1024 + 1)).code, 2);
+});
+
+test('stop checks match exact diagnostic paths after normalizing separators and relative segments', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), process.platform === 'win32' ? 'techne-diagnostics-' : 'techne diagnostics '));
+  fs.mkdirSync(path.join(dir, 'node_modules', '.bin'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'tsconfig.json'), '{}');
+  const output = [
+    'src/index.ts(1,1): error TS2304: unrelated nested file',
+    './index.ts(1,1): error TS2304: root file',
+    'src/../index.ts(2,1): error TS2304: normalized root',
+    `${path.join(dir, 'index.ts')}(3,1): error TS2304: absolute root`,
+    'src\\other.ts(4,1): error TS2304: windows separators',
+    'src/./other.ts(5,1): error TS2304: normalized nested',
+  ].join('\n');
+  const tsc = path.join(dir, 'node_modules', '.bin', process.platform === 'win32' ? 'tsc.js' : 'tsc');
+  fs.writeFileSync(tsc, `#!${process.execPath}\nprocess.stdout.write(${JSON.stringify(output)}); process.exitCode = 2;\n`, { mode: 0o755 });
+  if (process.platform === 'win32') fs.writeFileSync(path.join(dir, 'node_modules', '.bin', 'tsc.cmd'), `@"${process.execPath}" "${tsc}" %*\r\n`);
+  for (const [index, relative] of ['index.ts', 'src/other.ts'].entries()) {
+    const file = path.join(dir, relative);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, 'export const value = 1;');
+    const session = `diagnostics-${process.pid}-${index}`;
+    hook('post:edit-tracker', { cwd: dir, session_id: session, tool_input: { file_path: file } });
+    const other = hook('stop:checks', { cwd: dir, session_id: `${session}-other` });
+    assert.strictEqual(other.stderr, '', 'sessions stay isolated');
+    const res = hook('stop:checks', { cwd: dir, session_id: session });
+    assert.strictEqual(res.code, 0, 'type errors stay advisory');
+    assert.doesNotMatch(res.stderr, /unrelated nested file/);
+    if (index === 0) {
+      for (const message of ['root file', 'normalized root', 'absolute root']) assert.ok(res.stderr.includes(message), message);
+      assert.doesNotMatch(res.stderr, /windows separators|normalized nested/);
+    } else {
+      for (const message of ['windows separators', 'normalized nested']) assert.ok(res.stderr.includes(message), message);
+      assert.doesNotMatch(res.stderr, /root file|normalized root|absolute root/);
+    }
+    assert.strictEqual(hook('stop:checks', { cwd: dir, session_id: session }).stderr, '', 'list is consumed');
+  }
+});
+
+
+test('stop checks exclude paths unsafe for Windows command shims', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'techne unsafe path '));
+  const file = path.join(dir, 'index.ts');
+  fs.writeFileSync(file, 'console.log("tracked");\n');
+  const session = `unsafe-path-${process.pid}`;
+  assert.strictEqual(hook('post:edit-tracker', { cwd: dir, session_id: session, tool_input: { file_path: file } }).code, 0);
+  const res = hook('stop:checks', { cwd: dir, session_id: session });
+  assert.strictEqual(res.code, 0);
+  if (process.platform === 'win32') assert.strictEqual(res.stderr, '', 'unsafe paths are excluded before invoking command shims');
+  else assert.match(res.stderr, /console\.log left in edited files/, 'POSIX permits paths containing spaces');
+  assert.strictEqual(hook('stop:checks', { cwd: dir, session_id: session }).stderr, '', 'excluded paths are consumed too');
+});

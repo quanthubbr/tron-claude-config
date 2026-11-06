@@ -57,7 +57,7 @@ Avoid sending on unbuffered channels without a receiver; prefer buffer size 1 pl
 | String assembly in loop | `strings.Builder` |
 | Map/set membership hot path | `map[T]struct{}` |
 
-Profile before `sync.Pool`; misuse adds complexity.
+Profile before `sync.Pool`. Copy returned bytes or strings into owned memory before returning the buffer to the pool.
 
 ## Tooling
 

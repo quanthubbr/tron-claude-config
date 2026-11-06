@@ -103,7 +103,11 @@ function typecheck(files, cwd, run, report) {
     if (!tsc) continue;
     const res = run(tsc, ['--noEmit', '--pretty', 'false', '-p', project], project);
     if (res.skipped || res.status === 0) continue;
-    const relevant = res.output.split('\n').filter((line) => group.some((f) => line.includes(path.relative(project, f))));
+    const edited = new Set(group.map((file) => path.resolve(file)));
+    const relevant = res.output.split('\n').filter((line) => {
+      const diagnostic = line.match(/^(.+)\(\d+,\d+\):/);
+      return diagnostic && edited.has(path.resolve(project, diagnostic[1].replace(/[\\/]/g, path.sep)));
+    });
     if (relevant.length) report(`type errors in edited files:\n${relevant.slice(0, 30).join('\n')}`);
   }
 }

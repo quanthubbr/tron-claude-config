@@ -7,6 +7,7 @@ Run after a feature chunk, refactor, or before opening a PR. Complements editor 
 ### 1 — Build
 
 ```bash
+set -o pipefail
 npm run build 2>&1 | tail -20
 # or pnpm build / bun run build — match the repo
 ```
@@ -17,22 +18,24 @@ npm run build 2>&1 | tail -20
 
 ```bash
 set -o pipefail
-npx --no-install tsc --noEmit 2>&1 | head -30
+npx --no-install tsc --noEmit 2>&1 | sed -n '1,30p'
 # Python: pyright . or mypy per project
 ```
 
-Report error count; fix blocking type errors on touched files at minimum.
+The filter consumes all output; `pipefail` preserves a failing tool status. Report error count; fix blocking type errors on touched files at minimum.
 
 ### 3 — Lint
 
 ```bash
-npm run lint 2>&1 | head -30
+set -o pipefail
+npm run lint 2>&1 | sed -n '1,30p'
 # Python: ruff check .
 ```
 
 ### 4 — Tests + coverage
 
 ```bash
+set -o pipefail
 npm run test -- --coverage 2>&1 | tail -50
 ```
 
