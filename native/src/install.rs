@@ -1042,7 +1042,7 @@ pub fn install_from(
     };
     if plan.current(launcher)?.is_none() || plan.previous.files.contains_key(launcher) {
         let command = if cfg!(windows) {
-            format!("@echo off\r\n{} %* & exit /b\r\n", quote(&binary)?)
+            format!("@echo off\r\n(goto) 2>nul & {} %*\r\n", quote(&binary)?)
         } else {
             format!("#!/bin/sh\nexec {} \"$@\"\n", quote(&binary)?)
         };
