@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { loadSources, resolveRepository } = require('./lib/sources');
 const { git, mirror } = require('./lib/git');
-const { reviewSource, resolveReviewEndpoint } = require('./lib/reviewer');
+const { reviewSource, resolveReviewBackend } = require('./lib/reviewer');
 
 function groupsFor(source) {
   const groups = [];
@@ -101,8 +101,7 @@ function resolveScopes(source, env = process.env) {
 }
 
 async function reviewAndPlan(sources, { env = process.env, open = (source) => mirror(source, env), request, localRoot } = {}) {
-  if (!env.EXONOUS_REVIEW_API_KEY || !/^[A-Za-z0-9][A-Za-z0-9._/-]{0,200}$/.test(env.EXONOUS_REVIEW_MODEL || '')) throw new Error('reviewer configuration unavailable');
-  resolveReviewEndpoint(env);
+  resolveReviewBackend(env);
   for (const source of sources) resolveRepository(source, env);
   const effective = sources.map((source) => resolveScopes(source, env));
   const reports = [];

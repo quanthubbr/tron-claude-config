@@ -2,6 +2,8 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const os = require('node:os');
+const { spawn } = require('node:child_process');
 const { git } = require('./git');
 
 const VALUES = {
@@ -22,6 +24,54 @@ function resolveReviewEndpoint(env) {
     return `${url.href.replace(/\/+$/, '')}/responses`;
   } catch {
     throw new Error('reviewer configuration unavailable');
+  }
+}
+
+function resolveReviewBackend(env) {
+  const backend = env.EXONOUS_REVIEW_BACKEND === undefined ? 'responses' : env.EXONOUS_REVIEW_BACKEND;
+  if (!['responses', 'claude'].includes(backend) || !/^[A-Za-z0-9][A-Za-z0-9._/-]{0,200}$/.test(env.EXONOUS_REVIEW_MODEL || '')) throw new Error('reviewer configuration unavailable');
+  if (backend === 'claude') {
+    if (typeof env.CLAUDE_CODE_OAUTH_TOKEN !== 'string' || !env.CLAUDE_CODE_OAUTH_TOKEN.trim() || /[\x00-\x1f\x7f]/.test(env.CLAUDE_CODE_OAUTH_TOKEN)) throw new Error('reviewer configuration unavailable');
+  } else {
+    if (!env.EXONOUS_REVIEW_API_KEY) throw new Error('reviewer configuration unavailable');
+    resolveReviewEndpoint(env);
+  }
+  return backend;
+}
+
+async function claudeReview(body, env) {
+  const home = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'source-review-claude-')));
+  try {
+    fs.chmodSync(home, 0o700);
+    const childEnv = { HOME: home, CLAUDE_CONFIG_DIR: home, TMPDIR: home, TMP: home, TEMP: home, CLAUDE_CODE_OAUTH_TOKEN: env.CLAUDE_CODE_OAUTH_TOKEN };
+    for (const key of ['PATH', 'SystemRoot', 'WINDIR', 'LANG', 'LC_ALL', 'TZ']) if (typeof env[key] === 'string') childEnv[key] = env[key];
+    const args = ['--print', '--safe-mode', '--tools', '', '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}', '--setting-sources', '', '--disable-slash-commands', '--no-session-persistence', '--output-format', 'json', '--json-schema', JSON.stringify(body.text.format.schema), '--model', body.model, '--system-prompt', body.input[0].content];
+    const output = await new Promise((resolve, reject) => {
+      const child = spawn('claude', args, { cwd: home, env: childEnv, shell: false, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
+      const chunks = [];
+      let size = 0;
+      let failed = false;
+      const fail = () => { failed = true; child.kill('SIGKILL'); };
+      const timer = setTimeout(fail, 180000);
+      child.on('error', () => { failed = true; });
+      child.stdin.on('error', fail);
+      for (const stream of [child.stdout, child.stderr]) stream.on('data', (chunk) => {
+        size += chunk.length;
+        if (size > 262144) fail();
+        if (!failed && stream === child.stdout) chunks.push(chunk);
+      });
+      child.on('close', (code) => {
+        clearTimeout(timer);
+        if (failed || code !== 0) reject(new Error());
+        else resolve(Buffer.concat(chunks).toString('utf8'));
+      });
+      child.stdin.end(body.input[1].content);
+    });
+    const payload = JSON.parse(output);
+    if (payload.type !== 'result' || payload.subtype !== 'success' || payload.is_error !== false || !Object.hasOwn(payload, 'structured_output')) throw new Error();
+    return payload.structured_output;
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
   }
 }
 
@@ -82,6 +132,7 @@ function validate(result, groups, context, license) {
 async function reviewSource(source, report, { dir, groups, env, request = fetch, localRoot = path.resolve(__dirname, '../../..') }) {
   if (!report.groups.length) return { ...report, reviews: [], tasks: [] };
   try {
+    const backend = resolveReviewBackend(env);
     let budget = 64000;
     const context = report.groups.map((group) => {
       const patterns = groups.find((item) => item.id === group.id).patterns.map((pattern) => `:(glob)${pattern}`);
@@ -102,17 +153,22 @@ async function reviewSource(source, report, { dir, groups, env, request = fetch,
       ],
       text: { format: { type: 'json_schema', name: 'source_review', strict: true, schema: schema(report.groups.map((group) => group.id)) } },
     };
-    const response = await request(resolveReviewEndpoint(env), { method: 'POST', redirect: 'error', headers: { Authorization: `Bearer ${env.EXONOUS_REVIEW_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(180000) });
-    if (!response.ok) throw new Error();
-    const payload = await response.json();
-    if (payload.status !== 'completed' || !Array.isArray(payload.output)) throw new Error();
-    const blocks = payload.output.filter((item) => item.type === 'message').flatMap((item) => item.content || []);
-    if (blocks.length !== 1 || blocks[0].type !== 'output_text') throw new Error();
-    const reviews = validate(JSON.parse(blocks[0].text), report.groups, context, source.license);
+    let result;
+    if (backend === 'claude') result = await claudeReview(body, env);
+    else {
+      const response = await request(resolveReviewEndpoint(env), { method: 'POST', redirect: 'error', headers: { Authorization: `Bearer ${env.EXONOUS_REVIEW_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(180000) });
+      if (!response.ok) throw new Error();
+      const payload = await response.json();
+      if (payload.status !== 'completed' || !Array.isArray(payload.output)) throw new Error();
+      const blocks = payload.output.filter((item) => item.type === 'message').flatMap((item) => item.content || []);
+      if (blocks.length !== 1 || blocks[0].type !== 'output_text') throw new Error();
+      result = JSON.parse(blocks[0].text);
+    }
+    const reviews = validate(result, report.groups, context, source.license);
     return { ...report, reviews, tasks: report.tasks.filter((task) => reviews.some((review) => review.scope === task.scope && review.decision === 'adopt')).map((task) => ({ ...task, state: 'reviewed-proposal', steps: reviews.find((review) => review.scope === task.scope).steps })) };
   } catch {
     throw new Error(`${source.id}: reviewer failed`);
   }
 }
 
-module.exports = { reviewSource, resolveReviewEndpoint };
+module.exports = { reviewSource, resolveReviewEndpoint, resolveReviewBackend };

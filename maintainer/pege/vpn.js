@@ -45,6 +45,8 @@ function runSudo(args) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+class VpnError extends Error {}
+
 async function probeGateway(base, request = fetch) {
   try {
     const endpoint = resolveReviewEndpoint({ EXONOUS_REVIEW_BASE_URL: base }).replace(/\/responses$/, '/models');
@@ -57,6 +59,7 @@ async function probeGateway(base, request = fetch) {
 }
 
 async function startVpn({ env = process.env, run = runSudo, probe = probeGateway, delay = sleep } = {}) {
+  let stage = 'configuration validation';
   try {
     const needsAuth = validateProfile(env.EXONOUS_REVIEW_VPN_PROFILE);
     resolveReviewEndpoint(env);
@@ -64,6 +67,7 @@ async function startVpn({ env = process.env, run = runSudo, probe = probeGateway
     if (needsAuth && !auth) throw new Error();
     if (auth && !/^[^\r\n]+\n[^\r\n]+\n?$/.test(auth)) throw new Error();
     if (!path.isAbsolute(env.RUNNER_TEMP || '')) throw new Error();
+    stage = 'private file preparation';
     const directory = fs.mkdtempSync(path.join(env.RUNNER_TEMP, 'source-review-vpn-'));
     fs.chmodSync(directory, 0o700);
     fs.writeFileSync(path.join(env.RUNNER_TEMP, 'source-review-vpn-state'), directory, { mode: 0o600, flag: 'wx' });
@@ -77,24 +81,37 @@ async function startVpn({ env = process.env, run = runSudo, probe = probeGateway
       fs.writeFileSync(authPath, auth, { mode: 0o600 });
       args.push('--auth-user-pass', authPath, '--auth-nocache');
     }
+    stage = 'client launch';
     run(args);
     for (let attempt = 0; attempt < 12; attempt++) {
-      const initialized = fs.readFileSync(path.join(directory, 'vpn.log'), 'utf8').includes('Initialization Sequence Completed');
+      stage = 'private log access';
+      const log = fs.readFileSync(path.join(directory, 'vpn.log'), 'utf8');
+      const failure = [
+        ['AUTH_FAILED', 'authentication rejected'],
+        ['VERIFY ERROR:', 'certificate verification failed'],
+        ['TLS Error:', 'TLS negotiation failed'],
+        ['Options error:', 'client configuration rejected'],
+        ['Exiting due to fatal error', 'client exited']
+      ].find(([marker]) => log.includes(marker));
+      const initialized = log.includes('Initialization Sequence Completed');
+      stage = initialized ? 'gateway probe timed out' : failure ? failure[1] : 'tunnel initialization timed out';
       if (initialized && await probe(env.EXONOUS_REVIEW_BASE_URL)) return;
       await delay(2000);
     }
     throw new Error();
   } catch {
-    throw new Error('VPN connection unavailable');
+    throw new VpnError(`VPN connection unavailable (${stage})`);
   }
 }
 
 async function stopVpn({ env = process.env, run = runSudo, processArgs = (pid) => fs.readFileSync(`/proc/${pid}/cmdline`, 'utf8').split('\0'), delay = sleep } = {}) {
+  let stage = 'state validation';
   try {
     const state = path.join(env.RUNNER_TEMP, 'source-review-vpn-state');
     if (!fs.existsSync(state)) return;
     const directory = fs.readFileSync(state, 'utf8');
     if (path.dirname(directory) !== env.RUNNER_TEMP || !path.basename(directory).startsWith('source-review-vpn-')) throw new Error();
+    stage = 'PID file access';
     const pid = fs.readFileSync(path.join(directory, 'pid'), 'utf8').trim();
     const owns = () => {
       try {
@@ -103,22 +120,24 @@ async function stopVpn({ env = process.env, run = runSudo, processArgs = (pid) =
       } catch { return false; }
     };
     if (owns()) {
+      stage = 'process termination';
       run(['-n', 'kill', '-TERM', pid]);
       for (let attempt = 0; attempt < 10 && owns(); attempt++) await delay(500);
       if (owns()) run(['-n', 'kill', '-KILL', pid]);
     }
+    stage = 'private file removal';
     fs.rmSync(directory, { recursive: true, force: true });
     fs.rmSync(state, { force: true });
     fs.rmSync(path.join(env.RUNNER_TEMP, 'source-review-vpn-install.log'), { force: true });
   } catch {
-    throw new Error('VPN cleanup failed');
+    throw new VpnError(`VPN cleanup failed (${stage})`);
   }
 }
 
 if (require.main === module) {
   const action = process.argv[2] === 'start' ? startVpn : process.argv[2] === 'stop' ? stopVpn : null;
-  Promise.resolve().then(() => { if (!action) throw new Error(); return action(); }).catch(() => {
-    process.stderr.write('Source review VPN operation failed\n');
+  Promise.resolve().then(() => { if (!action) throw new Error(); return action(); }).catch((error) => {
+    process.stderr.write(`${error instanceof VpnError ? error.message : 'Source review VPN operation failed'}\n`);
     process.exitCode = 1;
   });
 }

@@ -20,7 +20,7 @@ The native executable implements the machine control plane and first-party skill
 | Kairos and Anamnesis | Implemented | Original memory caller corpus and native concurrent session/handoff fixtures pass |
 | Vault, handoff, repository migration | Implemented | Discovery, schema, conflicts, symlinks, verified-copy recovery, worktrees and dependency cleanup tested |
 | First-party skill helpers | Project-memory, doc, issue-board and design driver implemented | Original memory/doc caller corpus replayed against native executable; native board and engine-driver caller checks pass |
-| Maintainer source review | Node, deliberately outside machine runtime | Weekly job uses an actual Responses reviewer; offline privacy, policy and VPN fixtures pass |
+| Maintainer source review | Node, deliberately outside machine runtime | Weekly job uses subscription-authenticated Claude Code; Responses remains available locally; offline privacy and policy fixtures pass |
 | Host bridges and bundled engines | Required external runtimes retained | OpenCode plugin remains host JavaScript; browser scripts and third-party engines retain their original execution environments |
 
 `exonous status --json` lists native commands, hook capabilities and remaining compatibility/external runtimes. The npm entrypoint and old helper files remain as compatibility sources; they are not called by native hooks. Native sources and Cargo files are included in the source package. Build with `cargo build --release --locked`, then invoke that executable's `install`; use `--real-home` when intentionally installing from a development checkout.
@@ -43,7 +43,7 @@ CI adds native checks on Linux, macOS and Windows, while retaining the existing 
 
 Final local acceptance passed 120 top-level Rust tests and 560 compatibility tests, formatting, Clippy with warnings denied, workflow actionlint and the native leak scan. Independent QA, security and architecture reviews passed. An upgrade smoke using the original Node installer and a temporary home preserved personal settings and hooks, retired legacy core hooks and passed 863 native doctor checks; the registered native gate denied an unreviewed commit.
 
-Operational acceptance after publication: run the configured Linux/macOS/Windows native matrix and compatibility WSL matrix, inspect the published per-target bundles, then run the hosted VPN/reviewer workflow with the configured secrets. No remote execution is claimed from local fixture results.
+Operational acceptance after publication: run the configured Linux/macOS/Windows native matrix and compatibility WSL matrix, inspect the published per-target bundles, then run the hosted Claude reviewer workflow with the configured secrets. No remote execution is claimed from local fixture results.
 
 Each installed native version keeps its sibling assets. Failed activation restores previous bytes and executable permissions. For a deliberate rollback, run the retained previous executable's `install` with its matching assets and adapter selection, then run `doctor` and `gate --selftest` before relying on it. Native uninstall preserves vaults, settings outside owned entries, backups and edited files. Reinstalling the retained legacy package restores its hook registrations if legacy rollback is needed.
 
@@ -68,7 +68,7 @@ These results describe that local command, not the entire harness or an LLM. The
 - Preserved existing installations while implementing and testing native policy modules and explicit native activation.
 - Rewrote twelve agent profiles into self-contained graph contracts, preserving routing identities and model tiers.
 - Reused the source registry and originality gate; moved repository URLs to secrets and added selective reviewer decisions rather than automatic upstream adoption.
-- Added a private VPN connection and cleanup path for the hosted runner; the user imported profile/auth directly into repository secrets. Hosted connectivity remains an operational check.
+- Replaced the hosted VPN/gateway dependency with isolated subscription-authenticated Claude Code. OAuth passed a synthetic structured-output check; hosted execution remains an operational check. Local Responses/VPN support and existing secrets remain available for rollback.
 - Reproduced unsafe state permissions and agent event/brief regressions with failing tests, corrected their causes, and reran checks.
 - Validated the existing private Responses gateway using synthetic input and strict structured output, without publishing its credential.
 - Ported vault/handoff, concurrent automatic memory, first-party helpers, adapter writers, installer ownership, updater and legacy migration; replayed original callers where applicable.

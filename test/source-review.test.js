@@ -100,10 +100,10 @@ test('registry uses fifteen secret names and workflow publishes only compiled fi
   assert.match(workflow, /contents: read/);
   assert.doesNotMatch(workflow, /pull_request:|contents: write|vars\.EXONOUS_SOURCE|vars\.EXONOUS_REVIEW_(?:BASE_URL|API_KEY|MODEL)|pege\/\.cache|git push/);
   assert.match(workflow, /runs-on: ubuntu-latest/);
-  assert.match(workflow, /secrets\.EXONOUS_REVIEW_VPN_PROFILE/);
-  assert.match(workflow, /secrets\.EXONOUS_REVIEW_VPN_AUTH/);
-  assert.match(workflow, /if: always\(\)\n\s+run: node maintainer\/pege\/vpn.js stop/);
-  assert.match(workflow, /secrets\.EXONOUS_REVIEW_BASE_URL/);
+  assert.match(workflow, /secrets\.CLAUDE_CODE_OAUTH_TOKEN/);
+  assert.match(workflow, /EXONOUS_REVIEW_BACKEND: claude/);
+  assert.match(workflow, /@anthropic-ai\/claude-code@2\.1\.318/);
+  assert.doesNotMatch(workflow, /EXONOUS_REVIEW_(?:VPN|BASE_URL|API_KEY)|pege\/vpn\.js/);
   assert.doesNotMatch(workflow, /uses: actions\/[\w-]+@v\d/);
   for (const source of registry.sources) assert.ok(workflow.includes(`secrets.${source.repoEnv}`));
   const ci = fs.readFileSync(path.join(__dirname, '../.github/workflows/ci.yml'), 'utf8');
@@ -244,6 +244,48 @@ test('VPN probe is anonymous, bounded and rejects redirects or unreachable gatew
   assert.equal(calls, 5);
 });
 
+test('VPN failures identify a safe stage without publishing private log content', async (t) => {
+  for (const [log, stage] of [
+    ['AUTH_FAILED private-user', 'authentication rejected'],
+    ['VERIFY ERROR: private-certificate', 'certificate verification failed'],
+    ['TLS Error: private-host', 'TLS negotiation failed'],
+    ['Options error: private-profile', 'client configuration rejected'],
+    ['Exiting due to fatal error: private-path', 'client exited'],
+    ['private-host waiting', 'tunnel initialization timed out'],
+    ['Initialization Sequence Completed', 'gateway probe timed out']
+  ]) {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'source-vpn-'));
+    t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+    let probes = 0;
+    const run = (args) => fs.writeFileSync(args[args.indexOf('--log') + 1], log);
+    await assert.rejects(startVpn({
+      env: { RUNNER_TEMP: dir, EXONOUS_REVIEW_VPN_PROFILE: 'client\ndev tun\n', EXONOUS_REVIEW_BASE_URL: 'https://gateway.invalid/v1' },
+      run, probe: async () => { probes++; return false; }, delay: async () => {}
+    }), { message: `VPN connection unavailable (${stage})` });
+    assert.equal(probes, stage === 'gateway probe timed out' ? 12 : 0);
+  }
+});
+
+test('VPN launch and cleanup errors suppress subprocess output but preserve the stage', async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'source-vpn-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const env = { RUNNER_TEMP: dir, EXONOUS_REVIEW_VPN_PROFILE: 'client\ndev tun\n', EXONOUS_REVIEW_BASE_URL: 'https://gateway.invalid/v1' };
+  await assert.rejects(startVpn({ env, run: () => { throw new Error('private subprocess output'); } }), { message: 'VPN connection unavailable (client launch)' });
+  const own = fs.readFileSync(path.join(dir, 'source-review-vpn-state'), 'utf8');
+  fs.writeFileSync(path.join(own, 'pid'), '12345');
+  await assert.rejects(stopVpn({ env, processArgs: () => ['openvpn', path.join(own, 'client.ovpn'), path.join(own, 'pid')], run: () => { throw new Error('private subprocess output'); } }), { message: 'VPN cleanup failed (process termination)' });
+});
+
+test('VPN CLI prints sanitized diagnostics and exits unsuccessfully', () => {
+  assert.throws(() => execFileSync(process.execPath, [path.join(__dirname, '../maintainer/pege/vpn.js'), 'start'], {
+    env: { ...process.env, EXONOUS_REVIEW_VPN_PROFILE: 'private-invalid-directive' }, stdio: ['ignore', 'pipe', 'pipe']
+  }), (error) => {
+    assert.equal(error.status, 1);
+    assert.equal(error.stderr.toString(), 'VPN connection unavailable (configuration validation)\n');
+    return true;
+  });
+});
+
 test('VPN cleanup never signals a reused PID belonging to another command', async (t) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'source-vpn-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
@@ -254,4 +296,109 @@ test('VPN cleanup never signals a reused PID belonging to another command', asyn
   await stopVpn({ env: { RUNNER_TEMP: dir }, run: () => { signaled = true; }, processArgs: () => ['unrelated-process'] });
   assert.equal(signaled, false);
   assert.ok(!fs.existsSync(vpn));
+});
+
+function claudeFixture(t, behavior = '') {
+  const fixtureData = fixture(t);
+  const bin = fs.mkdtempSync(path.join(os.tmpdir(), 'source-claude-bin-'));
+  t.after(() => fs.rmSync(bin, { recursive: true, force: true }));
+  const capture = path.join(bin, 'capture.json');
+  const decision = { decisions: [{ scope: 'map-001', decision: 'defer', reason: 'insufficient-evidence', localFit: 'uncertain', evidence: 'insufficient-context', risk: 'low', steps: [] }] };
+  const script = `#!${process.execPath}
+const fs = require('node:fs');
+let input = '';
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', chunk => input += chunk);
+process.stdin.on('end', () => {
+  fs.writeFileSync(${JSON.stringify(capture)}, JSON.stringify({ args: process.argv.slice(2), env: process.env, cwd: process.cwd(), input, mode: fs.statSync(process.cwd()).mode & 0o777, entries: fs.readdirSync(process.cwd()) }));
+  ${behavior || `process.stdout.write(${JSON.stringify(JSON.stringify({ type: 'result', subtype: 'success', is_error: false, structured_output: decision }))});`}
+});
+`;
+  fs.writeFileSync(path.join(bin, process.platform === 'win32' ? 'claude.cmd' : 'claude'), script, { mode: 0o700 });
+  const env = { PATH: bin, CLAUDE_CODE_OAUTH_TOKEN: 'private-oauth-token', EXONOUS_REVIEW_BACKEND: 'claude', EXONOUS_REVIEW_MODEL: 'claude-sonnet-4-6', EXONOUS_SOURCE_01_URL: 'https://github.com/owner/repo', ANTHROPIC_API_KEY: 'private-api-key', NODE_OPTIONS: '--private-injection', GITHUB_TOKEN: 'private-github-token', EXONOUS_REVIEW_BASE_URL: 'https://private.gateway' };
+  return { ...fixtureData, capture, env, options: { env, open: () => ({ dir: fixtureData.dir, latest: fixtureData.latest }), request: () => { throw new Error('API fallback forbidden'); } } };
+}
+
+test('Claude configuration fails before any source opens without API fallback', async () => {
+  for (const env of [
+    { EXONOUS_REVIEW_BACKEND: 'other', EXONOUS_REVIEW_API_KEY: 'key', EXONOUS_REVIEW_MODEL: 'review-model', EXONOUS_REVIEW_BASE_URL: 'https://gateway.invalid/v1' },
+    { EXONOUS_REVIEW_BACKEND: '', EXONOUS_REVIEW_API_KEY: 'key', EXONOUS_REVIEW_MODEL: 'review-model', EXONOUS_REVIEW_BASE_URL: 'https://gateway.invalid/v1' },
+    { EXONOUS_REVIEW_BACKEND: 'claude', EXONOUS_REVIEW_MODEL: 'claude-sonnet-4-6' },
+    { EXONOUS_REVIEW_BACKEND: 'claude', CLAUDE_CODE_OAUTH_TOKEN: 'token' },
+    { EXONOUS_REVIEW_BACKEND: 'claude', CLAUDE_CODE_OAUTH_TOKEN: 'token', EXONOUS_REVIEW_MODEL: 'bad model' },
+    { EXONOUS_REVIEW_BACKEND: 'claude', CLAUDE_CODE_OAUTH_TOKEN: 'token\n', EXONOUS_REVIEW_MODEL: 'review-model' },
+  ]) {
+    let touched = false;
+    await assert.rejects(reviewAndPlan([{ id: 'fixture' }], { env, open: () => { touched = true; }, request: () => { touched = true; } }), { message: 'reviewer configuration unavailable' });
+    assert.equal(touched, false);
+  }
+});
+
+test('Claude real transport sends context on stdin, isolates credentials and validates decisions', { skip: process.platform === 'win32' }, async (t) => {
+  const { source, capture, options } = claudeFixture(t);
+  const [report] = await reviewAndPlan([source], options);
+  assert.equal(report.reviews[0].decision, 'defer');
+  assert.equal(report.tasks.length, 0);
+  const sent = JSON.parse(fs.readFileSync(capture, 'utf8'));
+  assert.match(sent.input, /PRIVATE-BRAND/);
+  assert.doesNotMatch(JSON.stringify(sent.args), /PRIVATE-BRAND|private-oauth-token|private-engine/);
+  for (const flag of ['--print', '--safe-mode', '--strict-mcp-config', '--disable-slash-commands', '--no-session-persistence']) assert.ok(sent.args.includes(flag));
+  for (const [flag, value] of [['--tools', ''], ['--setting-sources', ''], ['--mcp-config', '{"mcpServers":{}}'], ['--output-format', 'json'], ['--model', 'claude-sonnet-4-6']]) assert.equal(sent.args[sent.args.indexOf(flag) + 1], value);
+  assert.equal(JSON.parse(sent.args[sent.args.indexOf('--json-schema') + 1]).additionalProperties, false);
+  assert.match(sent.args[sent.args.indexOf('--system-prompt') + 1], /untrusted data/);
+  assert.equal(sent.env.CLAUDE_CODE_OAUTH_TOKEN, 'private-oauth-token');
+  assert.equal(sent.env.HOME, sent.cwd);
+  assert.equal(sent.env.CLAUDE_CONFIG_DIR, sent.cwd);
+  assert.equal(sent.mode, 0o700);
+  assert.deepEqual(sent.entries, []);
+  assert.doesNotMatch(JSON.stringify(sent.env), /private-api-key|private-github-token|private-injection|private\.gateway|EXONOUS_SOURCE/);
+  assert.ok(!fs.existsSync(sent.cwd));
+  assert.doesNotMatch(JSON.stringify(report), /PRIVATE-BRAND|private-oauth-token/);
+});
+
+test('Claude real transport rejects malformed, refusal, error, invalid decisions and bounded output safely', { skip: process.platform === 'win32' }, async (t) => {
+  for (const behavior of [
+    `process.stdout.write('PRIVATE-BRAND invalid JSON');`,
+    `process.stdout.write(JSON.stringify({type:'result',subtype:'success',is_error:false,result:'PRIVATE-BRAND refusal'}));`,
+    `process.stdout.write(JSON.stringify({type:'result',subtype:'error_during_execution',is_error:true,structured_output:{decisions:[]}}));`,
+    `process.stdout.write(JSON.stringify({type:'result',subtype:'success',is_error:false,structured_output:{decisions:[],leak:'PRIVATE-BRAND'}}));`,
+    `process.stdout.write(JSON.stringify({type:'result',subtype:'success',is_error:false,structured_output:{decisions:[{scope:'map-999',decision:'adopt'}]}}));`,
+    `process.stderr.write('PRIVATE-BRAND private-token'); process.exitCode = 1;`,
+    `process.stdout.write('PRIVATE-BRAND'.repeat(100000));`,
+    `process.stderr.write('PRIVATE-BRAND'.repeat(100000));`,
+  ]) {
+    const { source, options, capture } = claudeFixture(t, behavior);
+    await assert.rejects(reviewAndPlan([source], options), { message: 'fixture: reviewer failed' });
+    const sent = JSON.parse(fs.readFileSync(capture, 'utf8'));
+    assert.ok(!fs.existsSync(sent.cwd));
+  }
+});
+
+test('Claude transport terminates at 180 seconds and removes its private directory', { skip: process.platform === 'win32' }, async (t) => {
+  const { source, options } = claudeFixture(t, `setInterval(() => {}, 1000);`);
+  const privateDirectories = () => fs.readdirSync(os.tmpdir()).filter((name) => name.startsWith('source-review-claude-')).sort();
+  const before = privateDirectories();
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const pending = reviewAndPlan([source], options);
+  const rejected = assert.rejects(pending, { message: 'fixture: reviewer failed' });
+  t.mock.timers.tick(180000);
+  await rejected;
+  assert.deepEqual(privateDirectories(), before);
+});
+
+test('Claude executable launch failure exposes no process details', async (t) => {
+  const { source, options, env } = claudeFixture(t);
+  await assert.rejects(reviewAndPlan([source], { ...options, env: { ...env, PATH: '/missing/PRIVATE-BRAND' } }), { message: 'fixture: reviewer failed' });
+});
+
+test('explicit Responses backend preserves the existing endpoint transport', async (t) => {
+  const { source, dir, latest } = fixture(t);
+  let called = false;
+  const [report] = await reviewAndPlan([source], {
+    env: { EXONOUS_REVIEW_BACKEND: 'responses', EXONOUS_REVIEW_API_KEY: 'key', EXONOUS_REVIEW_MODEL: 'review-model', EXONOUS_REVIEW_BASE_URL: 'https://gateway.invalid/v1', EXONOUS_SOURCE_01_URL: 'https://github.com/owner/repo' },
+    open: () => ({ dir, latest }),
+    request: async () => { called = true; return { ok: true, json: async () => ({ status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify({ decisions: [{ scope: 'map-001', decision: 'reject', reason: 'already-covered', localFit: 'no-local-benefit', evidence: 'documentation-change', risk: 'low', steps: [] }] }) }] }] }) }; }
+  });
+  assert.equal(called, true);
+  assert.equal(report.reviews[0].decision, 'reject');
 });
