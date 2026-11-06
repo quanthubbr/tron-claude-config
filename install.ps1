@@ -218,7 +218,7 @@ try {
     $env:EXONOUS_ASSETS = Join-Path $Bundle 'assets'
     $env:EXONOUS_NO_FORWARD = '1'
     $env:EXONOUS_NO_UPDATE = '1'
-    [Environment]::SetEnvironmentVariable('EXONOUS_VERIFIED_RELEASE', $null, 'Process')
+    if (Test-Path -LiteralPath Env:EXONOUS_VERIFIED_RELEASE) { Remove-Item -LiteralPath Env:EXONOUS_VERIFIED_RELEASE }
     $Probe = Invoke-ReleaseBinary $Candidate @('--version') $true
     if ($Probe.ExitCode -ne 0 -or $Probe.Output -cne $Version) { throw 'native executable version does not match release tag' }
     Write-Host "Installing Exonous $Version..."
@@ -227,7 +227,13 @@ try {
 } catch {
     [Console]::Error.WriteLine("exonous: " + $_.Exception.Message)
 } finally {
-    foreach ($Name in $SavedEnvironment.Keys) { [Environment]::SetEnvironmentVariable($Name, $SavedEnvironment[$Name], 'Process') }
+    foreach ($Name in $SavedEnvironment.Keys) {
+        if ($null -eq $SavedEnvironment[$Name]) {
+            if (Test-Path -LiteralPath "Env:$Name") { Remove-Item -LiteralPath "Env:$Name" }
+        } else {
+            [Environment]::SetEnvironmentVariable($Name, $SavedEnvironment[$Name], 'Process')
+        }
+    }
     if ($Stage -and (Test-Path -LiteralPath $Stage)) { Remove-Item -LiteralPath $Stage -Recurse -Force }
 }
 exit $ExitCode

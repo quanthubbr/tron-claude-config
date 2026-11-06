@@ -477,57 +477,11 @@ fn windows_launcher_preserves_failed_status_and_uninstalls_itself() {
     };
     let ledger = fixture.home.join(".claude/exonous/installed.json");
     let before = fs::read(&ledger).unwrap();
-    let mut matrix = Vec::new();
-    for (name, tail) in [
-        ("same-line", "{native} & exit /b"),
-        ("call", "{native} & call exit /b %%errorlevel%%"),
-        ("block", "(\r\n{native}\r\nexit /b\r\n)"),
-        ("next-line", "{native}\r\nexit /b %errorlevel%"),
-    ] {
-        for delete in [false, true] {
-            let child = fixture.home.join(format!("child-{name}-{delete}.cmd"));
-            write(
-                &child,
-                if delete {
-                    "@echo off\r\ndel \"%~1\"\r\nexit /b %2\r\n"
-                } else {
-                    "@echo off\r\nexit /b %2\r\n"
-                },
-            );
-            let mut statuses = Vec::new();
-            for code in [0, 1, 2] {
-                let probe = fixture
-                    .home
-                    .join(format!("probe-{name}-{delete}-{code}.cmd"));
-                let native = format!("cmd.exe /d /c \"\"{}\" \"%~f0\" {code}\"", child.display());
-                write(
-                    &probe,
-                    &format!("@echo off\r\n{}\r\n", tail.replace("{native}", &native)),
-                );
-                statuses.push(run(&probe, &[]).status.code());
-                if delete {
-                    assert!(!probe.exists(), "child did not remove {probe:?}");
-                }
-            }
-            eprintln!("launcher status matrix: {name}, delete={delete}: {statuses:?}");
-            matrix.push((name, delete, statuses));
-        }
-    }
-    assert!(
-        matrix.chunks_exact(2).any(|variants| variants
-            .iter()
-            .all(|(_, _, statuses)| statuses == &[Some(0), Some(1), Some(2)])),
-        "no candidate preserved child status: {matrix:?}"
-    );
     for args in [["uninstall"], ["unknown-command"]] {
         let direct = run(&installed, &args);
         let failed = run(&launcher, &args);
         assert!(!direct.status.success());
-        assert_eq!(
-            failed.status.code(),
-            direct.status.code(),
-            "launcher status matrix: {matrix:?}"
-        );
+        assert_eq!(failed.status.code(), direct.status.code());
         assert_eq!(failed.stderr, direct.stderr);
     }
     assert_eq!(fs::read(&ledger).unwrap(), before);
