@@ -1,6 +1,4 @@
 #!/bin/sh
 dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-if [ -n "${EXONOUS_BIN:-}" ]; then
-  exec "$EXONOUS_BIN" ui-design --skill-dir "$dir/.." "$@"
-fi
+command -v node >/dev/null 2>&1 || { echo "ui-design: node not found on PATH (needed by $dir/ui-design.mjs)" >&2; exit 127; }
 exec node "$dir/ui-design.mjs" "$@"

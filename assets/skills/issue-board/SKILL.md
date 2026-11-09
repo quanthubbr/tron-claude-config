@@ -5,7 +5,7 @@ description: Mostra no terminal, em tabelas, as issues abertas que o dev tem par
 
 # Issue Board
 
-Use `exonous issue-board`: CLI nativa em Rust, com `gh` autenticado para buscar o board. O renderizador e a classificação funcionam offline sobre o cache.
+Use `exonous issue-board` (Node 18+), com `gh` autenticado para buscar o board. O renderizador e a classificação funcionam offline sobre o cache.
 
 A skill não conhece nenhum projeto. O board (owner e número), os nomes dos campos e a lista de tipos moram em `config.json`, que é por pessoa e nunca vai versionado. Sem `types` no config, valem os tipos neutros embutidos: bug, feature, interface, dados, performance, segurança, infra, outros.
 

@@ -7,7 +7,7 @@ description: Acha o vault Obsidian de documentação do repositório atual e, co
 
 Mantém o vault Obsidian **do projeto** (dentro do repo, versionado com o código) em dia com o que a sessão mudou.
 
-Esta skill não conhece nenhum projeto. O vault é qualquer pasta do repo que contenha `.obsidian/`. A parte mecânica usa o comando nativo `exonous doc` e git, sem depender de Node.
+Esta skill não conhece nenhum projeto. O vault é qualquer pasta do repo que contenha `.obsidian/`. A parte mecânica usa `exonous doc` (Node 18+) e git.
 
 Não confunda os dois vaults:
 

@@ -43,10 +43,47 @@ test('concurrent CLI PR saves publish one complete note without temporary leftov
   assert.deepEqual(fs.readdirSync(path.dirname(file)), [path.basename(file)]);
 });
 
-test('legacy PR command explains the native upgrade and performs no creation', () => {
-  const result = spawnSync(process.execPath, [path.join(__dirname, '../bin/exonous.js'), 'pr', 'create', '--title', 'private title'], { cwd: fx.home(), env: process.env, encoding: 'utf8' });
+function pr(args) { return spawnSync(process.execPath, [path.join(__dirname, '../bin/exonous.js'), 'pr', ...args], { cwd: fx.home(), env: process.env, encoding: 'utf8' }); }
+function fakeGh(stdout) {
+  const bin = process.env.PATH.split(path.delimiter)[0];
+  const log = fx.home('gh-call.json');
+  const script = `#!/usr/bin/env node\nconst fs = require('fs'); const a = process.argv.slice(2); const i = a.indexOf('--body-file');\nfs.writeFileSync(${JSON.stringify(log)}, JSON.stringify({ args: a, body: fs.readFileSync(a[i + 1], 'utf8') }));\nprocess.stdout.write(${JSON.stringify(stdout)});\n`;
+  fs.writeFileSync(path.join(bin, 'gh'), script, { mode: 0o755 });
+  return log;
+}
+function validBody() {
+  const { resolveTemplate } = require('../assets/machine/hooks/lib/template.cjs');
+  return resolveTemplate(fx.home()).sections.map((section) => `${section}\n\nN/A\n`).join('\n');
+}
+const unixOnly = { skip: process.platform === 'win32' && 'fake gh is a shebang script' };
+
+test('pr create rejects malformed arguments without echoing values or creating', () => {
+  const result = pr(['create', '--title', 'private title']);
   assert.equal(result.status, 2);
-  assert.match(result.stderr, /requires the native CLI/);
+  assert.match(result.stderr, /usage: exonous pr create --body-file/);
   assert.equal(result.stdout, '');
   assert.equal(result.stderr.includes('private title'), false);
+});
+
+test('pr create refuses a body missing template sections and never runs gh', unixOnly, () => {
+  const log = fakeGh('https://github.com/acme/project/pull/3\n');
+  fx.write('just a sentence', 'body.md');
+  const result = pr(['create', '--title', 'feat: x', '--body-file', 'body.md']);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /PR body is missing/);
+  assert.equal(fs.existsSync(log), false);
+});
+
+test('pr create sends the validated body to gh and saves the PR handoff', unixOnly, () => {
+  const log = fakeGh('https://github.com/acme/project/pull/4\n');
+  fs.mkdirSync(fx.home('exonous-vault'));
+  fx.write(validBody(), 'body.md');
+  const result = pr(['create', '--base', 'main', '--head', 'feat/x', '--title', 'feat: x', '--body-file', 'body.md', '--draft']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout, 'https://github.com/acme/project/pull/4\n');
+  const call = JSON.parse(fs.readFileSync(log, 'utf8'));
+  assert.equal(call.body, validBody());
+  assert.deepEqual(call.args.filter((a) => !a.endsWith('body.md')), ['pr', 'create', '--base', 'main', '--head', 'feat/x', '--title', 'feat: x', '--body-file', '--draft']);
+  const latest = cli(['latest', '--json']);
+  assert.equal(JSON.parse(fs.readFileSync(JSON.parse(latest.stdout).path, 'utf8')).g[0][2], 'https://github.com/acme/project/pull/4');
 });

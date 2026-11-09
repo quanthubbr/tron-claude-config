@@ -21,7 +21,7 @@ Or run it without a global npm installation:
 npx exonous@latest
 ```
 
-The command runs the packaged native executable and installs the detected tools. The npm package contains binaries for macOS ARM64/x64, Linux ARM64/x64 and Windows x64, plus shared assets. Installation requires no Rust compiler, build step or package lifecycle scripts.
+Exonous is a Node CLI on macOS, Linux, WSL and Windows; npm, pnpm and bun all work. It has no build step and no install lifecycle scripts. Git is needed for release checks and repository commands.
 
 Choose tools or preview changes:
 
@@ -29,29 +29,15 @@ Choose tools or preview changes:
 npx exonous install --tools 'claude,cursor,codex' --dry-run
 ```
 
-Without Node, on macOS, Linux or WSL:
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/zaqueu-1/exonous/main/install.sh | sh
-```
-
-Without Node, in Windows PowerShell:
-
-```powershell
-& ([scriptblock]::Create((Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/zaqueu-1/exonous/main/install.ps1).Content))
-```
-
-These installers fetch the same npm package, verify its SHA-512 integrity, inspect its archive and confirm the executable version before installation. They preserve personal settings, foreign launchers and vault notes. Use `EXONOUS_HOME=<temporary-directory>` for an isolated trial.
-
-Add `~/.local/bin` to PATH (`exonous.cmd` on Windows), restart your terminal, then run:
+Then check the result:
 
 ```sh
 exonous doctor
 ```
 
-Hooks and installed skills use an absolute native executable path, so they keep working after the npm cache or downloaded files are removed. Approve the registered native commands in Codex `/hooks`; Exonous never approves them for you. Doctor checks registration and owned files; host loading and approval need verification inside the tool.
+Hooks run from `~/.claude/exonous/hooks` with your Node, so they keep working after the npm cache is cleared. Approve the registered commands in Codex `/hooks`; Exonous never approves them for you. Doctor checks registration and owned files; host loading and approval need verification inside the tool. Use `EXONOUS_HOME=<temporary-directory>` for an isolated trial.
 
-**Upgrading from v2.10.3 or earlier:** reinstall once with `npx exonous@latest` or either installer above. Subsequent native updates use the verified npm package distribution. Git is needed for release checks and repository commands.
+**Coming from v2.10.4–v2.10.9 (Rust executable, `install.sh` or `install.ps1`):** while that version is still installed, run `exonous uninstall --yes`. It keeps your vault and personal settings. Then run the npm install above. The Rust updater cannot move itself to the Node package.
 
 ## What it adds
 
@@ -79,7 +65,7 @@ Install selects an existing configured vault, then an open or recent Obsidian va
 | `exonous gate --selftest claude` | Check a registered gate |
 | `exonous workflow <commit\|pr>` | Read the review procedure |
 
-`npx exonous <command>` forwards explicit arguments to the native CLI. Daily update checks run at session start unless disabled. New major versions require an explicit upgrade.
+`npx exonous <command>` runs the same CLI without a global install. `exonous pr create` validates the PR body against the template, runs `gh pr create` and saves the PR handoff. `project-memory`, `doc`, `issue-board` and `ui-design` run the engine of the installed skill. Daily update checks run at session start unless disabled and move to the newest release tag of the same major. New major versions require an explicit upgrade.
 
 ## Privacy and configuration
 
@@ -95,14 +81,12 @@ No telemetry. Session capture records prompts, tool names, file paths and comman
 
 ## Development and existing repository installs
 
-Build the native CLI with Rust 1.88+:
+From a checkout, with Node 18+:
 
 ```sh
-cargo build --release --locked
-./target/release/exonous install --real-home
-cargo test --locked
+EXONOUS_HOME="$(mktemp -d)" HOME="$(mktemp -d)" EXONOUS_NO_UPDATE=1 GIT_CONFIG_GLOBAL=/dev/null npm test
 ```
 
-Windows uses `target/release/exonous.exe`. Existing Git-based npm repository installs retain their legacy entrypoint. `exonous migrate` verifies the native installation before retiring recognized repository files; edited files and foreign hooks remain.
+Install and uninstall from a checkout refuse the real home unless `EXONOUS_HOME` points elsewhere or `--real-home` is passed. Existing Git-based npm repository installs keep their legacy entrypoint. `exonous migrate` moves a repo-mode install to the global one and retires recognized repository files; edited files and foreign hooks remain.
 
-[Runtime boundaries and rollback](docs/RUST-MIGRATION.md) · [Agent contracts](docs/AGENT-CONTRACTS.md) · [Maintainer documentation](docs/MAINTAINING.md) · [Third-party notices](assets/THIRD-PARTY-NOTICES.md)
+[Agent contracts](docs/AGENT-CONTRACTS.md) · [Maintainer documentation](docs/MAINTAINING.md) · [Third-party notices](assets/THIRD-PARTY-NOTICES.md)

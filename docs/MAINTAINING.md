@@ -51,7 +51,8 @@ Install and uninstall write into other tools' configs under the real home. Never
 
 - **test:** Ubuntu, macOS and Windows on Node 20 and 22, plus Ubuntu on Node 18. Steps run in bash and call `node --test test/*.test.js` directly: `npm test` goes through cmd.exe on Windows, which leaves the glob unexpanded. `core.autocrlf` is off so checkouts keep LF.
 - **wsl:** Ubuntu-24.04 under WSL on a Windows runner. It copies the repo to the Linux filesystem (`/mnt/*` has no POSIX modes) and exports the temp-home env itself, since Windows variables do not cross into WSL. It blocks like every other job.
-- Both jobs set `EXONOUS_HOME`, `HOME`, `EXONOUS_NO_UPDATE=1` and a null `GIT_CONFIG_GLOBAL`, as in the safety rules above.
+- **npm-package / npm-smoke:** `npm pack` builds the one tarball every later job uses. On Ubuntu, macOS and Windows, the smoke installs that tarball into a temp global prefix, then runs `install --tools claude` and `gate --selftest claude` against a temp home.
+- Every job that runs exonous sets `EXONOUS_HOME`, `HOME`, `EXONOUS_NO_UPDATE=1` and a null `GIT_CONFIG_GLOBAL`, as in the safety rules above.
 
 ## Adding a tool adapter
 
@@ -91,7 +92,7 @@ Install and uninstall write into other tools' configs under the real home. Never
 Releases are tagged by CI; nobody tags by hand.
 
 - **In the PR:** a change to anything `package.json` `files` ships must raise the version (`npm version patch|minor --no-git-tag-version`; patch: fix · minor: new tool, skill or gate · major: breaks the install contract). The `version bump` job (`node maintainer/release.js check origin/main`) fails otherwise. PRs touching only CI, tests, `maintainer/` or `docs/MAINTAINING.md` need no bump; `README.md` ships, so it does.
-- **On merge to `main`:** after the test matrix, the `release tag` job runs `e2e-smoke.sh` and `pege:originality`. If `v<version>` does not exist yet and is above the newest tag, it pushes the annotated tag (`node maintainer/release.js tag`). A failed check means no tag; fix it in a new PR.
+- **On merge to `main`:** after the test, WSL and npm-smoke jobs, `release checks` runs `e2e-smoke.sh` and `pege:originality`. If `v<version>` does not exist yet, the `release` job publishes the packed tarball to npm with provenance (trusted publishing, `id-token: write`). It then checks that the registry's `dist.integrity` matches that tarball. Next it pushes the annotated tag (`node maintainer/release.js tag`, refused unless above the newest tag) and creates the GitHub release. A failed check means no publish and no tag; fix it in a new PR. If the publish succeeded but tagging failed, rerunning the job verifies the published bytes and tags without republishing.
 - **Mirror:** the quanthub mirror copies the new tag within the hour; `bash maintainer/mirror-sync.sh` copies it now.
 
 Tags are annotated. Installs and updates resolve the tag to its peeled commit and install `github:zaqueu-1/exonous#<commit>`; the commit is verified after install. Never move or delete a published tag: `exonous doctor` warns every consumer whose tag now points elsewhere.

@@ -9,7 +9,7 @@ Ship UI with a point of view: complete artifacts, brief-aligned craft, bounded v
 
 ## Setup
 
-0. Engine CLI: `exonous ui-design <verb>` on every OS. `<skill-dir>/scripts/ui-design <verb>` in playbooks means this native command. Use `exonous ui-design --skill-dir <skill-dir> <verb>` to select another installed copy.
+0. Engine CLI: `exonous ui-design <verb>` on every OS. `<skill-dir>/scripts/ui-design <verb>` in playbooks means this command. Use `exonous ui-design --skill-dir <skill-dir> <verb>` to select another installed copy.
 1. Once per session: `exonous ui-design context` (project cwd; optional `--target`). Obey directives; do not repeat context.
 2. Open the playbook for the invoked subcommand (table below) or the new-work playbook for greenfield/rebrand. Inspect incumbent visuals first; use fixtures if runtime unavailable.
 3. Before any UI edit post-direction: craft-floor playbook.
