@@ -120,6 +120,28 @@ test('claude: --permissions adds only the read-only exonous CLI, never token min
   assert.ok(!JSON.stringify(after).includes('pyle.cjs'));
 });
 
+test('claude: --permissions tells the auto-mode classifier the gated finish is routine; keeps $defaults and user rules; uninstall removes only ours', () => {
+  writeJson({ autoMode: { allow: ['$defaults', 'Bash(make deploy-dev)'] } }, '.claude', 'settings.json');
+  run({ permissions: true });
+  run({ permissions: true });
+  const allow = readJson('.claude', 'settings.json').autoMode.allow;
+  assert.deepStrictEqual(allow.slice(0, 2), ['$defaults', 'Bash(make deploy-dev)']);
+  const ours = allow.filter((rule) => rule.includes('[exonous gate]'));
+  assert.strictEqual(ours.length, 1, 'one exonous rule, not duplicated on reinstall');
+  for (const command of ['exonous token commit', 'exonous pr create']) assert.ok(ours[0].includes(command));
+  assert.ok(!readJson('.claude', 'settings.json').permissions.allow.some((i) => /exonous (token|pr create)/.test(i)), 'manual mode still prompts for token minting and PR creation');
+  ADAPTERS.find((a) => a.id === 'claude').uninstall({ dryRun: false, log: () => {} });
+  assert.deepStrictEqual(readJson('.claude', 'settings.json').autoMode.allow, ['$defaults', 'Bash(make deploy-dev)']);
+});
+
+test('claude: --permissions with no autoMode starts the classifier list from $defaults', () => {
+  fs.mkdirSync(home('.claude'), { recursive: true });
+  run({ permissions: true });
+  const allow = readJson('.claude', 'settings.json').autoMode.allow;
+  assert.strictEqual(allow[0], '$defaults');
+  assert.strictEqual(allow.filter((rule) => rule.includes('[exonous gate]')).length, 1);
+});
+
 test('cursor: hooks, rule, skills; foreign hooks kept; nothing for cursor when it is absent', () => {
   fs.mkdirSync(home('.claude'), { recursive: true });
   run();

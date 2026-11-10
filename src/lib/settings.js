@@ -207,4 +207,26 @@ function mergeList(file, { key, add, ownedMarker, dryRun, log, jsonc }) {
   }, { fallback: add.length ? () => ({}) : null, dryRun, log, label: `exonous ${key}`, jsonc });
 }
 
-module.exports = { mergeOwned, stripOwned, mergeKey, mergeAllow, mergeList, stripJsonc, FORMATS: Object.keys(SKELETONS) };
+/**
+ * Claude `autoMode.allow` (auto-mode classifier rules): drops items containing ownedMarker, then appends `add`.
+ * A list created here starts with "$defaults" so the classifier keeps its built-in rules.
+ * @param {{ add: string[], ownedMarker: string, dryRun?: boolean, log?: (msg: string) => void }} options
+ */
+function mergeAutoModeAllow(file, { add, ownedMarker, dryRun, log }) {
+  return edit(file, (config) => {
+    if (config.autoMode === undefined && !add.length) return null;
+    if (config.autoMode === undefined) config.autoMode = {};
+    if (!isObject(config.autoMode)) return 'has an "autoMode" value that is not an object';
+    const current = config.autoMode.allow === undefined ? ['$defaults'] : config.autoMode.allow;
+    if (!Array.isArray(current)) return 'has an "autoMode.allow" value that is not a list';
+    const kept = current.filter((item) => !(typeof item === 'string' && item.includes(ownedMarker)));
+    const next = [...kept, ...add.filter((item) => !kept.includes(item))];
+    // A list of only "$defaults" equals no list: drop it so uninstall leaves the file as it found it.
+    if (next.length === 1 && next[0] === '$defaults') delete config.autoMode.allow;
+    else config.autoMode.allow = next;
+    if (!Object.keys(config.autoMode).length) delete config.autoMode;
+    return null;
+  }, { fallback: add.length ? () => ({}) : null, dryRun, log, label: 'exonous auto-mode rules' });
+}
+
+module.exports = { mergeOwned, stripOwned, mergeKey, mergeAllow, mergeAutoModeAllow, mergeList, stripJsonc, FORMATS: Object.keys(SKELETONS) };

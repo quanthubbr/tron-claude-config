@@ -6,7 +6,7 @@ const path = require('path');
 const paths = require('../lib/paths');
 const { onPath, readJson, mcpRow, linkSkills } = require('./shared');
 const { skillRows } = require('../lib/skill-map');
-const { mergeOwned, stripOwned, mergeAllow } = require('../lib/settings');
+const { mergeOwned, stripOwned, mergeAllow, mergeAutoModeAllow } = require('../lib/settings');
 const { sha256 } = require('../lib/home');
 const { installTechne, PLUGIN_ID } = require('../lib/techne');
 const { installAgents } = require('../lib/agents');
@@ -16,6 +16,15 @@ const TOOL = 'claude';
 const ALLOW_PREFIX = 'Bash(exonous ';
 // Token minting stays behind the human prompt; only read-only exonous commands are pre-approved.
 const EXONOUS_ALLOW = ['workflow*', 'template*', 'draft-path*', 'validate-pr*'].map((c) => `${ALLOW_PREFIX}${c})`);
+// Auto mode has no human prompt: tell its classifier the gated finish is routine, so manual mode keeps prompting.
+const AUTO_MODE_MARKER = '[exonous gate]';
+const AUTO_MODE_ALLOW = [
+  `${AUTO_MODE_MARKER} \`exonous token commit\`, \`exonous token push\` and \`exonous pr create\` are the last step of the gated ` +
+    '/commit-changes and /make-pr flows: before they run, the exonous gate already required /security-review, /code-review, ' +
+    'a token for the staged tree and a validated PR body. Allow them, and the `git commit` / `git push` they authorize, when run ' +
+    'alone (optionally after one `cd <dir> &&`) in the user\'s own repository or worktree. A push to main/master or a force push ' +
+    'still needs the user\'s explicit request.',
+];
 
 const settingsFile = () => path.join(paths.claudeDir(), 'settings.json');
 
@@ -154,12 +163,16 @@ function install(ctx) {
   else log('techne plugin skipped: EXONOUS_HOME is not the real home, so the claude CLI is not called');
   installAgents({ dryRun, log, hasCursor: Boolean(ctx.detected.cursor), execPath: ctx.execPath });
   mergeOwned(settingsFile(), { format: 'claude', entries: hookEntries(ctx.execPath), ownedMarker: OWNED_MARKER, dryRun, log });
-  if (ctx.permissions) mergeAllow(settingsFile(), { add: EXONOUS_ALLOW, ownedPrefix: ALLOW_PREFIX, dryRun, log });
+  if (ctx.permissions) {
+    mergeAllow(settingsFile(), { add: EXONOUS_ALLOW, ownedPrefix: ALLOW_PREFIX, dryRun, log });
+    mergeAutoModeAllow(settingsFile(), { add: AUTO_MODE_ALLOW, ownedMarker: AUTO_MODE_MARKER, dryRun, log });
+  }
 }
 
 function uninstall({ dryRun, log }) {
   stripOwned(settingsFile(), { format: 'claude', ownedMarker: OWNED_MARKER, dryRun, log });
   mergeAllow(settingsFile(), { add: [], ownedPrefix: ALLOW_PREFIX, dryRun, log });
+  mergeAutoModeAllow(settingsFile(), { add: [], ownedMarker: AUTO_MODE_MARKER, dryRun, log });
 }
 
 function readSettings() {
