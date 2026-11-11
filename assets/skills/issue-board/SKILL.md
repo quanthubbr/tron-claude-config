@@ -46,18 +46,23 @@ exonous issue-board render
 exonous issue-board render --json
 ```
 
+Rodado dentro de um repo git que tem issues no board, o escopo padrão é esse repo (casado pelo nome dos remotes, então fork e upstream valem). Fora de um repo, ou num repo que não está no board, vale o board inteiro. O cabeçalho do `render` diz qual repo está no escopo.
+
 Flags de escopo e filtro (valem para `pending` e `render`):
 
 | Flag | Efeito |
 |---|---|
-| `--all` | board inteiro, não só as suas |
+| `--all` | todas as pessoas, não só as suas |
+| `--todos-repos` | todos os repos do board, ignorando o repo atual |
 | `--user login` | issues de outra pessoa |
 | `--por tipo\|prioridade\|dificuldade\|campo\|status\|repo` | agrupamento (padrão `tipo`); `campo` usa `fields.group` |
-| `--prioridade P0,P1` · `--dificuldade facil` · `--tipo bug` · `--campo valor` · `--repo nome` · `--status ready` | filtros: vários valores separados por vírgula; casam por trecho, sem diferenciar maiúscula nem acento (`--status ready` também pega "Not ready"); `--tipo` aceita id ou nome |
+| `--prioridade P0,P1` · `--dificuldade facil` · `--tipo bug` · `--campo valor` · `--repo nome` · `--status ready` | filtros: vários valores separados por vírgula; casam por trecho, sem diferenciar maiúscula nem acento (`--status ready` também pega "Not ready"); `--tipo` aceita id ou nome; `--repo` substitui o escopo do repo atual |
 
 O cache fica em `data/<owner>-<número>/` dentro da skill compartilhada em `~/.agents/skills/issue-board`; instalações antigas em `~/.claude/skills/issue-board` continuam legíveis. `--skill-dir <pasta>` seleciona outra cópia explicitamente.
 
 A saída do Bash nem sempre aparece para o usuário. Para colar na resposta, rode `exonous issue-board render --width 100` e cole a tabela em um bloco `text`, exatamente como saiu. Preserve bordas, colunas, cabeçalho e legenda.
+
+A coluna Link num terminal com cor é `↗ abrir`, clicável (OSC 8). Sem cor, como no `--width 100` colado no chat, ela mostra a URL sem `https://` e ocupa o lugar das colunas ID e Repo.
 
 ## 3. Como classificar
 

@@ -15,7 +15,7 @@ const BODY_LIMIT = 1500
 const EXIT_AUTH = 2
 const EXIT_CONFIG = 3
 const EXIT_NO_GH = 4
-const BOOLEAN_FLAGS = new Set(['all', 'color', 'no-color', 'json'])
+const BOOLEAN_FLAGS = new Set(['all', 'todos-repos', 'color', 'no-color', 'json'])
 const MIN_TITLE_WIDTH = 20
 
 const DEFAULT_FIELDS = { status: 'Status', priority: 'Priority', size: 'Size', group: '' }
@@ -195,9 +195,28 @@ function cmdFetch(config, flags) {
   const mine = all.filter((i) => i.assignees.includes(me))
   writeJson(join(config.dataDir, 'items.json'), { fetchedAt: new Date().toISOString(), me, items: all })
   const classes = readJson(join(config.dataDir, 'classification.json'), {})
-  const scope = flags.all ? all : mine
+  const { items: scope, repos } = scopeItems(config, flags)
   const pending = scope.filter((i) => !classes[i.key]).length
-  console.log(`Board ${config.owner}#${config.projectNumber}: ${all.length} issues abertas, ${mine.length} atribuídas a ${me}. Sem classificação no escopo: ${pending}.`)
+  console.log(`Board ${config.owner}#${config.projectNumber}: ${all.length} issues abertas, ${mine.length} atribuídas a ${me}.${repos ? ` Escopo: ${repos.join(', ')}.` : ''} Sem classificação no escopo: ${pending}.`)
+}
+
+// Nomes dos repos dos remotes do diretório atual; fork e upstream têm o mesmo nome.
+function cwdRepoNames() {
+  try {
+    const out = execFileSync('git', ['remote', '-v'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+    const urls = out.split('\n').map((line) => line.split(/\s+/)[1]).filter(Boolean)
+    return new Set(urls.map((url) => url.match(/([^/:]+?)(\.git)?\/?$/)?.[1]).filter(Boolean).map(fold))
+  } catch {
+    return new Set()
+  }
+}
+
+// Dentro de um repo que está no board, o escopo padrão é esse repo; --repo ou --todos-repos desligam.
+function repoScope(items, flags) {
+  if (flags['todos-repos'] || typeof flags.repo === 'string') return null
+  const names = cwdRepoNames()
+  const repos = [...new Set(items.map((i) => i.repo).filter((r) => names.has(fold(r))))]
+  return repos.length ? repos : null
 }
 
 function scopeItems(config, flags) {
@@ -205,12 +224,16 @@ function scopeItems(config, flags) {
   if (!data) fail('Nada em cache para esse board. Rode "fetch" antes.')
   if (flags.user === true) fail('--user precisa de um login.')
   const wanted = flags.user || data.me
-  return flags.all ? data.items : data.items.filter((i) => i.assignees.includes(wanted))
+  const repos = repoScope(data.items, flags)
+  const items = data.items
+    .filter((i) => flags.all || i.assignees.includes(wanted))
+    .filter((i) => !repos || repos.includes(i.repo))
+  return { items, repos }
 }
 
 function cmdPending(config, flags) {
   const classes = readJson(join(config.dataDir, 'classification.json'), {})
-  const pending = scopeItems(config, flags)
+  const pending = scopeItems(config, flags).items
     .filter((i) => !classes[i.key])
     .map(({ key, title, labels, status, group, boardPriority, boardSize, body }) => ({ key, title, labels, status, group, boardPriority, boardSize, body }))
   console.log(JSON.stringify({ types: config.types, issues: pending }, null, 2))
@@ -258,7 +281,8 @@ function resolve(item, classes, config) {
 
 function makePaint(enabled) {
   const code = (n) => (s) => (enabled ? `\x1b[${n}m${s}\x1b[0m` : s)
-  return { red: code('31;1'), yellow: code('33;1'), cyan: code('36'), gray: code('90'), bold: code('1'), dim: code('2') }
+  const link = (url, s) => (enabled ? `\x1b]8;;${url}\x1b\\${s}\x1b]8;;\x1b\\` : s)
+  return { enabled, link, red: code('31;1'), yellow: code('33;1'), cyan: code('36'), gray: code('90'), bold: code('1'), dim: code('2') }
 }
 
 function pad(text, width) {
@@ -306,7 +330,8 @@ function buildView(config, flags) {
     [list(flags.repo), (r) => r.repo],
     [list(flags.status), (r) => r.status],
   ]
-  const rows = scopeItems(config, flags)
+  const { items, repos } = scopeItems(config, flags)
+  const rows = items
     .map((i) => resolve(i, classes, config))
     .filter((r) => filters.every(([want, get]) => !want || want.some((w) => fold(get(r)).includes(w))))
   const groupBy = GROUPS[flags.por] ? flags.por : 'tipo'
@@ -320,6 +345,7 @@ function buildView(config, flags) {
   return {
     board: `${config.owner}#${config.projectNumber}`,
     user: flags.all ? null : flags.user || readJson(join(config.dataDir, 'items.json'), {}).me || null,
+    repos,
     groupBy,
     groupField: config.fields.group || null,
     total: rows.length,
@@ -344,23 +370,36 @@ function cmdRender(config, flags) {
   }
   const paint = makePaint(flags.color === true || (flags['no-color'] === undefined && process.stdout.isTTY))
   if (!view.total) {
-    console.log('Nenhuma issue nesse escopo. Tente --all para ver o board inteiro.')
+    console.log(`Nenhuma issue nesse escopo. Tente --all para ver o board inteiro${view.repos ? ' ou --todos-repos para sair do repo atual' : ''}.`)
     return
   }
 
   const counts = PRIORITIES.map((p) => `${p} ${view.counts[p]}`).join('  ·  ')
-  console.log(paint.bold(`${view.total} issues  |  ${counts}`))
+  const scope = view.repos ? `  |  repo ${view.repos.join(', ')} (--todos-repos para o board inteiro)` : ''
+  console.log(paint.bold(`${view.total} issues  |  ${counts}${scope}`))
   console.log(paint.dim('Dificuldade ■□□ fácil  ■■□ média  ■■■ difícil   ~ = sugestão do agente (campo vazio no board)\n'))
 
   const width = Math.max(60, Math.min(Number(flags.width) || process.stdout.columns || 140, 180))
   const title = { label: 'Título', width: 0, get: (r) => (r.note ? `${r.title} [${r.note}]` : r.title) }
+  const rows = view.groups.flatMap((g) => g.rows)
+  // Sem terminal o link não é clicável: a URL curta já diz repo e número, então substitui ID e Repo.
+  const compactUrl = (r) => r.url.replace(/^https?:\/\//, '')
+  const idColumns = paint.enabled
+    ? [
+        { label: 'ID', width: 5, get: (r) => `#${r.number}` },
+        { label: 'Repo', width: 19, get: (r) => r.repo },
+      ]
+    : []
+  const linkColumn = paint.enabled
+    ? { label: 'Link', width: 7, get: () => '↗ abrir', color: (r, text) => paint.link(r.url, text) }
+    : { label: 'Link', width: Math.max(4, ...rows.map((r) => compactUrl(r).length)), get: compactUrl }
   const columns = [
     { label: 'Pri', width: 4, get: (r) => r.priority + (r.prioritySuggested ? '~' : ''), color: priorityColor(paint) },
     { label: 'Dif', width: 5, get: (r) => (r.difficulty ? '■'.repeat(r.difficulty) + '□'.repeat(3 - r.difficulty) : '—') + (r.difficultySuggested ? '~' : '') },
-    { label: 'ID', width: 5, get: (r) => `#${r.number}` },
-    { label: 'Repo', width: 19, get: (r) => r.repo },
+    ...idColumns,
     title,
     { label: 'Status', width: 12, get: (r) => r.status || '—' },
+    linkColumn,
   ]
   const optional = []
   if (view.groupField) optional.push({ label: view.groupField, width: 10, get: (r) => r.group || '—' })
@@ -383,7 +422,7 @@ const { flags, positional } = parseArgs(process.argv.slice(2))
 const command = positional.shift()
 const commands = { fetch: cmdFetch, pending: cmdPending, classify: (c) => cmdClassify(c, positional), render: cmdRender }
 if (!commands[command]) {
-  fail('Uso: node board.mjs <fetch|pending|classify|render> [--owner x --project-number n] [--all] [--user login] [--por tipo|prioridade|dificuldade|campo|status|repo] [--prioridade P0,P1] [--dificuldade fácil] [--tipo bug] [--campo valor] [--repo nome] [--status ready] [--width n] [--color|--no-color] [--json]')
+  fail('Uso: node board.mjs <fetch|pending|classify|render> [--owner x --project-number n] [--all] [--user login] [--por tipo|prioridade|dificuldade|campo|status|repo] [--prioridade P0,P1] [--dificuldade fácil] [--tipo bug] [--campo valor] [--repo nome] [--todos-repos] [--status ready] [--width n] [--color|--no-color] [--json]')
 }
 if (command === 'fetch') requireAuth()
 commands[command](loadConfig(flags), flags)
