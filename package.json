@@ -1,6 +1,6 @@
 {
   "name": "exonous",
-  "version": "2.12.0",
+  "version": "2.13.0",
   "description": "The mind outside your head for coding agents: enforced workflow, anchored memory and a disciplined agent roster for Claude Code and Cursor.",
   "repository": "github:zaqueu-1/exonous",
   "bin": {
