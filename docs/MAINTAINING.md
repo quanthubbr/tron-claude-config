@@ -25,7 +25,7 @@ Everything a maintainer needs; the README is for users. Nothing in this file or 
 | `assets/adapters/`, `assets/editors/` | generated-file templates (OpenCode plugin), Cursor rule and hook templates | yes |
 | `test/` | `npm test` | no |
 | `maintainer/pege/` | upstream provenance, watch and originality gate | no |
-| `maintainer/release.js` | CI release gate: `check` (shipped change needs a version bump), `tag` (annotated tag for a new version) | no |
+| `maintainer/release.js` | CI release gate: `check` (preview the merge bump), `bump` (raise the version from the newest tag), `tag` (annotated tag for a new version) | no |
 | `maintainer/gen-v2-manifest.js` | regenerates `src/legacy/v2-manifest.json` from the `v2.0.0` tag | no |
 | `maintainer/mirror-sync.sh` | run, check or update the quanthub mirror sync | no |
 
@@ -91,8 +91,9 @@ Install and uninstall write into other tools' configs under the real home. Never
 
 Releases are tagged by CI; nobody tags by hand.
 
-- **In the PR:** a change to anything `package.json` `files` ships must raise the version (`npm version patch|minor --no-git-tag-version`; patch: fix · minor: new tool, skill or gate · major: breaks the install contract). The `version bump` job (`node maintainer/release.js check origin/main`) fails otherwise. PRs touching only CI, tests, `maintainer/` or `docs/MAINTAINING.md` need no bump; `README.md` ships, so it does.
-- **On merge to `main`:** after the test, WSL and npm-smoke jobs, `release checks` runs `e2e-smoke.sh` and `pege:originality`. If `v<version>` does not exist yet, the `release` job publishes the packed tarball to npm with provenance (trusted publishing, `id-token: write`). It then checks that the registry's `dist.integrity` matches that tarball. Next it pushes the annotated tag (`node maintainer/release.js tag`, refused unless above the newest tag) and creates the GitHub release. A failed check means no publish and no tag; fix it in a new PR. If the publish succeeded but tagging failed, rerunning the job verifies the published bytes and tags without republishing.
+- **In the PR:** no manual bump needed. The `version bump` job (`node maintainer/release.js check origin/main`) previews the bump the merge gets and fails only if the version goes down or reuses a released tag. A manual bump is kept when it is at least the computed one.
+- **On merge to `main`:** the `version bump` job runs `node maintainer/release.js bump`: from the newest tag, every non-merge commit since it that touches `package.json` `files` sets the level (`feat` → minor, `type!:` or `BREAKING CHANGE:` → major, anything else → patch; `docs` commits never bump). It commits `chore: release vX.Y.Z` straight to `main` and every later job builds that commit. If `main` already moved on, the newer run bumps for both. PRs touching only CI, tests, `maintainer/` or `docs/MAINTAINING.md` release nothing; `README.md` ships, so a non-docs commit to it does.
+- **Then:** after the test, WSL and npm-smoke jobs, `release checks` runs `e2e-smoke.sh` and `pege:originality`. If `v<version>` does not exist yet, the `release` job publishes the packed tarball to npm with provenance (trusted publishing, `id-token: write`). It then checks that the registry's `dist.integrity` matches that tarball. Next it pushes the annotated tag (`node maintainer/release.js tag`, refused unless above the newest tag) and creates the GitHub release. A failed check means no publish and no tag; fix it in a new PR. If the publish succeeded but tagging failed, rerunning the job verifies the published bytes and tags without republishing.
 - **Mirror:** the quanthub mirror copies the new tag within the hour; `bash maintainer/mirror-sync.sh` copies it now.
 
 Tags are annotated. Installs and updates resolve the tag to its peeled commit and install `github:zaqueu-1/exonous#<commit>`; the commit is verified after install. Never move or delete a published tag: `exonous doctor` warns every consumer whose tag now points elsewhere.

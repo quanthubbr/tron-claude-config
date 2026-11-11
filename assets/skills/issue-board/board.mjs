@@ -15,7 +15,7 @@ const BODY_LIMIT = 1500
 const EXIT_AUTH = 2
 const EXIT_CONFIG = 3
 const EXIT_NO_GH = 4
-const BOOLEAN_FLAGS = new Set(['all', 'todos-repos', 'color', 'no-color', 'json'])
+const BOOLEAN_FLAGS = new Set(['all', 'todos-repos', 'color', 'no-color', 'json', 'markdown'])
 const MIN_TITLE_WIDTH = 20
 
 const DEFAULT_FIELDS = { status: 'Status', priority: 'Priority', size: 'Size', group: '' }
@@ -362,6 +362,51 @@ function buildView(config, flags) {
   }
 }
 
+function difficultyText(r) {
+  return (r.difficulty ? '■'.repeat(r.difficulty) + '□'.repeat(3 - r.difficulty) : '—') + (r.difficultySuggested ? '~' : '')
+}
+
+// Tabela mais larga que o terminal vira lista vertical no Claude Code: URL fica fora e o título é cortado.
+function renderMarkdown(view, width) {
+  const cell = (text) => String(text).replace(/\|/g, '\\|')
+  const len = (text) => [...text].length
+  const others = [
+    ['Pri', (r) => r.priority + (r.prioritySuggested ? '~' : '')],
+    ['Dif', difficultyText],
+    ['Issue', (r) => `#${r.number}`],
+    ...(view.repos?.length === 1 ? [] : [['Repo', (r) => cell(r.repo)]]),
+  ]
+  const trailing = [
+    ['Status', (r) => cell(r.status || '—')],
+    ...(view.groupField ? [[cell(view.groupField), (r) => cell(r.group || '—')]] : []),
+    ...(view.groupBy !== 'tipo' ? [['Tipo', (r) => cell(r.type)]] : []),
+  ]
+  const rows = view.groups.flatMap((g) => g.rows)
+  const fixed = [...others, ...trailing].reduce((sum, [label, get]) => sum + Math.max(len(label), ...rows.map((r) => len(get(r)))), 0)
+  const separators = 3 * (others.length + trailing.length) + 4
+  const titleMax = Math.max(MIN_TITLE_WIDTH, width - fixed - separators)
+  const title = (r) => {
+    const chars = [...(r.note ? `${r.title} [${r.note}]` : r.title)]
+    const cut = (n) => cell(chars.slice(0, n).join('')) + (n < chars.length ? '…' : '')
+    let keep = chars.length > titleMax ? titleMax - 1 : chars.length
+    while (keep > 1 && len(cut(keep)) > titleMax) keep--
+    return cut(keep)
+  }
+  const columns = [...others, ['Título', title], ...trailing]
+  const counts = PRIORITIES.map((p) => `${p} ${view.counts[p]}`).join(' · ')
+  const out = [`**${view.total} issues** · ${counts}${view.repos ? ` · repo ${view.repos.join(', ')}` : ''}`, '']
+  for (const group of view.groups) {
+    out.push(`**${cell(group.name)}** (${group.rows.length})`, '')
+    out.push(`| ${columns.map(([label]) => label).join(' | ')} |`, `|${columns.map(() => '---|').join('')}`)
+    for (const row of group.rows) out.push(`| ${columns.map(([, get]) => get(row)).join(' | ')} |`)
+    out.push('')
+    for (const row of group.rows.filter((r) => r.url)) out.push(`- #${row.number} ${row.url}`)
+    out.push('')
+  }
+  out.push('Dificuldade ■□□ fácil · ■■□ média · ■■■ difícil · ~ = sugestão do agente (campo vazio no board)')
+  return out.join('\n')
+}
+
 function cmdRender(config, flags) {
   const view = buildView(config, flags)
   if (flags.json) {
@@ -371,6 +416,10 @@ function cmdRender(config, flags) {
   const paint = makePaint(flags.color === true || (flags['no-color'] === undefined && process.stdout.isTTY))
   if (!view.total) {
     console.log(`Nenhuma issue nesse escopo. Tente --all para ver o board inteiro${view.repos ? ' ou --todos-repos para sair do repo atual' : ''}.`)
+    return
+  }
+  if (flags.markdown) {
+    console.log(renderMarkdown(view, Number(flags.width) || 100))
     return
   }
 
@@ -395,7 +444,7 @@ function cmdRender(config, flags) {
     : { label: 'Link', width: Math.max(4, ...rows.map((r) => compactUrl(r).length)), get: compactUrl }
   const columns = [
     { label: 'Pri', width: 4, get: (r) => r.priority + (r.prioritySuggested ? '~' : ''), color: priorityColor(paint) },
-    { label: 'Dif', width: 5, get: (r) => (r.difficulty ? '■'.repeat(r.difficulty) + '□'.repeat(3 - r.difficulty) : '—') + (r.difficultySuggested ? '~' : '') },
+    { label: 'Dif', width: 5, get: difficultyText },
     ...idColumns,
     title,
     { label: 'Status', width: 12, get: (r) => r.status || '—' },
@@ -422,7 +471,7 @@ const { flags, positional } = parseArgs(process.argv.slice(2))
 const command = positional.shift()
 const commands = { fetch: cmdFetch, pending: cmdPending, classify: (c) => cmdClassify(c, positional), render: cmdRender }
 if (!commands[command]) {
-  fail('Uso: node board.mjs <fetch|pending|classify|render> [--owner x --project-number n] [--all] [--user login] [--por tipo|prioridade|dificuldade|campo|status|repo] [--prioridade P0,P1] [--dificuldade fácil] [--tipo bug] [--campo valor] [--repo nome] [--todos-repos] [--status ready] [--width n] [--color|--no-color] [--json]')
+  fail('Uso: node board.mjs <fetch|pending|classify|render> [--owner x --project-number n] [--all] [--user login] [--por tipo|prioridade|dificuldade|campo|status|repo] [--prioridade P0,P1] [--dificuldade fácil] [--tipo bug] [--campo valor] [--repo nome] [--todos-repos] [--status ready] [--width n] [--color|--no-color] [--json] [--markdown]')
 }
 if (command === 'fetch') requireAuth()
 commands[command](loadConfig(flags), flags)

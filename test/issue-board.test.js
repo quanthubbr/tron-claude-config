@@ -88,3 +88,38 @@ test('issue-board plain table shows the compact url in place of ID and Repo', ()
   assert.doesNotMatch(out, /│ ID /);
   assert.ok(out.split('\n').every((line) => [...line].length <= 100), out);
 });
+
+test('issue-board --markdown keeps urls out of the table and lists them under it', () => {
+  const { root, skill } = setup();
+  const out = run(skill, repoDir(root, 'nuntius', 'git@github.com:org/nuntius.git'), ['--markdown']);
+  assert.match(out, /\| #1 \|/);
+  assert.match(out, /^- #1 https:\/\/github\.com\/org\/nuntius\/issues\/1$/m);
+  assert.match(out, /repo nuntius/);
+  assert.doesNotMatch(out, /\x1b|│|\]\(/);
+  assert.ok(out.split('\n').filter((l) => l.startsWith('|')).every((l) => !l.includes('https://')), out);
+  assert.doesNotMatch(out, /\| Repo \|/);
+});
+
+test('issue-board --markdown cuts titles so table rows fit --width', () => {
+  const { root, skill } = setup();
+  const items = path.join(skill, 'data', 'org-1', 'items.json');
+  const data = JSON.parse(fs.readFileSync(items, 'utf8'));
+  data.items[0].title = 'x'.repeat(200);
+  fs.writeFileSync(items, JSON.stringify(data));
+  const out = run(skill, repoDir(root, 'nuntius', 'git@github.com:org/nuntius.git'), ['--markdown', '--width', '80']);
+  const rows = out.split('\n').filter((l) => l.startsWith('| '));
+  assert.ok(rows.length >= 2);
+  assert.ok(rows.every((l) => [...l].length <= 80), out);
+  assert.match(out, /x…/);
+});
+
+test('issue-board --markdown shows the repo column across repos and escapes pipes', () => {
+  const { root, skill } = setup();
+  const items = path.join(skill, 'data', 'org-1', 'items.json');
+  const data = JSON.parse(fs.readFileSync(items, 'utf8'));
+  data.items[2].title = 'a | b';
+  fs.writeFileSync(items, JSON.stringify(data));
+  const out = run(skill, repoDir(root, 'plain'), ['--markdown']);
+  assert.match(out, /\| Repo \|/);
+  assert.match(out, /\| a \\\| b \|/);
+});

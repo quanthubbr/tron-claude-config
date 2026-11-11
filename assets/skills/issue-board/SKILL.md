@@ -44,6 +44,7 @@ exonous issue-board pending
 exonous issue-board classify <arquivo.json>
 exonous issue-board render
 exonous issue-board render --json
+exonous issue-board render --markdown
 ```
 
 Rodado dentro de um repo git que tem issues no board, o escopo padrão é esse repo (casado pelo nome dos remotes, então fork e upstream valem). Fora de um repo, ou num repo que não está no board, vale o board inteiro. O cabeçalho do `render` diz qual repo está no escopo.
@@ -60,9 +61,9 @@ Flags de escopo e filtro (valem para `pending` e `render`):
 
 O cache fica em `data/<owner>-<número>/` dentro da skill compartilhada em `~/.agents/skills/issue-board`; instalações antigas em `~/.claude/skills/issue-board` continuam legíveis. `--skill-dir <pasta>` seleciona outra cópia explicitamente.
 
-A saída do Bash nem sempre aparece para o usuário. Para colar na resposta, rode `exonous issue-board render --width 100` e cole a tabela em um bloco `text`, exatamente como saiu. Preserve bordas, colunas, cabeçalho e legenda.
+A saída do Bash nem sempre aparece para o usuário. Para colar na resposta, rode `exonous issue-board render --markdown` e cole a saída como markdown, fora de bloco de código, exatamente como saiu, sem reformatar. A tabela corta o título para caber em `--width` (padrão 100) e deixa a URL fora; os links vêm numa lista `- #n url` abaixo de cada grupo. Tabela mais larga que o terminal vira lista vertical no Claude Code, então não junte colunas nem ponha a URL de volta. Nunca cole a tabela de bordas no chat.
 
-A coluna Link num terminal com cor é `↗ abrir`, clicável (OSC 8). Sem cor, como no `--width 100` colado no chat, ela mostra a URL sem `https://` e ocupa o lugar das colunas ID e Repo.
+A tabela de bordas é para o terminal. Com cor, a coluna Link é `↗ abrir`, clicável (OSC 8). Sem cor, ela mostra a URL sem `https://` no lugar das colunas ID e Repo.
 
 ## 3. Como classificar
 
@@ -85,5 +86,5 @@ A classificação é gravada por `owner/repo#número` e reaproveitada nas próxi
 
 ## 4. Resposta ao usuário
 
-1. A tabela, começando pelo cabeçalho do `render` (total, contagem por prioridade e legenda). Não escreva outra linha de total antes dela: repete o cabeçalho.
+1. A saída do `render --markdown`, começando pelo cabeçalho (total, contagem por prioridade e repo). Não escreva outra linha de total antes dela: repete o cabeçalho.
 2. Uma linha dizendo o que pegar primeiro: a issue de maior prioridade e, entre elas, a de menor dificuldade.
