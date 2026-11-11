@@ -79,6 +79,12 @@ def id_cell(row, Text):
     return Text(f"#{row['number']}", style=f"{style} bold".strip())
 
 
+def link_cell(row, Text):
+    if not row.get("url"):
+        return "—"
+    return Text("↗ abrir", style=f"link {row['url']} grey70")
+
+
 def title_cell(row, Text):
     cell = Text(row["title"])
     if row["note"]:
@@ -107,6 +113,8 @@ def header(view, Text, Panel):
         body.append(f" {label}   ", style="dim")
     body.append("~ sugestão do agente (campo vazio no board)", style="dim")
     who = view["user"] or "board inteiro"
+    if view.get("repos"):
+        who += f" · repo {', '.join(view['repos'])}"
     return Panel(body, title=f"[bold]Board {view['board']}[/] · {who}", title_align="left", border_style="grey50", expand=False)
 
 
@@ -130,6 +138,7 @@ def group_table(view, group, Table, Text, box):
         table.add_column(view["groupField"], no_wrap=True, style="grey70")
     if view["groupBy"] != "tipo":
         table.add_column("Tipo", no_wrap=True, style="grey70")
+    table.add_column("Link", no_wrap=True)
     for row in group["rows"]:
         cells = [
             priority_cell(row, Text),
@@ -143,6 +152,7 @@ def group_table(view, group, Table, Text, box):
             cells.append(row["group"] or "—")
         if view["groupBy"] != "tipo":
             cells.append(row["type"])
+        cells.append(link_cell(row, Text))
         table.add_row(*cells)
     return table
 
