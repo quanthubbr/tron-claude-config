@@ -313,6 +313,29 @@ test('bypass matrix: every unsafe commit shape is denied even with a valid token
   assert.deepStrictEqual(failures, []);
 });
 
+test('a read-only git loop with a `[ ... ]` test passes; computed git names still block (#89)', () => {
+  const fx = setup();
+  fs.mkdirSync(path.join(fx.dir, 'sub'));
+  const loops = [
+    'cd sub; prev=""; while true; do\n  cur=$(git status --short 2>/dev/null | sort | tr \'\\n\' \' \')\n  if [ "$cur" != "$prev" ]; then\n'
+      + '    echo "[$(date +%H:%M)] $(git status --short | wc -l) arquivos: $(git status --short | awk \'{print $2}\' | xargs -n1 basename | tr \'\\n\' \' \')"\n'
+      + '    prev="$cur"\n  fi\n  sleep 300\ndone',
+    'cd sub; prev=""; while true; do\n  cur=$(git status --short | sort)\n'
+      + '  if [ "$cur" != "$prev" ]; then echo "[$(date +%H:%M)] $(echo "$cur" | grep -c .) arquivos alterados"; prev="$cur"; fi\n  sleep 300\ndone',
+    '[[ "$(git status --short)" != "" ]] && echo dirty',
+  ];
+  const blocked = ['git commit -m x', 'git $SUB -m x', '$(echo git) commit -m x', 'g=git; $g commit -m x', 'git -C sub commit -m x', '[$X] commit -m x'];
+  const failures = [];
+  for (const cmd of loops) {
+    const res = run('auto', claude(cmd, fx.dir), fx.env);
+    if (res.code !== 0) failures.push(`DENIED: ${JSON.stringify(cmd)} → ${res.stderr.trim()}`);
+  }
+  for (const cmd of blocked) {
+    if (run('auto', claude(cmd, fx.dir), fx.env).code !== 2) failures.push(`ALLOWED: ${JSON.stringify(cmd)}`);
+  }
+  assert.deepStrictEqual(failures, []);
+});
+
 test('help and dry-run count only as real options, never as option values', () => {
   const fx = setup();
   const failures = [];

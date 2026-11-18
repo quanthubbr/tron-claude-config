@@ -355,7 +355,8 @@ const commandName = (word) => path.basename(word).replace(/\.exe$/i, '');
 
 // `$HOME/bin/tool` keeps a static basename; anything computed after the last slash is unknowable.
 function staticName(word) {
-  if (word.glob) return null;
+  // A lone `[` or `[[` has no closing bracket, so the shell runs it as the test builtin, not a glob.
+  if (word.glob && !(word.v === '[' || word.v === '[[')) return null;
   if (!word.dyn) return commandName(word.v);
   const slash = word.v.lastIndexOf('/');
   return slash !== -1 && word.dynEnd <= slash ? commandName(word.v.slice(slash + 1)) : null;
