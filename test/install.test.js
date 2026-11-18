@@ -364,7 +364,7 @@ test('commandNode reads back the node path shellQuote wrote, per platform', () =
 // ── M8: shared skills in ~/.agents/skills ─────────────────────────────────────
 test('shared skills live in ~/.agents/skills and Claude links to them', () => {
   run();
-  for (const name of ['deliver', 'project-memory', 'doc', 'issue-board', 'session-handoff']) {
+  for (const name of ['deliver', 'project-memory', 'doc', 'issue-board', 'issue-create', 'session-handoff']) {
     assert.ok(fs.existsSync(home('.agents', 'skills', name, 'SKILL.md')), name);
     assert.ok(fs.lstatSync(home('.claude', 'skills', name)).isSymbolicLink(), name);
     assert.strictEqual(fs.realpathSync(home('.claude', 'skills', name)), fs.realpathSync(home('.agents', 'skills', name)));

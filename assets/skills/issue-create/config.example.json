@@ -1,0 +1,32 @@
+{
+  "name": "meu-time",
+  "title": {
+    "hint": "<Área>: <o que está errado ou o que vai existir>",
+    "pattern": "^[^:\\s][^:]{1,40}: \\S.{4,}$",
+    "maxLength": 100
+  },
+  "templates": {
+    "bug": {
+      "typeLabel": "bug",
+      "sections": [
+        { "name": "Problema", "required": true },
+        { "name": "Passos para reproduzir" },
+        { "name": "Comportamento esperado", "required": true },
+        { "name": "Critérios de aceite", "required": true, "checklist": true }
+      ]
+    },
+    "feature": {
+      "typeLabel": "enhancement",
+      "sections": [
+        { "name": "Contexto", "required": true },
+        { "name": "Proposta", "required": true },
+        { "name": "Critérios de aceite", "required": true, "checklist": true }
+      ]
+    }
+  },
+  "labels": { "type": ["bug", "enhancement", "documentation"], "area": {} },
+  "requiredAssignees": [],
+  "project": { "owner": "sua-org-ou-usuario", "number": 1 },
+  "createStatuses": [],
+  "requiredFields": ["Status"]
+}

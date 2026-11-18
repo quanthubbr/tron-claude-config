@@ -20,6 +20,7 @@ const HOME_SKILLS = {
   'session-handoff': ['SKILL.md', 'config.example.json'],
   doc: ['SKILL.md', 'doc.mjs'],
   'issue-board': ['SKILL.md', 'board.mjs', 'render.py', 'config.example.json'],
+  'issue-create': ['SKILL.md', 'create.mjs', 'config.example.json'],
 };
 // Design trees are replaced whole; ui-patterns ships with them so every tool that reads ~/.agents/skills gets it.
 const DESIGN_SKILLS = ['ui-design', 'ui-motion', 'native-ui', 'ui-mockup', 'ui-patterns'];
