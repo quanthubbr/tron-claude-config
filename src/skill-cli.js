@@ -10,6 +10,7 @@ const ENGINES = {
   'project-memory': { skill: 'project-memory', script: 'project-memory.mjs' },
   doc: { skill: 'doc', script: 'doc.mjs' },
   'issue-board': { skill: 'issue-board', script: 'board.mjs' },
+  'issue-create': { skill: 'issue-create', script: 'create.mjs' },
   'ui-design': { skill: 'ui-design', script: path.join('scripts', 'ui-design.mjs') },
 };
 

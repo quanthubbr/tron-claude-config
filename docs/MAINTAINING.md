@@ -20,7 +20,7 @@ Everything a maintainer needs; the README is for users. Nothing in this file or 
 | `assets/rules/nomos.md` | the only always-on rule (byte budget enforced); `render-rules` derives the `no-agents` and `min` variants | yes |
 | `assets/machine/` | what is copied to `~/.claude/exonous`: `hooks/` (`pyle.cjs`, `kairos.cjs`, `lib/*.cjs`, Node builtins only) and `PR-TEMPLATE.md`. Replaces the old `assets/repo/` | yes |
 | `assets/agents/` | the 12 `exo-*` agents, `roster.json`, `taxis.js` | yes |
-| `assets/skills/` | deliver, project-memory, commit-changes, make-pr, code-review, security-review, session-handoff, doc, issue-board, ui-design, ui-motion, native-ui, ui-mockup, ui-patterns | yes |
+| `assets/skills/` | deliver, project-memory, commit-changes, make-pr, code-review, security-review, session-handoff, doc, issue-board, issue-create, ui-design, ui-motion, native-ui, ui-mockup, ui-patterns | yes |
 | `assets/techne/` | the `techne@exonous` Claude Code plugin (stack skills, quality hooks, language rules) | yes |
 | `assets/adapters/`, `assets/editors/` | generated-file templates (OpenCode plugin), Cursor rule and hook templates | yes |
 | `test/` | `npm test` | no |

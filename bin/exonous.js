@@ -24,7 +24,7 @@ Usage: exonous <command> [flags]
   pr create --body-file <file> [--base b] [--head h] [--title t] [--draft]   validate the body, run gh pr create, save the PR handoff
   vault [show|detect|set <path> [--create]|graph|consolidate [target] <--dry-run|--apply>]   one central root for agent notes
   handoff save --body-file <file> | latest --json   save or resume compact session graphs in existing vaults
-  project-memory | doc | issue-board | ui-design [--skill-dir <dir>] <args>   run the installed skill's engine
+  project-memory | doc | issue-board | issue-create | ui-design [--skill-dir <dir>] <args>   run the installed skill's engine
 
   setup is an alias of install; from a repo's node_modules (npx exonous setup) it runs repo mode. From a source checkout, install/uninstall need EXONOUS_HOME or --real-home.`;
 

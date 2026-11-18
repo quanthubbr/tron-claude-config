@@ -65,7 +65,7 @@ Install selects an existing configured vault, then an open or recent Obsidian va
 | `exonous gate --selftest claude` | Check a registered gate |
 | `exonous workflow <commit\|pr>` | Read the review procedure |
 
-`npx exonous <command>` runs the same CLI without a global install. `exonous pr create` validates the PR body against the template, runs `gh pr create` and saves the PR handoff. `project-memory`, `doc`, `issue-board` and `ui-design` run the engine of the installed skill. Daily update checks run at session start unless disabled and move to the newest release tag of the same major. New major versions require an explicit upgrade.
+`npx exonous <command>` runs the same CLI without a global install. `exonous pr create` validates the PR body against the template, runs `gh pr create` and saves the PR handoff. `project-memory`, `doc`, `issue-board`, `issue-create` and `ui-design` run the engine of the installed skill. Daily update checks run at session start unless disabled and move to the newest release tag of the same major. New major versions require an explicit upgrade.
 
 ## Privacy and configuration
 
